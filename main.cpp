@@ -7,12 +7,66 @@
 
 using namespace std;
 
-int main()
+int main(int argc, char* argv[])
 {
-    string code="func main(){printint(5+6);return}";
-    cout<<"code:"<<endl<<code<<endl<<endl;
-    Lexer lexer(code);
-    /*
+    if(argc==2){
+        string code(argv[1]);
+        cout<<"code:"<<endl<<code<<endl<<endl;
+        Lexer lexer(code);
+
+
+        lexer.SetOrigin();
+        cout<<"ASTを生成しています..."<<endl;;
+        Parser parser(&lexer);
+        parser.Parse();
+        cout<<"完了"<<endl;
+        cout<<"型をチェックしています...";
+        parser.TypeCheck();
+        cout<<"完了"<<endl;
+        cout<<"コードを生成しています...";
+        parser.Codegen();
+        cout<<"完了"<<endl<<endl<<"実行します..."<<endl;
+        CodegenInfo cgi=parser.GetCGInfo();
+        VM vm(&cgi);
+        vm.Run();
+        cout<<endl<<"終了しました。"<<endl;
+    }else if(argc==3){
+        string code(argv[2]);
+        if(string(argv[1])=="-t"){
+            string code(argv[1]);
+            cout<<"code:"<<endl<<code<<endl<<endl;
+            Lexer lexer(code);
+
+
+            lexer.SetOrigin();
+            cout<<"ASTを生成しています..."<<endl;;
+            Parser parser(&lexer);
+            parser.Parse();
+            cout<<"完了"<<endl;
+            cout<<"型をチェックしています...";
+            parser.TypeCheck();
+            cout<<"完了"<<endl;
+            cout<<"コードを生成しています...";
+            parser.Codegen();
+            cout<<"完了"<<endl;
+            CodegenInfo cgi=parser.GetCGInfo();
+        }else if(string(argv[1])=="-s"){
+            cout<<"未実装ですm(__)m"<<endl;
+        }else{
+            error(string(argv[1])+":無効なオプションです。");
+        }
+	}else{
+		error("コマンドライン引数を確認して下さい。");
+		return -1;
+	}
+
+    return 0;
+}
+
+
+
+
+    /*lexerのテスト用
     cout<<"lexer:"<<endl;
     while(lexer.CurrentToken!=token_eof){
         lexer.GetNextToken();
@@ -47,22 +101,3 @@ int main()
         }
     }
     cout<<endl;*/
-
-    lexer.SetOrigin();
-    cout<<"ASTを生成しています..."<<endl;
-    Parser parser(&lexer);
-    parser.Parse();
-    cout<<"完了"<<endl;
-    cout<<"型をチェックしています..."<<endl;
-    parser.TypeCheck();
-    cout<<"完了"<<endl;
-    cout<<endl<<endl<<"コード生成を開始します..."<<endl;
-    parser.Codegen();
-    CodegenInfo cgi=parser.GetCGInfo();/*
-    VM vm(&cgi);
-    cout<<"完了"<<endl<<endl;
-    vm.OutputCode();
-    vm.Run();
-    cout<<"終了しました。"<<endl;*/
-    return 0;
-}

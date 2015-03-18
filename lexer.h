@@ -15,7 +15,8 @@ enum Token{
     token_floatval=-6,
     token_boolval=-7,
     token_stringval=-8,
-    token_return=-9
+    token_return=-9,
+    token_var=-10
 };
 
 class Lexer{

@@ -11,6 +11,7 @@
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
+				<Option parameters='&quot;func main(){printint(f1(4));} func f1(x:int)=&gt;int{return 6+x*x}&quot;' />
 				<Compiler>
 					<Add option="-g" />
 				</Compiler>

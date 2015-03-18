@@ -25,23 +25,26 @@ enum{
     invoke,
     iloadlocal,floadlocal,bloadlocal,rloadlocal, //localという名前だが、結局はフレームを遡っていくのでグローバル変数に行き着くかもしれない
     ret,iret,fret,bret,rret,
+    invokebuiltin //ビルトイン関数呼び出し（スタックトップの文字列が組み込み関数名）
 };
+
+
 
 class Flame{
 public:
-    map<string,int> *VariableMap; //型検査には通ってるので型情報は保管しない（変数名と値のペア）
+    vector< pair<string,int> > *Variables; //型検査には通ってるので型情報は保管しない（変数名と値のペア）
     stack<int> OperandStack; //ここで計算を行う
     vector<int> *CodePtr; //コードベクトルへのポインタ
     Flame *StaticLink;
     Flame *DynamicLink;
     int PC;
-    Flame(map<string,int> *varmap,vector<int> *codeptr,Flame *staticlink,Flame *dynamiclink):VariableMap(varmap),CodePtr(codeptr),StaticLink(staticlink),DynamicLink(dynamiclink){PC=0;}
+    Flame(vector< pair<string,int> > *vars,vector<int> *codeptr,Flame *staticlink,Flame *dynamiclink):Variables(vars),CodePtr(codeptr),StaticLink(staticlink),DynamicLink(dynamiclink){PC=0;}
 };
 
 class VM{
 private:
      CodegenInfo *CodeInfo;
-     stack<Flame *> Environment;
+     vector<Flame *> Environment;
 public:
     VM( CodegenInfo *cinfo):CodeInfo(cinfo){}
     void Run();

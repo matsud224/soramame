@@ -14,6 +14,7 @@ bool iscrlf(char c){
     return (c=='\n' || c=='\r');
 }
 
+//新しい記号を導入するときは、十分な注意が必要
 bool isoperatorchar(char c){
     switch(c){
         case '%':
@@ -60,6 +61,11 @@ void Lexer::GetNextToken()
 
         if(CurrentIdentifier=="return"){
             CurrentToken=token_return;
+            return;
+        }
+
+        if(CurrentIdentifier=="var"){
+            CurrentToken=token_var;
             return;
         }
 

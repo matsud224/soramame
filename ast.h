@@ -17,7 +17,8 @@ class OperatorInfo;
 class TypeAST;
 class ExprAST;
 class FunctionAST;
-
+class Flame;
+class VariableDefineExprAST;
 
 class ConstantPool{
 private:
@@ -59,17 +60,18 @@ public:
     CodegenInfo genInfo;
     FunctionAST *ParseFunction();
     TypeAST *ParseType();
-    ExprAST *ParsePrimary();
+    ExprAST *ParsePrimary(vector<int> *);
     ExprAST *ParseIntValExpr();
     ExprAST *ParseBoolValExpr();
-    ExprAST *ParseIdentifierExpr();
+    ExprAST *ParseIdentifierExpr(vector<int> *);
     ExprAST *ParseFloatValExpr();
-    ExprAST *ParseParenExpr();
+    ExprAST *ParseParenExpr(vector<int> *);
     ExprAST *ParseUnary();
-    ExprAST *ParseExpression();
-    ExprAST *ParseClosureExpr();
+    ExprAST *ParseExpression(vector<int> *);
+    ExprAST *ParseClosureExpr(vector<int> *);
     ExprAST *ParseStringValExpr();
-    ExprAST *ParseReturnExpr();
+    ExprAST *ParseReturnExpr(vector<int> *);
+    ExprAST *ParseVariableDefineExpr();
 
     Parser(Lexer *l):lexer(l){}
     void Parse();
@@ -157,7 +159,7 @@ public:
     StringValExprAST(CodegenInfo *cgi,string val):value(val){
         type=new TypeAST("string");
         //コンスタントプールへの登録
-        poolindex=cgi->PublicConstantPool.SetReference(reinterpret_cast<void *>(this));
+        poolindex=cgi->PublicConstantPool.SetReference(reinterpret_cast<void *>(&value));
     }
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
     virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){return type;}
@@ -208,7 +210,6 @@ public:
                 if(Name==(*(*env)[currentflame])[i].first){
                     //名前が一致
                     type=(*(*env)[currentflame])[i].second; //自身の型を決定
-                    cout<<type->GetName()<<endl;
                     found=true;
                     goto out_for;
                 }
@@ -218,7 +219,7 @@ public:
         if(!found){
             error("変数:"+Name+"は未定義またはスコープ外です。");
         }
-
+        //cout<<Name<<":"<<localindex<<endl;
         return type;
     }
 };
@@ -262,6 +263,7 @@ public:
     virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
         TypeAST *lhst=LHS->CheckType(env,geninfo);
         TypeAST *rhst=RHS->CheckType(env,geninfo);
+        type=NULL;
 
         //組み込み型の型チェック
         if(opcode=="+" || opcode=="-" || opcode=="*" || opcode=="/"){
@@ -290,6 +292,13 @@ public:
                 error("型に問題があります。二項演算子:"+opcode+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
             }
             type=new TypeAST("bool");
+        }else if(opcode=="="){
+			if(*lhst!=*rhst){
+                error("型に問題があります。二項演算子:"+opcode+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
+            }else if(typeid(*LHS)!=typeid(VariableExprAST)){
+				error("代入式の左辺が変数ではありません。");
+            }
+            type=lhst;
         }
 
         if(type==NULL){
@@ -300,12 +309,12 @@ public:
     }
 };
 
-class ReturnExpr : public ExprAST{
+class ReturnExprAST : public ExprAST{
 private:
     ExprAST *expression;
 public:
     TypeAST *GetType(){return type;}
-    ReturnExpr(ExprAST *exp):expression(exp){};
+    ReturnExprAST(ExprAST *exp):expression(exp){};
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
     virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
         if(expression==NULL){
@@ -317,20 +326,40 @@ public:
     };
 };
 
+class VariableDefineExprAST : public ExprAST{
+public:
+    vector< pair<string,TypeAST *> > *Variables;
+    TypeAST *GetType(){return type;}
+    VariableDefineExprAST(vector< pair<string,TypeAST *> > *vars):Variables(vars){type=new TypeAST("void");}
+
+    virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo){}; //今のところ代入式は併記できないのでコード生成は行わない
+
+    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
+        return type;
+    };
+};
+
+
 
 class FunctionAST : public ExprAST{
 private:
     string name;
 public:
     vector< pair<string,TypeAST *> > Args;
+    vector< pair<string,TypeAST *> > LocalVariables;
+	Flame *ParentFlame; //クロージャの場合、生成元のフレームを覚えておく（実行時にVMが使用）
     vector<int> bytecodes;
     int poolindex;
 private:
     TypeAST *type;
     vector<ExprAST *> body;
 
-    bool isBuiltin;
+
 public:
+
+    vector<int> *ChildPoolIndex; //生成したクロージャのコンスタントプールのインデックス
+    bool isBuiltin;
+
     string GetName(){return name;}
     vector<ExprAST *> &GetBody(){return body;}
 
@@ -353,13 +382,18 @@ public:
         for(iter2=body.begin();iter2!=body.end();iter2++){
             (*iter2)->CheckType(env,geninfo);
 
-            //return文の場合特別扱い。返す値の型とこの関数の返り値の型が不一致ならばエラー
-            if(typeid(*(*iter2))==typeid(ReturnExpr)){
-                if(type->ParseFunctionType().back()->GetName() != dynamic_cast<ReturnExpr *>(*iter2)->GetType()->GetName()){
+            if(typeid(*(*iter2))==typeid(VariableDefineExprAST)){
+				//変数宣言を見つけたら変数リストへ随時追加していく
+				LocalVariables.insert(LocalVariables.end(),dynamic_cast<VariableDefineExprAST *>(*iter2)->Variables->begin(),dynamic_cast<VariableDefineExprAST *>(*iter2)->Variables->end());
+				env->back()->insert(env->back()->end(),dynamic_cast<VariableDefineExprAST *>(*iter2)->Variables->begin(),dynamic_cast<VariableDefineExprAST *>(*iter2)->Variables->end());
+            }else if(typeid(*(*iter2))==typeid(ReturnExprAST)){
+            	//return文の場合特別扱い。返す値の型とこの関数の返り値の型が不一致ならばエラー
+                if(type->ParseFunctionType().back()->GetName() != dynamic_cast<ReturnExprAST *>(*iter2)->GetType()->GetName()){
                     error("'returnする値の型'と、'関数の戻り値の型'が一致しません。");
                 }
             }
         }
+
         delete env->back();
         env->pop_back(); //最後尾のフレームを削除
 
@@ -367,7 +401,7 @@ public:
         return type; //自らの型を一応返しておく
     }
 
-    FunctionAST(CodegenInfo *cgi,string &n,vector< pair<string,TypeAST *> > &a,TypeAST *t,vector<ExprAST *> &bdy):name(n),Args(a),type(t),body(bdy){
+    FunctionAST(CodegenInfo *cgi,string &n,vector< pair<string,TypeAST *> > &a,TypeAST *t,vector<ExprAST *> &bdy,vector<int> *cpi):name(n),Args(a),type(t),body(bdy),ChildPoolIndex(cpi){
         isBuiltin=false;
         if(t->ParseFunctionType().empty()){
             error("関数に対して関数型ではない型が付与されました。");
@@ -395,6 +429,7 @@ private:
     string callee;
     vector<ExprAST *> args;
     int localindex;
+    bool isBuiltin;
 public:
     CallExprAST(const string &callee_func,vector<ExprAST *> &args_list):callee(callee_func),args(args_list){type=NULL;}
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
@@ -429,6 +464,14 @@ public:
                             }
                         }
                         type=currentarg.back(); //関数の型ではなく関数の戻り値の型を代入
+                        if(currentflame==0){
+                            //トップレベルに関数がある場合はビルトイン関数を疑う
+                            for(unsigned int k=0;k<geninfo->FunctionList.size();k++){
+                                if(geninfo->FunctionList[k]->GetName()==callee){
+                                    isBuiltin=geninfo->FunctionList[k]->isBuiltin;
+                                }
+                            }
+                        }
                         return type;
                     }
                 }
@@ -447,6 +490,7 @@ public:
         return NULL;
     }
 };
+
 
 
 //操車場アルゴリズムでのみ使用
