@@ -14,7 +14,7 @@ void VM::Run()
     for(unsigned int i=0;i<CodeInfo->FunctionList.size();i++){
         (*toplevel_vars).push_back(pair<string,int>(CodeInfo->FunctionList[i]->GetName(),reinterpret_cast<int>(CodeInfo->PublicConstantPool.GetReference(CodeInfo->FunctionList[i]->poolindex))));
     }
-    Flame *tl_flame=new Flame(toplevel_vars,&(reinterpret_cast<FunctionAST *>(CodeInfo->PublicConstantPool.GetReference(CodeInfo->main_poolindex))->bytecodes),NULL,NULL);
+    Flame *tl_flame=new Flame(toplevel_vars,&(reinterpret_cast<FunctionAST *>(CodeInfo->PublicConstantPool.GetReference(CodeInfo->main_poolindex))->bytecodes),NULL);
     FunctionAST *mainfunc=reinterpret_cast<FunctionAST *>(CodeInfo->PublicConstantPool.GetReference(CodeInfo->main_poolindex));
     for(unsigned int i=0;i<mainfunc->ChildPoolIndex->size();i++){
         //コンスタントプール内のクロージャに生成元のフレームを覚えさせる
@@ -212,7 +212,7 @@ void VM::Run()
                 for(int i=callee->LocalVariables.size()-1;i>=0;i--){
                     (*vars).push_back(pair<string,int>(callee->LocalVariables[i].first,0)); //ローカル変数はすべて0に初期化される
                 }
-                Flame *inv_flame=new Flame(vars,&(callee->bytecodes),callee->ParentFlame,Environment.back());
+                Flame *inv_flame=new Flame(vars,&(callee->bytecodes),callee->ParentFlame);
                 for(unsigned int i=0;i<callee->ChildPoolIndex->size();i++){
                     //コンスタントプール内のクロージャに生成元のフレームを覚えさせる
                     reinterpret_cast<FunctionAST *>(CodeInfo->PublicConstantPool.GetReference((*(callee->ChildPoolIndex))[i]))->ParentFlame=inv_flame;

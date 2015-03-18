@@ -4,6 +4,7 @@
 #include <vector>
 #include "ast.h"
 #include "vm.h"
+#include <conio.h>
 
 using namespace std;
 
@@ -11,7 +12,7 @@ int main(int argc, char* argv[])
 {
     if(argc==2){
         string code(argv[1]);
-        cout<<"code:"<<endl<<code<<endl<<endl;
+        cout<<"入力:"<<endl<<code<<endl<<endl;
         Lexer lexer(code);
 
 
@@ -33,8 +34,7 @@ int main(int argc, char* argv[])
     }else if(argc==3){
         string code(argv[2]);
         if(string(argv[1])=="-t"){
-            string code(argv[1]);
-            cout<<"code:"<<endl<<code<<endl<<endl;
+            cout<<"入力:"<<endl<<code<<endl<<endl;
             Lexer lexer(code);
 
 
@@ -51,7 +51,7 @@ int main(int argc, char* argv[])
             cout<<"完了"<<endl;
             CodegenInfo cgi=parser.GetCGInfo();
         }else if(string(argv[1])=="-s"){
-            cout<<"未実装ですm(__)m"<<endl;
+            cout<<"未実装です"<<endl;
         }else{
             error(string(argv[1])+":無効なオプションです。");
         }
@@ -59,6 +59,8 @@ int main(int argc, char* argv[])
 		error("コマンドライン引数を確認して下さい。");
 		return -1;
 	}
+
+	getch();
 
     return 0;
 }

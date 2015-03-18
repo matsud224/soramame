@@ -36,9 +36,9 @@ public:
     stack<int> OperandStack; //ここで計算を行う
     vector<int> *CodePtr; //コードベクトルへのポインタ
     Flame *StaticLink;
-    Flame *DynamicLink;
+    //Flame *DynamicLink;
     int PC;
-    Flame(vector< pair<string,int> > *vars,vector<int> *codeptr,Flame *staticlink,Flame *dynamiclink):Variables(vars),CodePtr(codeptr),StaticLink(staticlink),DynamicLink(dynamiclink){PC=0;}
+    Flame(vector< pair<string,int> > *vars,vector<int> *codeptr,Flame *staticlink):Variables(vars),CodePtr(codeptr),StaticLink(staticlink){PC=0;}
 };
 
 class VM{

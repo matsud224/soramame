@@ -326,7 +326,7 @@ ExprAST* Parser::ParseExpression(vector<int> *childpoolindex)
     stack<OperatorAST *> operatorstack;
 
     while(1){
-        if(lexer->CurrentToken==')' || lexer->CurrentToken=='}' || lexer->CurrentToken==';'){
+        if(lexer->is_met_semicolon || lexer->CurrentToken==')' || lexer->CurrentToken=='}' || lexer->CurrentToken==';'){
             //式の終端の決め方がよくわからないのでとりあえずこうしておく
             break;
         }else if(lexer->CurrentToken!=token_operator){
@@ -659,7 +659,7 @@ void FunctionAST::Codegen(vector<int> *bytecodes_given,CodegenInfo *geninfo)
     };
     cout<<endl<<"関数:"<<name<<"のコード"<<endl;
     for(unsigned int i=0;i<bytecodes.size();i++){
-        cout<<bytecodes[i]<<" ("<<bytecode_names[bytecodes[i]]<<")"<<endl;
+        cout<<bytecodes[i]<<" ("<< ((bytecodes[i]>=0 && bytecodes[i]<= 47)?bytecode_names[bytecodes[i]]:"undef") <<")"<<endl;
     }
     cout<<endl;
     return;
