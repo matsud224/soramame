@@ -25,7 +25,7 @@ void VM::Run()
     int iopr1,iopr2;
     float fopr1,fopr2;
     bool bopr1,bopr2;
-    void *ropr1;
+    void *ropr1,*ropr2;
     int localindex;
 
     int currentflame,counter;
@@ -335,12 +335,77 @@ void VM::Run()
                     //返り値を直にプッシュ
                     Environment.back()->OperandStack.push(abs(iopr1));
                 }else{
-                    error("不正なビルトイン関数名です。");
+                    error(NULL,"不正なビルトイン関数名です。");
                 }
             }
             break;
+        case istorelocal:
+            //スタックトップにlocalindexが、その下に値がおいてある
+            iopr1=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop();
+            iopr2=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop();
+            counter=iopr1;
+            //cout<<"localindex:"<<localindex<<endl;
+			for(currentflame=(static_cast<int>(Environment.size())-1);currentflame>=0;currentflame--){
+				for(i=0;i<Environment[currentflame]->Variables->size();i++){
+					counter--;
+					if(counter==-1){
+						(*(Environment[currentflame]->Variables))[i].second=iopr2;
+						goto fin6;
+					}
+				}
+			}
+			fin6:
+            break;
+        case fstorelocal:
+            iopr1=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop();
+            fopr2=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop();
+            counter=iopr1;
+            //cout<<"localindex:"<<localindex<<endl;
+			for(currentflame=(static_cast<int>(Environment.size())-1);currentflame>=0;currentflame--){
+				for(i=0;i<Environment[currentflame]->Variables->size();i++){
+					counter--;
+					if(counter==-1){
+						(*(Environment[currentflame]->Variables))[i].second=fopr2;
+						goto fin7;
+					}
+				}
+			}
+			fin7:
+            break;
+        case bstorelocal:
+            iopr1=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop();
+            bopr2=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop();
+            counter=iopr1;
+            //cout<<"localindex:"<<localindex<<endl;
+			for(currentflame=(static_cast<int>(Environment.size())-1);currentflame>=0;currentflame--){
+				for(i=0;i<Environment[currentflame]->Variables->size();i++){
+					counter--;
+					if(counter==-1){
+						(*(Environment[currentflame]->Variables))[i].second=bopr2;
+						goto fin8;
+					}
+				}
+			}
+			fin8:
+            break;
+        case rstorelocal:
+            iopr1=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop();
+            ropr2=reinterpret_cast<void *>(Environment.back()->OperandStack.top()); Environment.back()->OperandStack.pop();
+            counter=iopr1;
+            //cout<<"localindex:"<<localindex<<endl;
+			for(currentflame=(static_cast<int>(Environment.size())-1);currentflame>=0;currentflame--){
+				for(i=0;i<Environment[currentflame]->Variables->size();i++){
+					counter--;
+					if(counter==-1){
+						(*(Environment[currentflame]->Variables))[i].second=reinterpret_cast<int>(ropr2);
+						goto fin9;
+					}
+				}
+			}
+			fin9:
+            break;
         default:
-            error("不正な命令です");
+            error(NULL,"不正な命令です");
             break;
         }
     }

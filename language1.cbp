@@ -5,16 +5,21 @@
 		<Option title="language1" />
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
+		<Option extended_obj_names="1" />
 		<Build>
 			<Target title="Debug">
 				<Option output="bin/Debug/language1" prefix_auto="1" extension_auto="1" />
 				<Option object_output="obj/Debug/" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters='&quot;func main(){printint(f1(4));} func f1(x:int)=&gt;int{return 6+x*x}&quot;' />
+				<Option parameters='&quot;fuc main){var a:int;a=9;printint(a*a);}&quot;' />
 				<Compiler>
 					<Add option="-g" />
 				</Compiler>
+				<ExtraCommands>
+					<Add before="bison -d -y -v parser.y" />
+					<Add before="flex lexer.l" />
+				</ExtraCommands>
 			</Target>
 			<Target title="Release">
 				<Option output="bin/Release/language1" prefix_auto="1" extension_auto="1" />
@@ -27,6 +32,10 @@
 				<Linker>
 					<Add option="-s" />
 				</Linker>
+				<ExtraCommands>
+					<Add before="bison -d -y -v parser.y" />
+					<Add before="flex lexer.l" />
+				</ExtraCommands>
 			</Target>
 		</Build>
 		<Compiler>
@@ -48,6 +57,9 @@
 		<Unit filename="utility.h" />
 		<Unit filename="vm.cpp" />
 		<Unit filename="vm.h" />
+		<Unit filename="y.tab.c">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Extensions>
 			<code_completion />
 			<envvars />

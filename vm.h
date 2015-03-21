@@ -25,7 +25,8 @@ enum{
     invoke,
     iloadlocal,floadlocal,bloadlocal,rloadlocal, //localという名前だが、結局はフレームを遡っていくのでグローバル変数に行き着くかもしれない
     ret,iret,fret,bret,rret,
-    invokebuiltin //ビルトイン関数呼び出し（スタックトップの文字列が組み込み関数名）
+    invokebuiltin, //ビルトイン関数呼び出し（スタックトップの文字列が組み込み関数名）
+    istorelocal,fstorelocal,bstorelocal,rstorelocal
 };
 
 

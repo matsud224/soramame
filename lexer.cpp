@@ -10,7 +10,7 @@
 
 using namespace std;
 
-bool iscrlf(char c){
+bool iseol(char c){
     return (c=='\n' || c=='\r');
 }
 
@@ -39,13 +39,15 @@ bool isoperatorchar(char c){
 void Lexer::GetNextToken()
 {
     redo:
-    is_met_semicolon=false;
-    while(iswblank(lastchar) || iscrlf(lastchar) || lastchar==';'){
-        if(lastchar==';'){
-            is_met_semicolon=true;
+
+    while(iswblank(lastchar) || iseol(lastchar)){
+        if(iseol(lastchar)){
+            CurrentLineNumber++;
+            CurrentCharPosition=-1;
         }
         lastchar=getnextchar();
     }
+
 
     //ï∂éöóÒÇÃâêÕ
     if(isalpha(lastchar)){
@@ -169,7 +171,7 @@ void Lexer::GetNextToken()
     if(lastchar=='#'){
         do{
             lastchar=getnextchar();
-        }while(lastchar!=EOF && !iscrlf(lastchar));
+        }while(lastchar!=EOF && !iseol(lastchar));
 
         if(lastchar!=EOF){
             goto redo;
@@ -205,7 +207,7 @@ bool Lexer::isClosureAfterParen(){
         return false;
     }
     for(unsigned int j=i;j<rawcode.size();j++){
-        if(!(iswblank(rawcode[j]) || iscrlf(rawcode[j]) || rawcode[j]==';')){
+        if(!(iswblank(rawcode[j]) || iseol(rawcode[j]) || rawcode[j]==';')){
             if(rawcode[j]=='='){
                 if(j+1!=rawcode.size() && rawcode[j+1]=='>'){
                     return true;
@@ -222,5 +224,6 @@ char Lexer::getnextchar()
     if(nowpos==rawcode.size()){
         return EOF;
     }
+    CurrentCharPosition++;
     return rawcode[nowpos++];
 }

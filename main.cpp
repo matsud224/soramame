@@ -53,10 +53,10 @@ int main(int argc, char* argv[])
         }else if(string(argv[1])=="-s"){
             cout<<"未実装です"<<endl;
         }else{
-            error(string(argv[1])+":無効なオプションです。");
+            error(NULL,string(argv[1])+":無効なオプションです。");
         }
 	}else{
-		error("コマンドライン引数を確認して下さい。");
+		error(NULL,"コマンドライン引数を確認して下さい。");
 		return -1;
 	}
 

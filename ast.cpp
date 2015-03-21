@@ -17,16 +17,16 @@ FunctionAST* Parser::ParseFunction()
     vector<ExprAST *> body;
 
     if(lexer->CurrentToken!=token_func){
-        error("関数宣言でないものがあります。");
+        error(lexer,"関数宣言でないものがあります。");
     }
     lexer->GetNextToken();
 
     if(lexer->CurrentToken!=token_identifier){
-        error("関数名がありません。");
+        error(lexer,"関数名がありません。");
     }else{
         fname=lexer->CurrentIdentifier;
         if(lexer->GetNextToken(),lexer->CurrentToken!='('){
-            error("引数リストの開き括弧がありません。");
+            error(lexer,"引数リストの開き括弧がありません。");
         }else{
             //引数リスト取得
             lexer->GetNextToken();
@@ -34,11 +34,11 @@ FunctionAST* Parser::ParseFunction()
             while(lexer->CurrentToken!=')'){
                 string argname;
                 if(lexer->CurrentToken!=token_identifier){
-                    error("引数名がありません。");
+                    error(lexer,"引数名がありません。");
                 }else{
                     argname=lexer->CurrentIdentifier;
                     if(lexer->GetNextToken(),lexer->CurrentToken!=':'){
-                        error("引数リストのコロンがありません。");
+                        error(lexer,"引数リストのコロンがありません。");
                     }else{
                         lexer->GetNextToken();
                         args.push_back(pair<string,TypeAST *>(argname,ParseType()));
@@ -73,7 +73,7 @@ FunctionAST* Parser::ParseFunction()
 
     vector<int> *childpoolindex=new vector<int>;
     if(lexer->CurrentToken!='{'){
-        error("関数宣言の開き波括弧がありません。");
+        error(lexer,"関数宣言の開き波括弧がありません。");
     }else{
         lexer->GetNextToken();
 
@@ -84,7 +84,7 @@ FunctionAST* Parser::ParseFunction()
             }else if(lexer->CurrentToken==token_var){
             	body.push_back(ParseVariableDefineExpr());
 			}else{
-                body.push_back(ParsePrimary(childpoolindex));
+                body.push_back(ParseExpression(childpoolindex));
             }
         }
     }
@@ -113,7 +113,7 @@ TypeAST* Parser::ParseType()
         functiontypename+=")";
         lexer->GetNextToken();
         if(lexer->CurrentToken!=token_operator || lexer->CurrentOperator!="=>"){
-            error("関数型の'戻り値の型'の記述がありません。");
+            error(lexer,"関数型の'戻り値の型'の記述がありません。");
         }
         lexer->GetNextToken();
         ret=new TypeAST(functiontypename+"=>"+(ParseType()->GetName()));
@@ -141,7 +141,7 @@ ExprAST* Parser::ParsePrimary(vector<int> *childpoolindex)
     case '(':
         return ParseParenExpr(childpoolindex);
     default:
-        error("式がありません。");
+        error(lexer,"式がありません。");
     }
 
     return NULL;
@@ -175,18 +175,18 @@ ExprAST* Parser::ParseClosureExpr(vector<int> *childpoolindex){
     vector<int> *mychildpoolindex=new vector<int>();
 
     if(lexer->CurrentToken!='('){
-        error("クロージャの引数リストの開き括弧がありません。");
+        error(lexer,"クロージャの引数リストの開き括弧がありません。");
     }else{
         //引数リスト取得
         lexer->GetNextToken();
         while(lexer->CurrentToken!=')'){
             string argname;
             if(lexer->CurrentToken!=token_identifier){
-                error("クロージャの引数名がありません。");
+                error(lexer,"クロージャの引数名がありません。");
             }else{
                 argname=lexer->CurrentIdentifier;
                 if(lexer->GetNextToken(),lexer->CurrentToken!=':'){
-                    error("クロージャの引数リストのコロンがありません。");
+                    error(lexer,"クロージャの引数リストのコロンがありません。");
                 }else{
                     lexer->GetNextToken();
                     args.push_back(pair<string,TypeAST *>(argname,ParseType()));
@@ -217,7 +217,7 @@ ExprAST* Parser::ParseClosureExpr(vector<int> *childpoolindex){
 
 
             if(lexer->CurrentToken!='{'){
-                error("クロージャの開き波括弧がありません。");
+                error(lexer,"クロージャの開き波括弧がありません。");
             }else{
                 lexer->GetNextToken();
                 while(lexer->CurrentToken!='}'){
@@ -227,7 +227,7 @@ ExprAST* Parser::ParseClosureExpr(vector<int> *childpoolindex){
 					}else if(lexer->CurrentToken==token_var){
 						body.push_back(ParseVariableDefineExpr());
 					}else{
-						body.push_back(ParsePrimary(mychildpoolindex));
+						body.push_back(ParseExpression(mychildpoolindex));
 					}
                 }
             }
@@ -236,7 +236,7 @@ ExprAST* Parser::ParseClosureExpr(vector<int> *childpoolindex){
             childpoolindex->push_back(res->poolindex);
             return res;
         }else{
-            error("'クロージャの戻り値'の型が指定されていません。");
+            error(lexer,"'クロージャの戻り値'の型が指定されていません。");
         }
     }
 
@@ -260,7 +260,7 @@ ExprAST* Parser::ParseIdentifierExpr(vector<int> *childpoolindex)
             if(lexer->CurrentToken==','){
                 lexer->GetNextToken();
             }else if(lexer->CurrentToken!=')'){
-                error("関数呼び出しの引数リストにカンマまたは閉じ括弧がありません。");
+                error(lexer,"関数呼び出しの引数リストにカンマまたは閉じ括弧がありません。");
             }
         }
         lexer->GetNextToken();
@@ -287,7 +287,7 @@ ExprAST* Parser::ParseParenExpr(vector<int> *childpoolindex)
     ExprAST *v=ParseExpression(childpoolindex);
 
     if(lexer->CurrentToken!=')'){
-        error("閉じ括弧が見つかりません。");
+        error(lexer,"閉じ括弧が見つかりません。");
     }else{
         lexer->GetNextToken();
         return v;
@@ -303,7 +303,7 @@ ExprAST* Parser::ParseVariableDefineExpr(){
 		string name=lexer->CurrentIdentifier;
 
 		if(lexer->GetNextToken(),lexer->CurrentToken!=':'){
-			error("変数定義において型が指定されていません。");
+			error(lexer,"変数定義において型が指定されていません。");
 		}else{
 		    lexer->GetNextToken();
 			vars->push_back(pair<string,TypeAST *>(name,ParseType()));
@@ -326,7 +326,7 @@ ExprAST* Parser::ParseExpression(vector<int> *childpoolindex)
     stack<OperatorAST *> operatorstack;
 
     while(1){
-        if(lexer->is_met_semicolon || lexer->CurrentToken==')' || lexer->CurrentToken=='}' || lexer->CurrentToken==';'){
+        if(lexer->CurrentToken==')' || lexer->CurrentToken=='}' || lexer->CurrentToken==';'){
             //式の終端の決め方がよくわからないのでとりあえずこうしておく
             break;
         }else if(lexer->CurrentToken!=token_operator){
@@ -334,7 +334,7 @@ ExprAST* Parser::ParseExpression(vector<int> *childpoolindex)
         }else{
             if(genInfo.OperatorList.count(lexer->CurrentOperator)==0){
                 //未登録の演算子
-                error("未定義の演算子です:"+lexer->CurrentOperator);
+                error(lexer,"未定義の演算子です:"+lexer->CurrentOperator);
             }
             while(!operatorstack.empty()){
                 string op1=lexer->CurrentOperator;
@@ -348,6 +348,7 @@ ExprAST* Parser::ParseExpression(vector<int> *childpoolindex)
             }
             operatorstack.push(new OperatorAST(lexer->CurrentOperator));
             lexer->GetNextToken();
+
         }
 
 
@@ -377,7 +378,7 @@ ExprAST* Parser::ParseExpression(vector<int> *childpoolindex)
     }
 
     if(calcstack.size()!=1){
-        error("expressionに問題があります。");
+        error(lexer,"expressionに問題があります。");
     }
 
     return calcstack.top();
@@ -488,6 +489,25 @@ void UnaryExprAST::Codegen(vector<int>* bytecodes,CodegenInfo *geninfo)
 
 void BinaryExprAST::Codegen(vector<int>* bytecodes,CodegenInfo *geninfo)
 {
+    //代入だけ特殊で、左辺を評価しない
+    if(opcode=="="){
+        RHS->Codegen(bytecodes,geninfo);
+        if(LHS->CheckType(NULL,NULL)->GetName()=="bool"){
+            bytecodes->push_back(dynamic_cast<VariableExprAST *>(LHS)->localindex);
+            bytecodes->push_back(bstorelocal);
+        }else if(LHS->CheckType(NULL,NULL)->GetName()=="int"){
+            bytecodes->push_back(dynamic_cast<VariableExprAST *>(LHS)->localindex);
+            bytecodes->push_back(istorelocal);
+        }else if(LHS->CheckType(NULL,NULL)->GetName()=="float"){
+            bytecodes->push_back(dynamic_cast<VariableExprAST *>(LHS)->localindex);
+            bytecodes->push_back(fstorelocal);
+        }else{
+            bytecodes->push_back(dynamic_cast<VariableExprAST *>(LHS)->localindex);
+            bytecodes->push_back(rstorelocal);
+        }
+        return;
+    }
+
     LHS->Codegen(bytecodes,geninfo);
     RHS->Codegen(bytecodes,geninfo);
 
@@ -575,9 +595,6 @@ void BinaryExprAST::Codegen(vector<int>* bytecodes,CodegenInfo *geninfo)
         }else if(LHS->CheckType(NULL,NULL)->GetName()=="float"){
             bytecodes->push_back(if_fcmpne);
         }
-    }else if(opcode=="="){
-
-
     }
     return;
 }
@@ -654,12 +671,13 @@ void FunctionAST::Codegen(vector<int> *bytecodes_given,CodegenInfo *geninfo)
         "invoke",
         "iloadlocal","floadlocal","bloadlocal","rloadlocal", //localという名前だが、結局はフレームを遡っていくのでグローバル変数に行き着くかもしれない
         "ret","iret","fret","bret","rret",
-        "invokebuiltin" //ビルトイン関数呼び出し（スタックトップの文字列が組み込み関数名）
+        "invokebuiltin", //ビルトイン関数呼び出し（スタックトップの文字列が組み込み関数名）
+        "istorelocal","fstorelocal","bstorelocal","rstorelocal"
 
     };
     cout<<endl<<"関数:"<<name<<"のコード"<<endl;
     for(unsigned int i=0;i<bytecodes.size();i++){
-        cout<<bytecodes[i]<<" ("<< ((bytecodes[i]>=0 && bytecodes[i]<= 47)?bytecode_names[bytecodes[i]]:"undef") <<")"<<endl;
+        cout<<bytecodes[i]<<" ("<< ((bytecodes[i]>=0 && bytecodes[i]<= 52)?bytecode_names[bytecodes[i]]:"undefined") <<")"<<endl;
     }
     cout<<endl;
     return;
@@ -690,7 +708,7 @@ void Parser::Codegen()
         }
     }
     if(main_index==-1){
-        error("適切なmain関数が見つかりません。");
+        error(lexer,"適切なmain関数が見つかりません。");
     }
     genInfo.main_poolindex=main_index;
 
@@ -714,7 +732,7 @@ void StringValExprAST::Codegen(vector<int>* bytecodes,CodegenInfo *geninfo)
 ExprAST *Parser::ParseReturnExpr(vector<int> *childpoolindex)
 {
     lexer->GetNextToken(); //returnを消費
-    if(lexer->is_met_semicolon==true || lexer->CurrentToken=='}' || lexer->CurrentToken==')'){
+    if(lexer->CurrentToken=='}' || lexer->CurrentToken==')'){
         return new ReturnExprAST(NULL);
     }else{
         return new ReturnExprAST(ParseExpression(childpoolindex));

@@ -34,7 +34,7 @@ public:
     unsigned int GetPoolSize(){
         return refpool.size();
     }
-    void CLear();
+    void Clear();
 };
 //パースした時に得た情報を詰め込んでおく
 class CodegenInfo{
@@ -47,7 +47,7 @@ public:
     void Initialize(){
         OperatorList.clear();
         FunctionList.clear();
-        PublicConstantPool.CLear();
+        PublicConstantPool.Clear();
         return;
     }
 };
@@ -217,7 +217,7 @@ public:
         }
         out_for:
         if(!found){
-            error("変数:"+Name+"は未定義またはスコープ外です。");
+            error(NULL,"変数:"+Name+"は未定義またはスコープ外です。");
         }
         //cout<<Name<<":"<<localindex<<endl;
         return type;
@@ -240,13 +240,13 @@ public:
         TypeAST *oprandt=operand->CheckType(env,geninfo);
         if(opcode=="!"){
             if(oprandt->GetName()!="bool"){
-                error("型に問題があります。単項演算子:"+opcode+" オペランド:"+oprandt->GetName());
+                error(NULL,"型に問題があります。単項演算子:"+opcode+" オペランド:"+oprandt->GetName());
             }
             type=oprandt;
         }
 
         if(type==NULL){
-            error("未知の単項演算子です:"+opcode);
+            error(NULL,"未知の単項演算子です:"+opcode);
         }
 
         return type;
@@ -268,41 +268,41 @@ public:
         //組み込み型の型チェック
         if(opcode=="+" || opcode=="-" || opcode=="*" || opcode=="/"){
             if(*lhst!=*rhst || (lhst->GetName()!="int" && lhst->GetName()!="float")){
-                error("型に問題があります。二項演算子:"+opcode+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
+                error(NULL,"型に問題があります。二項演算子:"+opcode+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
             }
 
             type=lhst; //オペランドの型を元に自らの型を決める
         }else if(opcode=="%" || opcode=="<<" || opcode==">>"){
             if(*lhst!=*rhst || (lhst->GetName()!="int")){
-                error("型に問題があります。二項演算子:"+opcode+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
+                error(NULL,"型に問題があります。二項演算子:"+opcode+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
             }
             type=lhst;
         }else if(opcode=="&&" || opcode=="||"){
             if(*lhst!=*rhst || (lhst->GetName()!="bool")){
-                error("型に問題があります。二項演算子:"+opcode+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
+                error(NULL,"型に問題があります。二項演算子:"+opcode+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
             }
             type=lhst;
         }else if(opcode=="<" || opcode==">" || opcode=="<=" || opcode==">="){
             if(*lhst!=*rhst || (lhst->GetName()!="int" && lhst->GetName()!="float")){
-                error("型に問題があります。二項演算子:"+opcode+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
+                error(NULL,"型に問題があります。二項演算子:"+opcode+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
             }
             type=new TypeAST("bool");
         }else if(opcode=="==" || opcode=="!="){
             if(*lhst!=*rhst || (lhst->GetName()!="int" && lhst->GetName()!="float" && lhst->GetName()!="bool")){
-                error("型に問題があります。二項演算子:"+opcode+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
+                error(NULL,"型に問題があります。二項演算子:"+opcode+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
             }
             type=new TypeAST("bool");
         }else if(opcode=="="){
 			if(*lhst!=*rhst){
-                error("型に問題があります。二項演算子:"+opcode+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
+                error(NULL,"型に問題があります。二項演算子:"+opcode+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
             }else if(typeid(*LHS)!=typeid(VariableExprAST)){
-				error("代入式の左辺が変数ではありません。");
+				error(NULL,"代入式の左辺が変数ではありません。");
             }
             type=lhst;
         }
 
         if(type==NULL){
-            error("未知の二項演算子です:"+opcode);
+            error(NULL,"未知の二項演算子です:"+opcode);
         }
 
         return type;
@@ -389,7 +389,7 @@ public:
             }else if(typeid(*(*iter2))==typeid(ReturnExprAST)){
             	//return文の場合特別扱い。返す値の型とこの関数の返り値の型が不一致ならばエラー
                 if(type->ParseFunctionType().back()->GetName() != dynamic_cast<ReturnExprAST *>(*iter2)->GetType()->GetName()){
-                    error("'returnする値の型'と、'関数の戻り値の型'が一致しません。");
+                    error(NULL,"'returnする値の型'と、'関数の戻り値の型'が一致しません。");
                 }
             }
         }
@@ -404,7 +404,7 @@ public:
     FunctionAST(CodegenInfo *cgi,string &n,vector< pair<string,TypeAST *> > &a,TypeAST *t,vector<ExprAST *> &bdy,vector<int> *cpi):name(n),Args(a),type(t),body(bdy),ChildPoolIndex(cpi){
         isBuiltin=false;
         if(t->ParseFunctionType().empty()){
-            error("関数に対して関数型ではない型が付与されました。");
+            error(NULL,"関数に対して関数型ではない型が付与されました。");
         }
         poolindex=cgi->PublicConstantPool.SetReference(reinterpret_cast<void *>(this));
     }
@@ -413,7 +413,7 @@ public:
     FunctionAST(CodegenInfo *cgi,string n,vector< pair<string,TypeAST *> > *a,TypeAST *t):name(n),Args(*a),type(t){
         isBuiltin=true;
         if(t->ParseFunctionType().empty()){
-            error("関数に対して関数型ではない型が付与されました。");
+            error(NULL,"関数に対して関数型ではない型が付与されました。");
         }
         poolindex=cgi->PublicConstantPool.SetReference(reinterpret_cast<void *>(this));
     }
@@ -482,9 +482,9 @@ public:
         }
 
         if(found==true){
-            error("引数の型が一致しません:"+callee);
+            error(NULL,"引数の型が一致しません:"+callee);
         }else{
-            error("未定義またはスコープ外の関数です:"+callee);
+            error(NULL,"未定義またはスコープ外の関数です:"+callee);
         }
 
         return NULL;

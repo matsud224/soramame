@@ -1,3 +1,6 @@
+program
+    ::= function*
+
 identifierexpr
     ::= identifier
     ::= identifier '(' expression* ')'
@@ -35,5 +38,4 @@ expression
 function
     ::= id '(' id:type * ')' =>type? '{' expression* '}'
 
-program
-    ::= function*
+

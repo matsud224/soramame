@@ -16,11 +16,17 @@ enum Token{
     token_boolval=-7,
     token_stringval=-8,
     token_return=-9,
-    token_var=-10
+    token_var=-10,
+    token_eol=-11
 };
+
+bool iseol(char);
 
 class Lexer{
 public:
+    int CurrentLineNumber;
+    int CurrentCharPosition; // 現在の行内での左端からの位置
+
     string CurrentIdentifier;
     string CurrentOperator;
     int CurrentIntVal;
@@ -30,17 +36,17 @@ public:
 
     int CurrentToken;
 
-    bool is_met_semicolon; //GetNextToken()を実行した時にセミコロンを読み飛ばしたか？　　return;の検出用。
     bool isClosureAfterParen(); //閉じかっこを探して、かっこの後に=>があるかを調べる（クロージャの検出用）
 
     void GetNextToken();
 
     void SetOrigin(){nowpos=0;lastchar=' ';CurrentToken=0;}
 
-    Lexer(string &code):rawcode(code){lastchar=' ';nowpos=0;CurrentToken=0;};
+    Lexer(string &code):rawcode(code){lastchar=' ';nowpos=0;CurrentToken=0;CurrentLineNumber=1;CurrentCharPosition=-1;};
 
-private:
     string &rawcode;
+private:
+
     char lastchar;
     unsigned int nowpos;
 
