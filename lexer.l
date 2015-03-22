@@ -1,6 +1,6 @@
 %{
 #include <stdio.h>
-#include "y.tab.h"
+#include "parser.hh"
 %}
 
 %state COMMENT
@@ -8,7 +8,7 @@
 %%
 
 <INITIAL>#\{			{BEGIN COMMENT;}
-<COMMENT>.				
+<COMMENT>.
 <COMMENT>#\}			{BEGIN INITIAL;}
 
 var						return VAR;

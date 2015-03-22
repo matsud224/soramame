@@ -1,15 +1,23 @@
 %{
 #include <iostream>
 #include <string>
+#include "ast.h"
 
 using namespace std;
 
-void yyerror(const char *str){
-	fprintf(stderr,"error: %s\n",str);
+extern "C"
+{
+        int yyparse(void);
+        int yylex(void);  
+        int yywrap()
+        {
+                return 1;
+        }
+
 }
 
-int yywrap(){
-	return 1;
+void yyerror(const char *str){
+	fprintf(stderr,"error: %s\n",str);
 }
 
 int main(){
@@ -65,7 +73,7 @@ int main(){
 program :
 		| program function
 		| program VAR variabledef_list ';'
-		
+
 intvalexpr : INTVAL
 boolvalexpr : BOOLVAL
 stringvalexpr : STRINGVAL
@@ -75,7 +83,7 @@ operator : OPERATOR
 function : FUN IDENT '(' parameter_list ')' '{' statement_list '}'
 		| FUN IDENT '(' parameter_list ')' ARROW type '{' statement_list '}'
 
-parameter_list : 
+parameter_list :
 		| parameter
 		| parameter_list ',' parameter
 
@@ -99,7 +107,7 @@ expression : primary
 		| expression primary
 		| expression operator
 		| expression infixfuncall
-	
+
 funcallexpr : variableexpr '(' arg_list ')'
 		| closureexpr '(' arg_list ')'
 
@@ -110,8 +118,8 @@ primary : intvalexpr
 		| funcallexpr
 		| closureexpr
 		| variableexpr
-		
-		
+
+
 variableexpr : IDENT
 
 parenexpr : '(' expression ')'
@@ -121,22 +129,22 @@ returnstatement : RETURN expression
 type : IDENT
 		| '(' type_list')' ARROW type
 
-type_list : 
+type_list :
 		| type
 		| type_list ',' type
 
-		
+
 infixfuncall : '`' IDENT '`'
 
 closureexpr : '(' parameter_list ')' ARROW type '{' statement_list '}'
 
-arg_list : 
+arg_list :
 		| expression
 		| arg_list ',' expression
 
 ifstatement : IF '(' expression ')' '{' statement_list '}'
 			| IF '(' expression ')' '{' statement_list '}' ELSE '{' statement_list '}'
-			
+
 %%
 
 #include "lex.yy.c"

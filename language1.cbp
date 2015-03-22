@@ -3,62 +3,59 @@
 	<FileVersion major="1" minor="6" />
 	<Project>
 		<Option title="language1" />
+		<Option makefile_is_custom="1" />
 		<Option pch_mode="2" />
 		<Option compiler="gcc" />
 		<Option extended_obj_names="1" />
 		<Build>
-			<Target title="Debug">
-				<Option output="bin/Debug/language1" prefix_auto="1" extension_auto="1" />
-				<Option object_output="obj/Debug/" />
+			<Target title="all">
+				<Option output="language1" prefix_auto="1" extension_auto="1" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters='&quot;fuc main){var a:int;a=9;printint(a*a);}&quot;' />
-				<Compiler>
-					<Add option="-g" />
-				</Compiler>
-				<ExtraCommands>
-					<Add before="bison -d -y -v parser.y" />
-					<Add before="flex lexer.l" />
-				</ExtraCommands>
 			</Target>
-			<Target title="Release">
-				<Option output="bin/Release/language1" prefix_auto="1" extension_auto="1" />
-				<Option object_output="obj/Release/" />
+			<Target title="clean">
+				<Option output="language1" prefix_auto="1" extension_auto="1" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Compiler>
-					<Add option="-O2" />
-				</Compiler>
-				<Linker>
-					<Add option="-s" />
-				</Linker>
-				<ExtraCommands>
-					<Add before="bison -d -y -v parser.y" />
-					<Add before="flex lexer.l" />
-				</ExtraCommands>
+				<Option use_console_runner="0" />
 			</Target>
 		</Build>
 		<Compiler>
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 		</Compiler>
-		<Unit filename="ast.cpp" />
-		<Unit filename="ast.h" />
-		<Unit filename="lexer.cpp" />
-		<Unit filename="lexer.h" />
-		<Unit filename="main.cpp" />
+		<Unit filename="ast.cpp">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="ast.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="lexer.cpp">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="lexer.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="main.cpp">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
 		<Unit filename="memo.txt">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
 		<Unit filename="syntax.txt">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="utility.cpp" />
-		<Unit filename="utility.h" />
-		<Unit filename="vm.cpp" />
-		<Unit filename="vm.h" />
-		<Unit filename="y.tab.c">
-			<Option compilerVar="CC" />
+		<Unit filename="utility.cpp">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="utility.h">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="vm.cpp">
+			<Option target="&lt;{~None~}&gt;" />
+		</Unit>
+		<Unit filename="vm.h">
+			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
 		<Extensions>
 			<code_completion />
