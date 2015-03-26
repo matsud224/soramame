@@ -1,27 +1,20 @@
 %{
-#include <iostream>
+#include <stdio.h>
 #include <string>
+#include <vector>
 #include "ast.h"
 
 using namespace std;
 
 extern "C"
 {
-        int yyparse(void);
-        int yylex(void);  
-        int yywrap()
-        {
-                return 1;
-        }
+    int yyparse(void);
+    int yylex(void);
 
-}
+    void yyerror(const char *str){
+        fprintf(stderr,"error: %s\n",str);
+    }
 
-void yyerror(const char *str){
-	fprintf(stderr,"error: %s\n",str);
-}
-
-int main(){
-	yyparse();
 }
 
 %}
@@ -31,22 +24,22 @@ int main(){
 %union {
 	int intval;
 	bool boolval;
-	string str;
-	ProgramAST program_ast;
-	FunctionAST function_ast;
-	vector<ParameterAST> parameter_ast_list;
-	ParameterAST parameter;
-	vector<VariableDefAST> variabledef_ast_list;
-	VariableDefAST variabledef_ast;
-	vector<StatementAST> statement_ast_list;
-	StatementAST statement_ast;
-	vector<ExprAST> expression_ast_list;
-	ExprAST expression_ast;
-	OperatorAST operator_ast;
-	ReturnStatementAST return_statement_ast;
-	TypeAST type_ast;
-	vector<TypeAST> type_ast_list;
-	IfStatementAST if_statemnt_ast;
+	string *str;
+	ProgramAST *program_ast;
+	FunctionAST *function_ast;
+	vector<ParameterAST> *parameter_ast_list;
+	ParameterAST *parameter;
+	vector<VariableDefAST> *variabledef_ast_list;
+	VariableDefAST *variabledef_ast;
+	vector<StatementAST> *statement_ast_list;
+	StatementAST *statement_ast;
+	vector<ExprAST> *expression_ast_list;
+	ExprAST *expression_ast;
+	OperatorAST *operator_ast;
+	ReturnStatementAST *return_statement_ast;
+	TypeAST *type_ast;
+	vector<TypeAST> *type_ast_list;
+	IfStatementAST *if_statemnt_ast;
 }
 
 %token VAR FUN IF ELSE RETURN ARROW

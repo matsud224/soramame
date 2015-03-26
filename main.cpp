@@ -4,10 +4,18 @@
 #include <vector>
 #include "ast.h"
 #include "vm.h"
+#include "utility.h"
 #include <conio.h>
 
 using namespace std;
 
+int yyparse();
+
+int main(){
+    yyparse();
+}
+
+/*
 int main(int argc, char* argv[])
 {
     if(argc==2){
@@ -64,7 +72,7 @@ int main(int argc, char* argv[])
 
     return 0;
 }
-
+*/
 
 
 
@@ -103,3 +111,4 @@ int main(int argc, char* argv[])
         }
     }
     cout<<endl;*/
+

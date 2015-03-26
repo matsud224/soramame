@@ -1,8 +1,10 @@
 %{
 #include <stdio.h>
-#include "parser.hh"
+#include "parser.cc"
+
 %}
 
+%option c++
 %state COMMENT
 
 %%
@@ -29,3 +31,11 @@ false					{yylval=false;return BOOLVAL;}
 
 %%
 
+int main()
+{
+  FlexLexer* lexer = new yyFlexLexer();
+  std::ifstream in("hoge.input" std::ios::binary);
+  lexer->switch_stream(&in);
+  lexer->parse();
+  return 0;
+}
