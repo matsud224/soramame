@@ -1,8 +1,0 @@
-#comment
-func main(a:int)=>int{
-    var square= func(t:int)=>int{
-        return t*t;
-    }
-    var p:int,q:func(int)=>int;
-    print(3*5-square(5));
-}
