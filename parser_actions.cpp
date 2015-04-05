@@ -4,7 +4,9 @@
 #include "color_text.h"
 
 TokenValue success(CodegenInfo *cgi,vector<TokenValue> values){
-    cout<<BG_CYAN"acceptされました"RESET<<endl;
+    #ifdef PARSER_DEBUG
+		cout<<BG_CYAN"acceptされました"RESET<<endl
+    #endif
     return values[0];
 }
 
@@ -57,14 +59,14 @@ TokenValue operator_n_reduce(CodegenInfo *cgi,vector<TokenValue> values)
 TokenValue function_norettype_reduce(CodegenInfo *cgi,vector<TokenValue> values)
 {
 	TokenValue t;
-	t.function_ast=new FunctionAST(cgi,values[1].str,values[3].parameter_list,new BasicTypeAST("void"),values[6].statement_list);
+	t.function_ast=new FunctionAST(cgi,values[1].str,values[3].parameter_list,new BasicTypeAST("void"),values[6].block_ast);
 	return t;
 }
 
 TokenValue function_withrettype_reduce(CodegenInfo *cgi,vector<TokenValue> values)
 {
 	TokenValue t;
-	t.function_ast=new FunctionAST(cgi,values[1].str,values[3].parameter_list,values[6].type_ast,values[8].statement_list);
+	t.function_ast=new FunctionAST(cgi,values[1].str,values[3].parameter_list,values[6].type_ast,values[8].block_ast);
 	return t;
 }
 
@@ -266,7 +268,7 @@ TokenValue type_list_addtype_reduce(CodegenInfo *cgi,vector<TokenValue> values)
 TokenValue closureexpr_reduce(CodegenInfo *cgi,vector<TokenValue> values)
 {
 	TokenValue t;
-	t.expression_ast=new FunctionAST(cgi,"<closure>",values[1].parameter_list,values[4].type_ast,values[6].statement_list);
+	t.expression_ast=new FunctionAST(cgi,"<closure>",values[1].parameter_list,values[4].type_ast,values[6].block_ast);
 	return t;
 }
 
@@ -296,13 +298,20 @@ TokenValue arg_list_addexpression_reduce(CodegenInfo *cgi,vector<TokenValue> val
 TokenValue ifstatement_noelse_reduce(CodegenInfo *cgi,vector<TokenValue> values)
 {
 	TokenValue t;
-	t.statement_ast=new IfStatementAST(new UnBuiltExprAST(values[2].expression_list),values[5].statement_list,new vector<StatementAST*>());
+	t.statement_ast=new IfStatementAST(new UnBuiltExprAST(values[2].expression_list),values[5].block_ast,new BlockAST(new vector<StatementAST*>(),new vector< pair<string,TypeAST*> >()));
 	return t;
 }
 
 TokenValue ifstatement_withelse_reduce(CodegenInfo *cgi,vector<TokenValue> values)
 {
 	TokenValue t;
-	t.statement_ast=new IfStatementAST(new UnBuiltExprAST(values[2].expression_list),values[5].statement_list,values[9].statement_list);
+	t.statement_ast=new IfStatementAST(new UnBuiltExprAST(values[2].expression_list),values[5].block_ast,values[9].block_ast);
+	return t;
+}
+
+TokenValue block_reduce(CodegenInfo *cgi,vector<TokenValue> values)
+{
+	TokenValue t;
+	t.block_ast=new BlockAST(values[0].statement_list,new vector< pair<string,TypeAST*> >());
 	return t;
 }

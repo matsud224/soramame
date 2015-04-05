@@ -10,8 +10,6 @@
 
 using namespace std;
 
-enum{Left,Right};
-enum{Unary,Binary};
 
 class OperatorInfo;
 class TypeAST;
@@ -20,91 +18,8 @@ class FunctionAST;
 class Flame;
 class VariableDefStatementAST;
 class TopLevelItem;
-
-
-class ClosureObject{
-public:
-	int PoolIndex;
-	Flame* ParentFlame;
-
-	ClosureObject(int index,Flame* parent):PoolIndex(index),ParentFlame(parent){};
-};
-
-class ConstantPool{
-private:
-    vector<void *> refpool;
-public:
-    int SetReference(void *item){
-        refpool.push_back(item);
-        return refpool.size()-1;
-    }
-    void *GetReference(int index){
-        return refpool[index];
-    }
-    unsigned int GetPoolSize(){
-        return refpool.size();
-    }
-    void Clear(){
-		refpool.clear();
-    };
-};
-
-//パースした時に得た情報を詰め込んでおく
-class CodegenInfo{
-public:
-    map<string,OperatorInfo *> OperatorList;
-    vector<FunctionAST *> TopLevelFunction;
-    vector<VariableDefStatementAST *> TopLevelVariableDef;
-    vector<int> Bootstrap;
-    ConstantPool PublicConstantPool;
-    int MainFuncPoolIndex; //main関数のコンスタントプール・インデックス
-	vector<int> ChildPoolIndex;
-};
-
-
-class Compiler{
-private:
-	void ASTgen();
-    void RegisterChildClosure();
-    void TypeCheck();
-    void Codegen();
-public:
-	Lexer *lexer;
-	Parser *parser;
-    CodegenInfo *genInfo;
-
-    Compiler(Lexer *l,Parser *p):lexer(l),parser(p){
-		genInfo=new CodegenInfo();
-    }
-
-    void Compile(){
-    	cout<<BG_GREEN"構文解析を行っています..."RESET<<endl;
-		ASTgen();
-		RegisterChildClosure();
-		cout<<BG_GREEN"型検査を行っています..."RESET<<endl;
-		TypeCheck();
-		cout<<BG_GREEN"コード生成を行っています..."RESET<<endl;
-		Codegen();
-
-		VM vm(genInfo);
-		cout<<BG_BLUE"VMを起動します..."RESET<<endl;
-		vm.Run();
-		cout<<endl;
-    }
-};
-
-class OperatorInfo{
-private:
-    int unaryorbinary;
-    int associativity;
-    int precedence;
-    //TypeAST lhstype,rhstype,rettype;
-public:
-    OperatorInfo(int uorb,int assoc,int prec=30):unaryorbinary(uorb),associativity(assoc),precedence(prec){}
-    int GetAssociativity(){return associativity;}
-    int GetPrecedence(){return precedence;}
-    int GetUnaryOrBinary(){return unaryorbinary;}
-};
+class BlockAST;
+class ClosureObject;
 
 
 class TypeAST{
@@ -214,20 +129,19 @@ public:
 class FunctionAST : public ExprAST{
 public:
     vector< pair<string,TypeAST *> > *Args;
-    vector< pair<string,TypeAST *> > *LocalVariables;
 	Flame *ParentFlame; //クロージャの場合、生成元のフレームを覚えておく（実行時にVMが使用）
     vector<int> bytecodes;
     int PoolIndex;
     vector<int> *ChildPoolIndex; //生成したクロージャのコンスタントプールのインデックス
     bool isBuiltin;
 	string Name;
-	vector<StatementAST *> *Body;
+	BlockAST *Body;
 
     //自らの型を返すだけでなく、bodyについて型検査を実施する
     TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo);
     vector<int> FindChildFunction(); //関数内で作られるクロージャを探し、ChildPoolIndexへ登録します。
 
-    FunctionAST(CodegenInfo *cgi,string n,vector< pair<string,TypeAST *> > *a,TypeAST *rett,vector<StatementAST *> *bdy):Name(n),Args(a),Body(bdy){
+    FunctionAST(CodegenInfo *cgi,string n,vector< pair<string,TypeAST *> > *a,TypeAST *rett,BlockAST *bdy):Name(n),Args(a),Body(bdy){
 		vector<TypeAST*> typelist;
 		vector< pair<string,TypeAST *> >::iterator iter;
 		for(iter=a->begin();iter!=a->end();iter++){
@@ -257,6 +171,7 @@ public:
 
     virtual void Codegen(vector<int> *unused_argumnt,CodegenInfo *geninfo);
 };
+
 
 class VariableExprAST : public ExprAST{
 public:
@@ -318,10 +233,10 @@ public:
 class IfStatementAST : public StatementAST{
 public:
     ExprAST *Condition;
-    vector<StatementAST *> *ThenBody;
-    vector<StatementAST *> *ElseBody;
+    BlockAST *ThenBody;
+    BlockAST *ElseBody;
 
-    IfStatementAST(ExprAST *cond,vector<StatementAST*> *thenbody,vector<StatementAST*> *elsebody):Condition(cond),ThenBody(thenbody),ElseBody(elsebody){}
+    IfStatementAST(ExprAST *cond,BlockAST *thenbody,BlockAST *elsebody):Condition(cond),ThenBody(thenbody),ElseBody(elsebody){}
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
     virtual void CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo);
     virtual vector<int> FindChildFunction();
@@ -357,4 +272,16 @@ public:
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
     virtual void CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo);
     virtual vector<int> FindChildFunction();
+};
+
+class BlockAST{
+public:
+	vector<StatementAST *> *Body;
+	vector< pair<string,TypeAST *> > *LocalVariables;
+
+	BlockAST(vector<StatementAST *> *body,vector< pair<string,TypeAST *> > *local):Body(body),LocalVariables(local){}
+
+	void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
+	void CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo);
+    vector<int> FindChildFunction();
 };

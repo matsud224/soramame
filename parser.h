@@ -7,10 +7,11 @@
 #include <queue>
 #include "common.h"
 #include "lexer.h"
+#include "compiler.h"
 
 using namespace std;
 
-class CodegenInfo;
+
 
 const int MAX_SYNTAXRULE_LEN=20;
 
@@ -51,6 +52,11 @@ public:
     stack< TokenValue > WorkStack;
     pair<Symbol,TokenValue> input;
     pair<Symbol,TokenValue> input_backup;
+
+	//codegeninfoの中身
+    vector<FunctionAST *> TopLevelFunction;
+    vector<VariableDefStatementAST *> TopLevelVariableDef;
+    ConstantPool PublicConstantPool;
 };
 
 class Parser{
@@ -71,7 +77,7 @@ private:
     int FindItem(pair<Symbol*,int>);
     void TraverseReduces(pair<Symbol*,int>,int,set<int>,vector<int>);
     TokenValue default_action(vector<TokenValue> values);
-    void CreateBacktrackingPoint(int,State,int,ConflictType,pair<Symbol,TokenValue>,pair<Symbol,TokenValue>);
+    void CreateBacktrackingPoint(int,State,int,ConflictType,pair<Symbol,TokenValue>,pair<Symbol,TokenValue>,CodegenInfo*);
 
     vector<int> StateStack;
     stack< TokenValue > WorkStack; //データを置いていきます

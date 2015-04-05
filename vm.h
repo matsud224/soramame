@@ -22,7 +22,9 @@ enum{
     iloadlocal, //localという名前だが、結局はフレームを遡っていくのでグローバル変数に行き着くかもしれない
     ret,iret,
     istorelocal,
-    makeclosure
+    makeclosure,
+    skip,iffalse_skip,
+    icmpeq,icmpne,icmplt,icmple,icmpgt,icmpge
 };
 
 

@@ -4,9 +4,11 @@
 #include <string>
 #include <iostream>
 #include "ast.h"
+#include "basic_object.h"
 #include <cmath>
 
 using namespace std;
+
 
 void VM::Run()
 {
@@ -98,6 +100,36 @@ void VM::Run()
             iopr2=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop();
             Environment.back()->OperandStack.push(iopr2>>iopr1);
             break;
+		case icmpeq:
+			iopr1=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop();
+            iopr2=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop();
+            Environment.back()->OperandStack.push((iopr2==iopr1)?1:0);
+			break;
+		case icmpne:
+			iopr1=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop();
+            iopr2=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop();
+            Environment.back()->OperandStack.push((iopr2!=iopr1)?1:0);
+			break;
+		case icmplt:
+			iopr1=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop();
+            iopr2=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop();
+            Environment.back()->OperandStack.push((iopr2<iopr1)?1:0);
+			break;
+		case icmple:
+			iopr1=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop();
+            iopr2=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop();
+            Environment.back()->OperandStack.push((iopr2<=iopr1)?1:0);
+			break;
+		case icmpgt:
+			iopr1=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop();
+            iopr2=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop();
+            Environment.back()->OperandStack.push((iopr2>iopr1)?1:0);
+			break;
+		case icmpge:
+			iopr1=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop();
+            iopr2=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop();
+            Environment.back()->OperandStack.push((iopr2>=iopr1)?1:0);
+			break;
         case invoke:
             {
             	ClosureObject *cobj=reinterpret_cast<ClosureObject *>(CodeInfo->PublicConstantPool.GetReference(Environment.back()->OperandStack.top()));
@@ -141,8 +173,8 @@ void VM::Run()
 						Environment.back()->OperandStack.pop();
 					}
 					//ローカル変数の準備
-					for(int i=callee->LocalVariables->size()-1;i>=0;i--){
-						(*vars).push_back(pair<string,int>(callee->LocalVariables->at(i).first,0)); //ローカル変数はすべて0に初期化される
+					for(int i=callee->Body->LocalVariables->size()-1;i>=0;i--){
+						(*vars).push_back(pair<string,int>(callee->Body->LocalVariables->at(i).first,0)); //ローカル変数はすべて0に初期化される
 					}
 					Flame *inv_flame=new Flame(vars,&(callee->bytecodes),cobj->ParentFlame);
 					for(unsigned int i=0;i<callee->ChildPoolIndex->size();i++){
@@ -206,8 +238,19 @@ void VM::Run()
 			ClosureObject *cobj=new ClosureObject(iopr1,reinterpret_cast<FunctionAST*>(CodeInfo->PublicConstantPool.GetReference(iopr1))->ParentFlame);
 			Environment.back()->OperandStack.push(CodeInfo->PublicConstantPool.SetReference(cobj));
 			//cout<<"makeclosure: "<<iopr1<<","<<Environment.back()->OperandStack.top()<<endl;
-			break;
 			}
+			break;
+		case skip:
+			iopr1=(*(Environment.back()->CodePtr))[Environment.back()->PC++];
+			Environment.back()->PC+=iopr1;
+			break;
+		case iffalse_skip:
+			iopr1=(*(Environment.back()->CodePtr))[Environment.back()->PC++];
+			bopr1=(Environment.back()->OperandStack.top())==0?false:true;  Environment.back()->OperandStack.pop();
+			if(!bopr1){
+				Environment.back()->PC+=iopr1;
+			}
+			break;
         default:
             error("不正な命令です");
             break;

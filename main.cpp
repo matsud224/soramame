@@ -123,8 +123,8 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{boolvalexpr,BOOLVAL,SYNTAXEND},boovalexpr_reduce},
     {{stringvalexpr,STRINGVAL,SYNTAXEND},stringvalexpr_reduce},
     {{operator_n,OPERATOR,SYNTAXEND},operator_n_reduce},
-    {{function,FUN,IDENT,LPAREN,parameter_list,RPAREN,LBRACE,statement_list,RBRACE,SYNTAXEND},function_norettype_reduce},
-    {{function,FUN,IDENT,LPAREN,parameter_list,RPAREN,operator_n,type,LBRACE,statement_list,RBRACE,SYNTAXEND},function_withrettype_reduce},
+    {{function,FUN,IDENT,LPAREN,parameter_list,RPAREN,LBRACE,block,RBRACE,SYNTAXEND},function_norettype_reduce},
+    {{function,FUN,IDENT,LPAREN,parameter_list,RPAREN,operator_n,type,LBRACE,block,RBRACE,SYNTAXEND},function_withrettype_reduce},
     {{parameter_list,EMPTY,SYNTAXEND},parameter_list_empty_reduce},
     {{parameter_list,parameter,SYNTAXEND},parameter_list_parameter_reduce},
     {{parameter_list,parameter_list,COMMA,parameter,SYNTAXEND},parameter_list_addparameter_reduce},
@@ -161,12 +161,13 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{type_list,EMPTY,SYNTAXEND},type_list_empty_reduce},
     {{type_list,type,SYNTAXEND},type_list_type_reduce},
     {{type_list,type_list,COMMA,type,SYNTAXEND},type_list_addtype_reduce},
-    {{closureexpr,LPAREN,parameter_list,RPAREN,operator_n,type,LBRACE,statement_list,RBRACE,SYNTAXEND},closureexpr_reduce},
+    {{closureexpr,LPAREN,parameter_list,RPAREN,operator_n,type,LBRACE,block,RBRACE,SYNTAXEND},closureexpr_reduce},
     {{arg_list,EMPTY,SYNTAXEND},arg_list_empty_reduce},
     {{arg_list,expression,SYNTAXEND},arg_list_expression_reduce},
     {{arg_list,arg_list,COMMA,expression,SYNTAXEND},arg_list_addexpression_reduce},
-    {{ifstatement,IF,LPAREN,expression,RPAREN,LBRACE,statement_list,RBRACE,SYNTAXEND},ifstatement_noelse_reduce},
-    {{ifstatement,IF,LPAREN,expression,RPAREN,LBRACE,statement_list,RBRACE,ELSE,LBRACE,statement_list,RBRACE,SYNTAXEND},ifstatement_withelse_reduce}
+    {{ifstatement,IF,LPAREN,expression,RPAREN,LBRACE,block,RBRACE,SYNTAXEND},ifstatement_noelse_reduce},
+    {{ifstatement,IF,LPAREN,expression,RPAREN,LBRACE,block,RBRACE,ELSE,LBRACE,block,RBRACE,SYNTAXEND},ifstatement_withelse_reduce},
+    {{block,statement_list,SYNTAXEND},block_reduce},
 };
 
 
