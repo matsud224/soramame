@@ -24,7 +24,8 @@ enum{
     istorelocal,
     makeclosure,
     skip,iffalse_skip,
-    icmpeq,icmpne,icmplt,icmple,icmpgt,icmpge
+    icmpeq,icmpne,icmplt,icmple,icmpgt,icmpge,
+    back
 };
 
 

@@ -251,6 +251,10 @@ void VM::Run()
 				Environment.back()->PC+=iopr1;
 			}
 			break;
+		case back:
+			iopr1=(*(Environment.back()->CodePtr))[Environment.back()->PC++];
+			Environment.back()->PC-=iopr1;
+			break;
         default:
             error("不正な命令です");
             break;

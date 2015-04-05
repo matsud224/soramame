@@ -315,3 +315,10 @@ TokenValue block_reduce(CodegenInfo *cgi,vector<TokenValue> values)
 	t.block_ast=new BlockAST(values[0].statement_list,new vector< pair<string,TypeAST*> >());
 	return t;
 }
+
+TokenValue while_reduce(CodegenInfo *cgi,vector<TokenValue> values)
+{
+	TokenValue t;
+	t.statement_ast=new WhileStatementAST(new UnBuiltExprAST(values[2].expression_list),values[5].block_ast);
+	return t;
+}

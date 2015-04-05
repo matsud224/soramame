@@ -46,3 +46,4 @@ TokenValue arg_list_addexpression_reduce(CodegenInfo*,vector<TokenValue>);
 TokenValue ifstatement_noelse_reduce(CodegenInfo*,vector<TokenValue>);
 TokenValue ifstatement_withelse_reduce(CodegenInfo*,vector<TokenValue>);
 TokenValue block_reduce(CodegenInfo *cgi,vector<TokenValue> values);
+TokenValue while_reduce(CodegenInfo *cgi,vector<TokenValue> values);

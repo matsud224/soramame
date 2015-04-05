@@ -10,6 +10,7 @@
 #include "common.h"
 #include "color_text.h"
 
+//#define PARSER_DEBUG
 
 using namespace std;
 
@@ -104,6 +105,12 @@ string Parser::Symbol2Str(Symbol s){
     	return ",";
     case COLON:
     	return ":";
+	case block:
+		return "block";
+	case WHILE:
+		return "WHILE";
+	case whilestatement:
+		return "whilestatement";
     default:
         return "<UNKNOWN SYMBOL>";
     }

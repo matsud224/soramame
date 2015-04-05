@@ -52,7 +52,9 @@ void Compiler::ASTgen()
 
 	while(!parser->IsAccepted()){
 		pair<Symbol,TokenValue> token=lexer->Get();
-		//cout<< CYAN "取得したトークン：" <<Parser::Symbol2Str(token.first)<<RESET<<endl;
+		#ifdef PARSER_DEBUG
+		cout<< CYAN "取得したトークン：" <<Parser::Symbol2Str(token.first)<<RESET<<endl;
+		#endif
 		parser->Put(lexer,genInfo,token);
 	}
 

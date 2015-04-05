@@ -43,6 +43,21 @@ vector<int> IfStatementAST::FindChildFunction()
     return result_list;
 }
 
+vector<int> WhileStatementAST::FindChildFunction()
+{
+	vector<int> result_list;
+	vector<int> list_tmp;
+
+	list_tmp=Condition->FindChildFunction();
+	result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
+
+    vector<StatementAST *>::iterator iter;
+	list_tmp=Body->FindChildFunction();
+	result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
+
+    return result_list;
+}
+
 vector<int> ReturnStatementAST::FindChildFunction()
 {
 	vector<int> result_list;
@@ -182,27 +197,27 @@ void BinaryExprAST::Codegen(vector<int>* bytecodes,CodegenInfo *geninfo)
             bytecodes->push_back(bor);
         }
     }else if(Operator=="=="){
-        if(TypeInfo->GetName()=="bool" || TypeInfo->GetName()=="int"){
+        if(LHS->TypeInfo->GetName()=="bool" || LHS->TypeInfo->GetName()=="int"){
             bytecodes->push_back(icmpeq);
         }
     }else if(Operator=="!="){
-        if(TypeInfo->GetName()=="bool" || TypeInfo->GetName()=="int"){
+        if(LHS->TypeInfo->GetName()=="bool" || LHS->TypeInfo->GetName()=="int"){
             bytecodes->push_back(icmpne);
         }
     }else if(Operator=="<"){
-        if(TypeInfo->GetName()=="int"){
+        if(LHS->TypeInfo->GetName()=="int"){
             bytecodes->push_back(icmplt);
         }
     }else if(Operator==">"){
-        if(TypeInfo->GetName()=="int"){
+        if(LHS->TypeInfo->GetName()=="int"){
             bytecodes->push_back(icmpgt);
         }
     }else if(Operator=="<="){
-        if(TypeInfo->GetName()=="int"){
+        if(LHS->TypeInfo->GetName()=="int"){
             bytecodes->push_back(icmple);
         }
     }else if(Operator==">="){
-        if(TypeInfo->GetName()=="int"){
+        if(LHS->TypeInfo->GetName()=="int"){
             bytecodes->push_back(icmpge);
         }
     }
@@ -267,11 +282,12 @@ void FunctionAST::Codegen(vector<int> *bytecodes_given,CodegenInfo *geninfo)
 		"istorelocal",
 		"makeclosure",
 		"skip",
-		"iffalse_skip"
+		"iffalse_skip",
+		"back"
 	};
     cout<<endl<<"関数:"<<Name<<"のコード"<<endl;
     for(unsigned int i=0;i<bytecodes.size();i++){
-        cout<<bytecodes[i]<<" ("<< ((bytecodes[i]>=0 && bytecodes[i]<= 19)?bytecode_names[bytecodes[i]]:"undefined") <<")"<<endl;
+        cout<<bytecodes[i]<<" ("<< ((bytecodes[i]>=0 && bytecodes[i]<= 20)?bytecode_names[bytecodes[i]]:"undefined") <<")"<<endl;
     }
     cout<<endl;
     return;
@@ -402,6 +418,22 @@ void IfStatementAST::Codegen(vector<int>* bytecodes, CodegenInfo* geninfo)
 		bytecodes->insert(bytecodes->end(),thencode->begin(),thencode->end());
 		bytecodes->insert(bytecodes->end(),elsecode->begin(),elsecode->end());
     }
+}
+
+void WhileStatementAST::Codegen(vector<int>* bytecodes, CodegenInfo* geninfo)
+{
+	vector<int> *condcode=new vector<int>();
+	Condition->Codegen(condcode,geninfo);
+    vector<int> *bodycode=new vector<int>();
+	Body->Codegen(bodycode,geninfo);
+
+	condcode->push_back(iffalse_skip);
+	condcode->push_back(bodycode->size()+2);
+	bodycode->push_back(back);
+	bodycode->push_back(bodycode->size()+2+condcode->size()-1);
+
+	bytecodes->insert(bytecodes->end(),condcode->begin(),condcode->end());
+	bytecodes->insert(bytecodes->end(),bodycode->begin(),bodycode->end());
 }
 
 void VariableDefStatementAST::Codegen(vector<int>* bytecodes, CodegenInfo* geninfo)
@@ -556,6 +588,20 @@ void IfStatementAST::CheckType(vector< vector< pair<string,TypeAST *> > *> *env,
 
 	ThenBody->CheckType(env,geninfo);
 	ElseBody->CheckType(env,geninfo);
+
+	return;
+}
+
+void WhileStatementAST::CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
+	if(Condition->IsBuilt()==false){
+		Condition=dynamic_cast<UnBuiltExprAST*>(Condition)->BuildAST(geninfo);
+	}
+	Condition->CheckType(env,geninfo);
+	if(Condition->TypeInfo->GetName()!="bool"){
+		error("条件式の型がboolではありません");
+	}
+
+	Body->CheckType(env,geninfo);
 
 	return;
 }

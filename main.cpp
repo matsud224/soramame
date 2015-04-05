@@ -33,6 +33,7 @@ pair<Symbol,TokenValue> commentend_lex(char *str,Lexer *lex){
 pair<Symbol,TokenValue> var_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(VAR ,Lexer::dummy);};
 pair<Symbol,TokenValue> fun_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(FUN ,Lexer::dummy);};
 pair<Symbol,TokenValue> if_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(IF ,Lexer::dummy);};
+pair<Symbol,TokenValue> while_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(WHILE ,Lexer::dummy);};
 pair<Symbol,TokenValue> else_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(ELSE ,Lexer::dummy);};
 pair<Symbol,TokenValue> return_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(RETURN_S ,Lexer::dummy);};
 pair<Symbol,TokenValue> boolval_lex(char *str,Lexer *lex){
@@ -92,6 +93,7 @@ TokenRule TOKENRULE[TOKENRULECOUNT]={
 	{"var",INITIAL,true,var_lex},
 	{"fun",INITIAL,true,fun_lex},
     {"if",INITIAL,true,if_lex},
+    {"while",INITIAL,true,while_lex},
     {"else",INITIAL,true,else_lex},
     {"return",INITIAL,true,return_lex},
     {"true",INITIAL,true,boolval_lex},
@@ -139,6 +141,7 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{statement,expression,SEMICOLON,SYNTAXEND},statement_expression_reduce},
     {{statement,returnstatement,SEMICOLON,SYNTAXEND},NULL},
     {{statement,ifstatement,SYNTAXEND},NULL},
+    {{statement,whilestatement,SYNTAXEND},NULL},
     {{expression,primary,SYNTAXEND},expression_primary_reduce},
     {{expression,parenexpr,SYNTAXEND},NULL},
     {{expression,expression,primary,SYNTAXEND},expression_add_reduce},
@@ -168,6 +171,7 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{ifstatement,IF,LPAREN,expression,RPAREN,LBRACE,block,RBRACE,SYNTAXEND},ifstatement_noelse_reduce},
     {{ifstatement,IF,LPAREN,expression,RPAREN,LBRACE,block,RBRACE,ELSE,LBRACE,block,RBRACE,SYNTAXEND},ifstatement_withelse_reduce},
     {{block,statement_list,SYNTAXEND},block_reduce},
+    {{whilestatement,WHILE,LPAREN,expression,RPAREN,LBRACE,block,RBRACE,SYNTAXEND},while_reduce},
 };
 
 

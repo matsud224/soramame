@@ -242,6 +242,17 @@ public:
     virtual vector<int> FindChildFunction();
 };
 
+class WhileStatementAST : public StatementAST{
+public:
+    ExprAST *Condition;
+    BlockAST *Body;
+
+    WhileStatementAST(ExprAST *cond,BlockAST *body):Condition(cond),Body(body){}
+    virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
+    virtual void CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo);
+    virtual vector<int> FindChildFunction();
+};
+
 class ReturnStatementAST : public StatementAST{
 public:
     ExprAST *Expression;
