@@ -2,42 +2,37 @@
 #include <stack>
 #include <vector>
 #include <map>
-#include "ast.h"
+#include <string>
 
 using namespace std;
 
+class CodegenInfo;
+
 enum{
-    ipush,fpush,
-    btruepush,bfalsepush,
-    iadd,fadd,
-    isub,fsub,
-    imul,fmul,
-    idiv,fdiv,
+    ipush,
+    iadd,
+    isub,
+    imul,
+    idiv,
     band,bor,
     imod,
-    ineg,fneg,bnot,
+    ineg,bnot,
     ilshift,irshift,
-    iprint,fprint,bprint,
-    if_icmpeq,if_icmpne,if_icmplt,if_icmpgt,if_icmple,if_icmpge,
-    if_fcmpeq,if_fcmpne,if_fcmplt,if_fcmpgt,if_fcmple,if_fcmpge,
-    if_bcmpeq,if_bcmpne,
-    ldc,
     invoke,
-    iloadlocal,floadlocal,bloadlocal,rloadlocal, //local‚Æ‚¢‚¤–¼‘O‚¾‚ªAŒ‹‹Ç‚ÍƒtƒŒ[ƒ€‚ğ‘k‚Á‚Ä‚¢‚­‚Ì‚ÅƒOƒ[ƒoƒ‹•Ï”‚És‚«’…‚­‚©‚à‚µ‚ê‚È‚¢
-    ret,iret,fret,bret,rret,
-    invokebuiltin, //ƒrƒ‹ƒgƒCƒ“ŠÖ”ŒÄ‚Ño‚µiƒXƒ^ƒbƒNƒgƒbƒv‚Ì•¶š—ñ‚ª‘g‚İ‚İŠÖ”–¼j
-    istorelocal,fstorelocal,bstorelocal,rstorelocal
+    iloadlocal, //localã¨ã„ã†åå‰ã ãŒã€çµå±€ã¯ãƒ•ãƒ¬ãƒ¼ãƒ ã‚’é¡ã£ã¦ã„ãã®ã§ã‚°ãƒ­ãƒ¼ãƒãƒ«å¤‰æ•°ã«è¡Œãç€ãã‹ã‚‚ã—ã‚Œãªã„
+    ret,iret,
+    istorelocal,
+    makeclosure
 };
 
 
 
 class Flame{
 public:
-    vector< pair<string,int> > *Variables; //Œ^ŒŸ¸‚É‚Í’Ê‚Á‚Ä‚é‚Ì‚ÅŒ^î•ñ‚Í•ÛŠÇ‚µ‚È‚¢i•Ï”–¼‚Æ’l‚ÌƒyƒAj
-    stack<int> OperandStack; //‚±‚±‚ÅŒvZ‚ğs‚¤
-    vector<int> *CodePtr; //ƒR[ƒhƒxƒNƒgƒ‹‚Ö‚Ìƒ|ƒCƒ“ƒ^
+    vector< pair<string,int> > *Variables; //å‹æ¤œæŸ»ã«ã¯é€šã£ã¦ã‚‹ã®ã§å‹æƒ…å ±ã¯ä¿ç®¡ã—ãªã„ï¼ˆå¤‰æ•°åã¨å€¤ã®ãƒšã‚¢ï¼‰
+    stack<int> OperandStack; //ã“ã“ã§è¨ˆç®—ã‚’è¡Œã†
+    vector<int> *CodePtr; //ãƒã‚¤ãƒˆã‚³ãƒ¼ãƒ‰ã¸ã®ãƒã‚¤ãƒ³ã‚¿
     Flame *StaticLink;
-    //Flame *DynamicLink;
     int PC;
     Flame(vector< pair<string,int> > *vars,vector<int> *codeptr,Flame *staticlink):Variables(vars),CodePtr(codeptr),StaticLink(staticlink){PC=0;}
 };
@@ -49,7 +44,6 @@ private:
 public:
     VM( CodegenInfo *cinfo):CodeInfo(cinfo){}
     void Run();
-    //void OutputCode();
 };
 
 

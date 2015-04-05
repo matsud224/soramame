@@ -1,229 +1,62 @@
+#include "oniguruma.h"
 #include "lexer.h"
-#include <map>
-#include <string>
-#include <vector>
-#include <cstdio>
-#include <cmath>
-#include <cstdlib>
-#include "utility.h"
+#include "common.h"
 #include <iostream>
 
-using namespace std;
 
-bool iseol(char c){
-    return (c=='\n' || c=='\r');
-}
+TokenValue Lexer::dummy;
 
-//V‚µ‚¢‹L†‚ğ“±“ü‚·‚é‚Æ‚«‚ÍA\•ª‚È’ˆÓ‚ª•K—v
-bool isoperatorchar(char c){
-    switch(c){
-        case '%':
-        case '=':
-        case '~':
-        case '|':
-        case '^':
-        case '-':
-        case '+':
-        case '*':
-        case '/':
-        case '<':
-        case '>':
-        case '&':
-        case '!':
-            return true;
-        default:
-            return false;
-    }
-}
-
-void Lexer::GetNextToken()
+pair<Symbol,TokenValue> Lexer::Get()
 {
-    redo:
+    re_get:
 
-    while(iswblank(lastchar) || iseol(lastchar)){
-        if(iseol(lastchar)){
-            CurrentLineNumber++;
-            CurrentCharPosition=-1;
-        }
-        lastchar=getnextchar();
+    if(rawcode[curr_index]==NULL){
+		return pair<Symbol,TokenValue>(INPUTEND,dummy);
     }
 
+    OnigRegion *region;
 
-    //•¶š—ñ‚Ì‰ğÍ
-    if(isalpha(lastchar)){
-        CurrentIdentifier=lastchar;
-        while(isalnum(lastchar=getnextchar())){
-            CurrentIdentifier+=lastchar;
+    char *start,*end,*range;
+    int r;
+    //ãƒ«ãƒ¼ãƒ«ã‚’ã²ã¨ã¤ãšã¤ä¸Šã‹ã‚‰é †ã«è©¦ã—ã¦ã„ãï¼Œãƒãƒƒãƒã—ãŸã‚‰è¿”ã™
+    for(int i=0;i<TOKENRULECOUNT;i++){
+        if(TOKENRULE[i].state!=curr_state){
+            continue;
         }
-
-        if(CurrentIdentifier=="func"){
-            CurrentToken=token_func;
-            return;
-        }
-
-        if(CurrentIdentifier=="return"){
-            CurrentToken=token_return;
-            return;
-        }
-
-        if(CurrentIdentifier=="var"){
-            CurrentToken=token_var;
-            return;
-        }
-
-        if(CurrentIdentifier=="true"){
-            CurrentBoolVal=true;
-            CurrentToken=token_boolval;
-            return;
-        }
-        if(CurrentIdentifier=="false"){
-            CurrentBoolVal=false;
-            CurrentToken=token_boolval;
-            return;
-        }
-
-        CurrentToken=token_identifier;
-        return;
-    }
-
-    //•¶š—ñ’l‚Ì‰ğÍ
-    if(lastchar=='"'){
-        CurrentStringVal="";
-        while((lastchar=getnextchar())!='"'){
-            CurrentStringVal+=lastchar;
-        }
-        lastchar=getnextchar();
-        CurrentToken=token_stringval;
-        return;
-    }
-
-
-    //”’l‚Ì‰ğÍiGj
-    if(isdigit(lastchar)){
-        bool is_double=false;//¬”‚©‚Ç‚¤‚©
-        string numstr;
-        do{
-            numstr+=lastchar;
-            lastchar=getnextchar();
-            if(lastchar=='.'){
-                is_double=true;
+        region=onig_region_new();
+        end=const_cast<char*>(rawcode)+strlen(rawcode);
+        start=const_cast<char*>(rawcode)+curr_index;
+        range=end;
+        r=onig_search(regex_objs[i],reinterpret_cast<OnigUChar*>(const_cast<char*>(rawcode)),reinterpret_cast<OnigUChar*>(end),reinterpret_cast<OnigUChar*>(start),reinterpret_cast<OnigUChar*>(range),region,ONIG_OPTION_NONE);
+        if(r>=0){
+            //ç¾åœ¨ã®èª­ã¿å–ã‚Šé–‹å§‹ä½ç½®ã«ãƒãƒƒãƒã—ãŸã®ã‹ï¼Ÿ
+            if(r!=curr_index){
+                //é›¢ã‚ŒãŸä½ç½®ã§ãƒãƒƒãƒã—ãŸ
+                continue;
             }
-        }while(isdigit(lastchar) || lastchar=='.');
-
-        if(is_double){
-            CurrentFloatVal=atof(numstr.c_str());
-            CurrentToken=token_floatval;
-            return;
-        }else{
-            CurrentIntVal=atoi(numstr.c_str());
-            CurrentToken= token_intval;
-            return;
-        }
-    }
-
-    //‰‰Zqi‹L†‚R•¶š˜A‘±‚Ü‚Åj
-    if(isoperatorchar(lastchar)){
-        string opstr;
-        opstr+=lastchar;
-        for(int i=0;i<3;i++){
-            lastchar=getnextchar();
-            if(i==2){
-                break;
+            char *str=new char[region->end[0]-region->beg[0]+1]; //NULLã®ãŸã‚ã«+1
+            for(int k=0;k<region->end[0]-region->beg[0];k++){
+                str[k]=rawcode[r+k];
             }
-            if(!isoperatorchar(lastchar)){
-                break;
-            }
-            opstr+=lastchar;
-        }
+            str[region->end[0]-region->beg[0]]=NULL;
 
-        CurrentOperator=opstr;
+            curr_index+=region->end[0]-region->beg[0];
 
-        if(CurrentOperator=="-" && (CurrentToken==token_operator || CurrentToken=='(' || CurrentToken=='{')){
-            //ˆê‚Â‘O‚Ìƒg[ƒNƒ“iCurrentToken:‚Ü‚¾‘O‰ñ‚Ì‚ªc‚Á‚Ä‚¢‚éj‚ª‰‰ZqAŠJ‚«ƒJƒbƒR‚Ìê‡iH‚¤‚Ü‚­‚¢‚©‚È‚¢‚©‚àj’P€‰‰Zq‚Ìƒ}ƒCƒiƒX‚Æ‚·‚é
-            if(isdigit(lastchar)){
-                bool is_double=false;//¬”‚©‚Ç‚¤‚©
-                string numstr;
-                do{
-                    numstr+=lastchar;
-                    lastchar=getnextchar();
-                    if(lastchar=='.'){
-                        is_double=true;
-                    }
-                }while(isdigit(lastchar) || lastchar=='.');
+            onig_region_free(region,1);
 
-                if(is_double){
-                    CurrentFloatVal=(-1)*atof(numstr.c_str());
-                    CurrentToken=token_floatval;
-                    return;
-                }else{
-                    CurrentIntVal=(-1)*atoi(numstr.c_str());
-                    CurrentToken= token_intval;
-                    return;
-                }
-            }
-        }
-
-        CurrentToken=token_operator;
-        return;
-    }
-
-    //ƒRƒƒ“ƒgu“Ç‚İ”ò‚Î‚µ
-    if(lastchar=='#'){
-        do{
-            lastchar=getnextchar();
-        }while(lastchar!=EOF && !iseol(lastchar));
-
-        if(lastchar!=EOF){
-            goto redo;
-        }
-    }
-
-    if(lastchar==EOF){
-        CurrentToken=token_eof;
-        return;
-    }
-
-    CurrentToken=lastchar;
-    lastchar=getnextchar();
-    return;
-}
-
-bool Lexer::isClosureAfterParen(){
-    int open=0;
-    unsigned int i;
-    for(i=nowpos+1;i<rawcode.size();i++){
-        if(rawcode[i]=='('){
-            open++;
-        }else if(rawcode[i]==')'){
-            if(open==0){
-                break;
+            if(TOKENRULE[i].hasValue==true){
+				return TOKENRULE[i].callback(str,this);
             }else{
-                open--;
+				if(TOKENRULE[i].callback!=NULL){
+					TOKENRULE[i].callback(str,this);
+				}
+				goto re_get;
             }
+
         }
-    }
-    i++;
-    if(i>=rawcode.size()){
-        return false;
-    }
-    for(unsigned int j=i;j<rawcode.size();j++){
-        if(!(iswblank(rawcode[j]) || iseol(rawcode[j]) || rawcode[j]==';')){
-            if(rawcode[j]=='='){
-                if(j+1!=rawcode.size() && rawcode[j+1]=='>'){
-                    return true;
-                }
-            }
-        }
+        onig_region_free(region,1);
     }
 
-    return false;
-}
-
-char Lexer::getnextchar()
-{
-    if(nowpos==rawcode.size()){
-        return EOF;
-    }
-    CurrentCharPosition++;
-    return rawcode[nowpos++];
+    //ãƒãƒƒãƒã™ã‚‹ã‚‚ã®ãŒãªã‹ã£ãŸ
+    throw NoMatchRule();
 }

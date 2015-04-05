@@ -2,11 +2,11 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <iostream>
-#include "lexer.h"
 #include "utility.h"
-#include <typeinfo>
-
+#include "parser.h"
+#include "lexer.h"
+#include "vm.h"
+#include "color_text.h"
 
 using namespace std;
 
@@ -18,7 +18,17 @@ class TypeAST;
 class ExprAST;
 class FunctionAST;
 class Flame;
-class VariableDefineExprAST;
+class VariableDefStatementAST;
+class TopLevelItem;
+
+
+class ClosureObject{
+public:
+	int PoolIndex;
+	Flame* ParentFlame;
+
+	ClosureObject(int index,Flame* parent):PoolIndex(index),ParentFlame(parent){};
+};
 
 class ConstantPool{
 private:
@@ -34,50 +44,53 @@ public:
     unsigned int GetPoolSize(){
         return refpool.size();
     }
-    void Clear();
+    void Clear(){
+		refpool.clear();
+    };
 };
-//ƒp[ƒX‚µ‚½‚É“¾‚½î•ñ‚ğ‹l‚ß‚ñ‚Å‚¨‚­
+
+//ãƒ‘ãƒ¼ã‚¹ã—ãŸæ™‚ã«å¾—ãŸæƒ…å ±ã‚’è©°ã‚è¾¼ã‚“ã§ãŠã
 class CodegenInfo{
 public:
     map<string,OperatorInfo *> OperatorList;
-    vector<FunctionAST *> FunctionList; //ƒgƒbƒvƒŒƒxƒ‹‚ÌŠÖ”‚Ü‚½‚Í‘g‚İ‚İŠÖ”‚ª‚±‚±‚É“o˜^‚³‚ê‚é
+    vector<FunctionAST *> TopLevelFunction;
+    vector<VariableDefStatementAST *> TopLevelVariableDef;
+    vector<int> Bootstrap;
     ConstantPool PublicConstantPool;
-    int main_poolindex; //mainŠÖ”‚ÌƒRƒ“ƒXƒ^ƒ“ƒgƒv[ƒ‹EƒCƒ“ƒfƒbƒNƒX
-
-    void Initialize(){
-        OperatorList.clear();
-        FunctionList.clear();
-        PublicConstantPool.Clear();
-        return;
-    }
+    int MainFuncPoolIndex; //mainé–¢æ•°ã®ã‚³ãƒ³ã‚¹ã‚¿ãƒ³ãƒˆãƒ—ãƒ¼ãƒ«ãƒ»ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹
+	vector<int> ChildPoolIndex;
 };
 
 
-
-class Parser{
-public:
-    Lexer *lexer;
-    CodegenInfo genInfo;
-    FunctionAST *ParseFunction();
-    TypeAST *ParseType();
-    ExprAST *ParsePrimary(vector<int> *);
-    ExprAST *ParseIntValExpr();
-    ExprAST *ParseBoolValExpr();
-    ExprAST *ParseIdentifierExpr(vector<int> *);
-    ExprAST *ParseFloatValExpr();
-    ExprAST *ParseParenExpr(vector<int> *);
-    ExprAST *ParseUnary();
-    ExprAST *ParseExpression(vector<int> *);
-    ExprAST *ParseClosureExpr(vector<int> *);
-    ExprAST *ParseStringValExpr();
-    ExprAST *ParseReturnExpr(vector<int> *);
-    ExprAST *ParseVariableDefineExpr();
-
-    Parser(Lexer *l):lexer(l){}
-    void Parse();
+class Compiler{
+private:
+	void ASTgen();
+    void RegisterChildClosure();
     void TypeCheck();
     void Codegen();
-    CodegenInfo GetCGInfo(){return genInfo;}
+public:
+	Lexer *lexer;
+	Parser *parser;
+    CodegenInfo *genInfo;
+
+    Compiler(Lexer *l,Parser *p):lexer(l),parser(p){
+		genInfo=new CodegenInfo();
+    }
+
+    void Compile(){
+    	cout<<BG_GREEN"æ§‹æ–‡è§£æã‚’è¡Œã£ã¦ã„ã¾ã™..."RESET<<endl;
+		ASTgen();
+		RegisterChildClosure();
+		cout<<BG_GREEN"å‹æ¤œæŸ»ã‚’è¡Œã£ã¦ã„ã¾ã™..."RESET<<endl;
+		TypeCheck();
+		cout<<BG_GREEN"ã‚³ãƒ¼ãƒ‰ç”Ÿæˆã‚’è¡Œã£ã¦ã„ã¾ã™..."RESET<<endl;
+		Codegen();
+
+		VM vm(genInfo);
+		cout<<BG_BLUE"VMã‚’èµ·å‹•ã—ã¾ã™..."RESET<<endl;
+		vm.Run();
+		cout<<endl;
+    }
 };
 
 class OperatorInfo{
@@ -93,413 +106,255 @@ public:
     int GetUnaryOrBinary(){return unaryorbinary;}
 };
 
+
 class TypeAST{
-private:
-    string name;
 public:
-    TypeAST(const string &n):name(n){}
-    string &GetName() {return name;}
-    bool operator == (TypeAST another){return name==another.name;}
-    bool operator != (TypeAST another){return !(*this==another);}
-    //ŠÖ”Œ^‚Ìˆø”E–ß‚è’l‚ÌŒ^‚ÌƒŠƒXƒg‚ğ•Ô‚µ‚Ü‚·iŠÖ”Œ^‚Å‚È‚¢ê‡‚Ínullj
-    vector<TypeAST *> ParseFunctionType(){
-        //cout<<name<<endl;
-        vector<TypeAST *> ret;
-        Lexer l(name);
-        Parser p(&l);
-        if(l.GetNextToken(),l.CurrentToken=='('){
-            l.GetNextToken();
-            while(l.CurrentToken!=')' || l.CurrentToken==token_eof){
-                ret.push_back(p.ParseType());
-                //cout<<ret.back()->GetName()<<endl;
-                if(l.CurrentToken==','){
-                    l.GetNextToken();
-                }
-            }
-            if(l.GetNextToken(),l.CurrentToken==token_operator){
-                if(l.CurrentOperator=="=>"){
-                    l.GetNextToken();
-                    ret.push_back(p.ParseType());
-                    //cout<<ret.back()->GetName()<<endl;
-                    return ret;
-                }
-            }
-        }
-        ret.clear();
-        return ret;
+	virtual ~TypeAST(){}
+	virtual string GetName()=0;
+
+	virtual bool operator == (TypeAST &obj){return this->GetName()==obj.GetName();};
+	virtual bool operator != (TypeAST &obj){return this->GetName()!=obj.GetName();};
+};
+
+//å˜ä¸€ã®å‹
+class BasicTypeAST : public TypeAST{
+public:
+    BasicTypeAST(string n):Name(n){} //æ™®é€šã®å‹ç”¨
+    string Name; //é–¢æ•°å‹ã®ãŸã‚ã«vectorã«ã—ã¦ã‚ã‚‹
+    virtual string GetName(){
+		return Name;
     }
+};
+
+//é–¢æ•°å‹
+class FunctionTypeAST : public TypeAST{
+public:
+	FunctionTypeAST(vector<TypeAST*> t_list):TypeList(t_list){}
+	vector<TypeAST*> TypeList;
+	virtual string GetName(){
+		string s="(";
+		for(int i=0;i<TypeList.size()-1;i++){
+			s+=TypeList[i]->GetName();
+			if(i!=TypeList.size()-2){
+				s+=",";
+			}
+		}
+		s+=")=>"+TypeList[TypeList.size()-1]->GetName();
+		return s;
+	}
 
 };
 
 class ExprAST{
-protected:
-    TypeAST *type;
 public:
+	TypeAST *TypeInfo;
+
     virtual ~ExprAST(){}
+    virtual bool IsBuilt(){return true;}; //ASTãŒæ§‹ç¯‰ã•ã‚ŒãŸã‹
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo)=0;
     virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo)=0;
+    virtual vector<int> FindChildFunction()=0;
 };
 
-class BoolValExprAST : public ExprAST{
-private:
-    bool value;
+class UnBuiltExprAST : public ExprAST{
 public:
-    bool GetValue(){return value;}
-    BoolValExprAST(bool val):value(val){type=new TypeAST("bool");}
-    virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
-    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){return type;}
-};
-
-class StringValExprAST : public ExprAST{
-private:
-    string value;
-public:
-    int poolindex;
-    string GetValue(){return value;}
-    StringValExprAST(CodegenInfo *cgi,string val):value(val){
-        type=new TypeAST("string");
-        //ƒRƒ“ƒXƒ^ƒ“ƒgƒv[ƒ‹‚Ö‚Ì“o˜^
-        poolindex=cgi->PublicConstantPool.SetReference(reinterpret_cast<void *>(&value));
-    }
-    virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
-    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){return type;}
+	vector<ExprAST*> *ExprList;
+    UnBuiltExprAST(vector<ExprAST*> *val):ExprList(val){TypeInfo=NULL;}
+    virtual bool IsBuilt(){return false;}
+    virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo){};
+    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){return TypeInfo;}
+    ExprAST *BuildAST(CodegenInfo*);
+    virtual vector<int> FindChildFunction();
 };
 
 class IntValExprAST : public ExprAST{
-private:
-    int value;
 public:
-    int GetValue(){return value;}
-    IntValExprAST(int val):value(val){type=new TypeAST("int");}
+	int Value;
+    IntValExprAST(int val):Value(val){TypeInfo=new BasicTypeAST("int");}
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
-    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){return type;}
+    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){return TypeInfo;}
+    virtual vector<int> FindChildFunction(){return vector<int>();};
 };
 
-class FloatValExprAST : public ExprAST{
-private:
-    float value;
+class BoolValExprAST : public ExprAST{
 public:
-    float GetValue(){return value;}
-    FloatValExprAST(float val):value(val){type=new TypeAST("float");}
+	bool Value;
+    BoolValExprAST(bool val):Value(val){TypeInfo=new BasicTypeAST("bool");}
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
-    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){return type;}
+    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){return TypeInfo;}
+    virtual vector<int> FindChildFunction(){return vector<int>();};
 };
 
-class VariableExprAST : public ExprAST{
-private:
-    string Name;
+class StringValExprAST : public ExprAST{
 public:
-    int localindex;//ƒ[ƒJƒ‹•Ï”‚ÌƒCƒ“ƒfƒbƒNƒX”Ô†iƒtƒŒ[ƒ€”z—ñ‚ÌƒCƒ“ƒfƒbƒNƒXj
-
-    VariableExprAST(const string &name):Name(name){type=NULL;}
-    const string &GetName() {return Name;}
-    virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
-    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
-        if(type!=NULL){
-            return type;
-        }
-
-        //–¼‘O‚ªˆê’v‚·‚é‚à‚Ì‚ª‚ ‚é‚©ãˆÊ‚ÌƒtƒŒ[ƒ€‚É‘k‚è‚È‚ª‚ç’T‚·
-        bool found=false;
-        int currentflame;
-        unsigned int i;
-        localindex=-1;
-        for(currentflame=(static_cast<int>(env->size())-1);currentflame>=0;currentflame--){
-            for(i=0;i<(*env)[currentflame]->size();i++){
-                localindex++;
-                if(Name==(*(*env)[currentflame])[i].first){
-                    //–¼‘O‚ªˆê’v
-                    type=(*(*env)[currentflame])[i].second; //©g‚ÌŒ^‚ğŒˆ’è
-                    found=true;
-                    goto out_for;
-                }
-            }
-        }
-        out_for:
-        if(!found){
-            error(NULL,"•Ï”:"+Name+"‚Í–¢’è‹`‚Ü‚½‚ÍƒXƒR[ƒvŠO‚Å‚·B");
-        }
-        //cout<<Name<<":"<<localindex<<endl;
-        return type;
+    string Value;
+    int PoolIndex;
+    StringValExprAST(CodegenInfo *cgi,string val):Value(val){
+        TypeInfo=new BasicTypeAST("string");
+        //ã‚³ãƒ³ã‚¹ã‚¿ãƒ³ãƒˆãƒ—ãƒ¼ãƒ«ã¸ã®ç™»éŒ²
+        PoolIndex=cgi->PublicConstantPool.SetReference(reinterpret_cast<void *>(&Value));
+        cout<<"#"<<PoolIndex<<" : <string>"<<Value<<endl;
     }
-};
-
-class UnaryExprAST : public ExprAST{
-private:
-    string opcode;
-    ExprAST *operand;
-public:
-    UnaryExprAST(string opc,ExprAST *oprnd):opcode(opc),operand(oprnd){type=NULL;}
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
-    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
-        //zŠÂ–h~‚Ìˆ×
-        if(type!=NULL){
-            return type;
-        }
-
-        TypeAST *oprandt=operand->CheckType(env,geninfo);
-        if(opcode=="!"){
-            if(oprandt->GetName()!="bool"){
-                error(NULL,"Œ^‚É–â‘è‚ª‚ ‚è‚Ü‚·B’P€‰‰Zq:"+opcode+" ƒIƒyƒ‰ƒ“ƒh:"+oprandt->GetName());
-            }
-            type=oprandt;
-        }
-
-        if(type==NULL){
-            error(NULL,"–¢’m‚Ì’P€‰‰Zq‚Å‚·:"+opcode);
-        }
-
-        return type;
-    }
+    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){return TypeInfo;}
+    virtual vector<int> FindChildFunction(){return vector<int>();};
 };
 
-class BinaryExprAST : public ExprAST{
-private:
-    string opcode;
-    ExprAST *LHS,*RHS;
+//æ“è»Šå ´ã‚¢ãƒ«ã‚´ãƒªã‚ºãƒ ã®ãŸã‚ã«
+class OperatorAST : public ExprAST{
 public:
-    BinaryExprAST(string opc,ExprAST *lhs,ExprAST *rhs):opcode(opc),LHS(lhs),RHS(rhs){type=NULL;}
-    virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
-    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
-        TypeAST *lhst=LHS->CheckType(env,geninfo);
-        TypeAST *rhst=RHS->CheckType(env,geninfo);
-        type=NULL;
+    string Operator;
 
-        //‘g‚İ‚İŒ^‚ÌŒ^ƒ`ƒFƒbƒN
-        if(opcode=="+" || opcode=="-" || opcode=="*" || opcode=="/"){
-            if(*lhst!=*rhst || (lhst->GetName()!="int" && lhst->GetName()!="float")){
-                error(NULL,"Œ^‚É–â‘è‚ª‚ ‚è‚Ü‚·B“ñ€‰‰Zq:"+opcode+" ¶•Ó:"+lhst->GetName()+" ‰E•Ó:"+rhst->GetName());
-            }
-
-            type=lhst; //ƒIƒyƒ‰ƒ“ƒh‚ÌŒ^‚ğŒ³‚É©‚ç‚ÌŒ^‚ğŒˆ‚ß‚é
-        }else if(opcode=="%" || opcode=="<<" || opcode==">>"){
-            if(*lhst!=*rhst || (lhst->GetName()!="int")){
-                error(NULL,"Œ^‚É–â‘è‚ª‚ ‚è‚Ü‚·B“ñ€‰‰Zq:"+opcode+" ¶•Ó:"+lhst->GetName()+" ‰E•Ó:"+rhst->GetName());
-            }
-            type=lhst;
-        }else if(opcode=="&&" || opcode=="||"){
-            if(*lhst!=*rhst || (lhst->GetName()!="bool")){
-                error(NULL,"Œ^‚É–â‘è‚ª‚ ‚è‚Ü‚·B“ñ€‰‰Zq:"+opcode+" ¶•Ó:"+lhst->GetName()+" ‰E•Ó:"+rhst->GetName());
-            }
-            type=lhst;
-        }else if(opcode=="<" || opcode==">" || opcode=="<=" || opcode==">="){
-            if(*lhst!=*rhst || (lhst->GetName()!="int" && lhst->GetName()!="float")){
-                error(NULL,"Œ^‚É–â‘è‚ª‚ ‚è‚Ü‚·B“ñ€‰‰Zq:"+opcode+" ¶•Ó:"+lhst->GetName()+" ‰E•Ó:"+rhst->GetName());
-            }
-            type=new TypeAST("bool");
-        }else if(opcode=="==" || opcode=="!="){
-            if(*lhst!=*rhst || (lhst->GetName()!="int" && lhst->GetName()!="float" && lhst->GetName()!="bool")){
-                error(NULL,"Œ^‚É–â‘è‚ª‚ ‚è‚Ü‚·B“ñ€‰‰Zq:"+opcode+" ¶•Ó:"+lhst->GetName()+" ‰E•Ó:"+rhst->GetName());
-            }
-            type=new TypeAST("bool");
-        }else if(opcode=="="){
-			if(*lhst!=*rhst){
-                error(NULL,"Œ^‚É–â‘è‚ª‚ ‚è‚Ü‚·B“ñ€‰‰Zq:"+opcode+" ¶•Ó:"+lhst->GetName()+" ‰E•Ó:"+rhst->GetName());
-            }else if(typeid(*LHS)!=typeid(VariableExprAST)){
-				error(NULL,"‘ã“ü®‚Ì¶•Ó‚ª•Ï”‚Å‚Í‚ ‚è‚Ü‚¹‚ñB");
-            }
-            type=lhst;
-        }
-
-        if(type==NULL){
-            error(NULL,"–¢’m‚Ì“ñ€‰‰Zq‚Å‚·:"+opcode);
-        }
-
-        return type;
-    }
+    OperatorAST(string n):Operator(n){};
+    virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo){}
+    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){return NULL;}
+    virtual vector<int> FindChildFunction(){return vector<int>();};
 };
-
-class ReturnExprAST : public ExprAST{
-private:
-    ExprAST *expression;
-public:
-    TypeAST *GetType(){return type;}
-    ReturnExprAST(ExprAST *exp):expression(exp){};
-    virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
-    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
-        if(expression==NULL){
-            type=new TypeAST("void");
-        }else{
-            type=expression->CheckType(env,geninfo);
-        }
-        return type;
-    };
-};
-
-class VariableDefineExprAST : public ExprAST{
-public:
-    vector< pair<string,TypeAST *> > *Variables;
-    TypeAST *GetType(){return type;}
-    VariableDefineExprAST(vector< pair<string,TypeAST *> > *vars):Variables(vars){type=new TypeAST("void");}
-
-    virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo){}; //¡‚Ì‚Æ‚±‚ë‘ã“ü®‚Í•¹‹L‚Å‚«‚È‚¢‚Ì‚ÅƒR[ƒh¶¬‚Ís‚í‚È‚¢
-
-    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
-        return type;
-    };
-};
-
-
 
 class FunctionAST : public ExprAST{
-private:
-    string name;
 public:
-    vector< pair<string,TypeAST *> > Args;
-    vector< pair<string,TypeAST *> > LocalVariables;
-	Flame *ParentFlame; //ƒNƒ[ƒWƒƒ‚Ìê‡A¶¬Œ³‚ÌƒtƒŒ[ƒ€‚ğŠo‚¦‚Ä‚¨‚­iÀs‚ÉVM‚ªg—pj
+    vector< pair<string,TypeAST *> > *Args;
+    vector< pair<string,TypeAST *> > *LocalVariables;
+	Flame *ParentFlame; //ã‚¯ãƒ­ãƒ¼ã‚¸ãƒ£ã®å ´åˆã€ç”Ÿæˆå…ƒã®ãƒ•ãƒ¬ãƒ¼ãƒ ã‚’è¦šãˆã¦ãŠãï¼ˆå®Ÿè¡Œæ™‚ã«VMãŒä½¿ç”¨ï¼‰
     vector<int> bytecodes;
-    int poolindex;
-private:
-    TypeAST *type;
-    vector<ExprAST *> body;
-
-
-public:
-
-    vector<int> *ChildPoolIndex; //¶¬‚µ‚½ƒNƒ[ƒWƒƒ‚ÌƒRƒ“ƒXƒ^ƒ“ƒgƒv[ƒ‹‚ÌƒCƒ“ƒfƒbƒNƒX
+    int PoolIndex;
+    vector<int> *ChildPoolIndex; //ç”Ÿæˆã—ãŸã‚¯ãƒ­ãƒ¼ã‚¸ãƒ£ã®ã‚³ãƒ³ã‚¹ã‚¿ãƒ³ãƒˆãƒ—ãƒ¼ãƒ«ã®ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹
     bool isBuiltin;
+	string Name;
+	vector<StatementAST *> *Body;
 
-    string GetName(){return name;}
-    vector<ExprAST *> &GetBody(){return body;}
+    //è‡ªã‚‰ã®å‹ã‚’è¿”ã™ã ã‘ã§ãªãã€bodyã«ã¤ã„ã¦å‹æ¤œæŸ»ã‚’å®Ÿæ–½ã™ã‚‹
+    TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo);
+    vector<int> FindChildFunction(); //é–¢æ•°å†…ã§ä½œã‚‰ã‚Œã‚‹ã‚¯ãƒ­ãƒ¼ã‚¸ãƒ£ã‚’æ¢ã—ã€ChildPoolIndexã¸ç™»éŒ²ã—ã¾ã™ã€‚
 
-    //’P‚É©‚ç‚ÌŒ^‚ğ•Ô‚·
-    TypeAST *GetType(){
+    FunctionAST(CodegenInfo *cgi,string n,vector< pair<string,TypeAST *> > *a,TypeAST *rett,vector<StatementAST *> *bdy):Name(n),Args(a),Body(bdy){
+		vector<TypeAST*> typelist;
+		vector< pair<string,TypeAST *> >::iterator iter;
+		for(iter=a->begin();iter!=a->end();iter++){
+			typelist.push_back((*iter).second);
+		}
+		typelist.push_back(rett);
 
-        return type;
-    }
-
-    //©‚ç‚ÌŒ^‚ğ•Ô‚·‚¾‚¯‚Å‚È‚­Abody‚É‚Â‚¢‚ÄŒ^ŒŸ¸‚ğÀ{‚·‚é
-    TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
-        vector< pair<string,TypeAST *> > *fflame=new vector< pair<string,TypeAST *> >();
-        //ˆø”‚ğŠÂ‹«‚É’Ç‰Á
-        vector< pair<string,TypeAST *> >::iterator argiter;
-        for(argiter=Args.begin();argiter!=Args.end();argiter++){
-            fflame->push_back(*argiter);
-        }
-        env->push_back(fflame);
-        vector<ExprAST *>::iterator iter2;
-        for(iter2=body.begin();iter2!=body.end();iter2++){
-            (*iter2)->CheckType(env,geninfo);
-
-            if(typeid(*(*iter2))==typeid(VariableDefineExprAST)){
-				//•Ï”éŒ¾‚ğŒ©‚Â‚¯‚½‚ç•Ï”ƒŠƒXƒg‚Ö’Ç‰Á‚µ‚Ä‚¢‚­
-				LocalVariables.insert(LocalVariables.end(),dynamic_cast<VariableDefineExprAST *>(*iter2)->Variables->begin(),dynamic_cast<VariableDefineExprAST *>(*iter2)->Variables->end());
-				env->back()->insert(env->back()->end(),dynamic_cast<VariableDefineExprAST *>(*iter2)->Variables->begin(),dynamic_cast<VariableDefineExprAST *>(*iter2)->Variables->end());
-            }else if(typeid(*(*iter2))==typeid(ReturnExprAST)){
-            	//return•¶‚Ìê‡“Á•Êˆµ‚¢B•Ô‚·’l‚ÌŒ^‚Æ‚±‚ÌŠÖ”‚Ì•Ô‚è’l‚ÌŒ^‚ª•sˆê’v‚È‚ç‚ÎƒGƒ‰[
-                if(type->ParseFunctionType().back()->GetName() != dynamic_cast<ReturnExprAST *>(*iter2)->GetType()->GetName()){
-                    error(NULL,"'return‚·‚é’l‚ÌŒ^'‚ÆA'ŠÖ”‚Ì–ß‚è’l‚ÌŒ^'‚ªˆê’v‚µ‚Ü‚¹‚ñB");
-                }
-            }
-        }
-
-        delete env->back();
-        env->pop_back(); //ÅŒã”ö‚ÌƒtƒŒ[ƒ€‚ğíœ
-
-
-        return type; //©‚ç‚ÌŒ^‚ğˆê‰•Ô‚µ‚Ä‚¨‚­
-    }
-
-    FunctionAST(CodegenInfo *cgi,string &n,vector< pair<string,TypeAST *> > &a,TypeAST *t,vector<ExprAST *> &bdy,vector<int> *cpi):name(n),Args(a),type(t),body(bdy),ChildPoolIndex(cpi){
+		TypeInfo=new FunctionTypeAST(typelist);
         isBuiltin=false;
-        if(t->ParseFunctionType().empty()){
-            error(NULL,"ŠÖ”‚É‘Î‚µ‚ÄŠÖ”Œ^‚Å‚Í‚È‚¢Œ^‚ª•t—^‚³‚ê‚Ü‚µ‚½B");
-        }
-        poolindex=cgi->PublicConstantPool.SetReference(reinterpret_cast<void *>(this));
+        PoolIndex=cgi->PublicConstantPool.SetReference(reinterpret_cast<void *>(this));
+        cout<<"#"<<PoolIndex<<" : <closure>"<<Name<<endl;
     }
 
-    //‘g‚İ‚İŠÖ”—p‚ÌƒRƒ“ƒXƒgƒ‰ƒNƒ^
-    FunctionAST(CodegenInfo *cgi,string n,vector< pair<string,TypeAST *> > *a,TypeAST *t):name(n),Args(*a),type(t){
+    //çµ„ã¿è¾¼ã¿é–¢æ•°ç”¨ã®ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿
+    FunctionAST(CodegenInfo *cgi,string n,vector< pair<string,TypeAST *> > *a,TypeAST *rett):Name(n),Args(a){
+		vector<TypeAST*> typelist;
+		vector< pair<string,TypeAST *> >::iterator iter;
+		for(iter=a->begin();iter!=a->end();iter++){
+			typelist.push_back((*iter).second);
+		}
+		typelist.push_back(rett);
+		TypeInfo=new FunctionTypeAST(typelist);
         isBuiltin=true;
-        if(t->ParseFunctionType().empty()){
-            error(NULL,"ŠÖ”‚É‘Î‚µ‚ÄŠÖ”Œ^‚Å‚Í‚È‚¢Œ^‚ª•t—^‚³‚ê‚Ü‚µ‚½B");
-        }
-        poolindex=cgi->PublicConstantPool.SetReference(reinterpret_cast<void *>(this));
+        PoolIndex=cgi->PublicConstantPool.SetReference(reinterpret_cast<void *>(this));
+        cout<<"#"<<PoolIndex<<" : <closure>"<<Name<<endl;
     }
 
     virtual void Codegen(vector<int> *unused_argumnt,CodegenInfo *geninfo);
-    bool isBuiltinFunction(){return isBuiltin;}
 };
 
+class VariableExprAST : public ExprAST{
+public:
+    string Name;
+    int LocalIndex;//ãƒ­ãƒ¼ã‚«ãƒ«å¤‰æ•°ã®ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ç•ªå·ï¼ˆãƒ•ãƒ¬ãƒ¼ãƒ é…åˆ—ã®ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ï¼‰
 
+    VariableExprAST(const string &name):Name(name){TypeInfo=NULL;}
+    virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
+    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo);
+    virtual vector<int> FindChildFunction(){return vector<int>();};
+};
 
 class CallExprAST : public ExprAST{
-private:
-    string callee;
-    vector<ExprAST *> args;
-    int localindex;
-    bool isBuiltin;
 public:
-    CallExprAST(const string &callee_func,vector<ExprAST *> &args_list):callee(callee_func),args(args_list){type=NULL;}
+    string callee;
+    vector<ExprAST *> *args;
+    int PoolIndex;
+    int LocalIndex;
+    bool isBuiltin;
+
+    CallExprAST(const string &callee_func,vector<ExprAST *> *args_list):callee(callee_func),args(args_list){TypeInfo=NULL;PoolIndex=-1;LocalIndex=-1;}
+    CallExprAST(int poolidx,vector<ExprAST *> *args_list):PoolIndex(poolidx),args(args_list){TypeInfo=NULL;callee="<closure>";LocalIndex=-1;}
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
-    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
-        //zŠÂ–h~‚Ìˆ×
-        if(type!=NULL){
-            return type;
-        }
+    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo);
+    virtual vector<int> FindChildFunction();
+};
 
-        //ˆø”‚ÌŒ^‚ğ‡‚ÉŒˆ‚ß‚Ä‚¢‚­
-        vector<ExprAST *>::iterator iter2;
-        for(iter2=args.begin();iter2!=args.end();iter2++){
-            (*iter2)->CheckType(env,geninfo);
-        }
+class UnaryExprAST : public ExprAST{
+public:
+    string Operator;
+    ExprAST *Operand;
 
-        //–¼‘O‚ªˆê’v‚·‚é‚à‚Ì‚ª‚ ‚é‚©ãˆÊ‚ÌƒtƒŒ[ƒ€‚É‘k‚è‚È‚ª‚ç’T‚·
-        bool found=false;
-        int currentflame;
-        unsigned int i;
-        localindex=-1;
-        for(currentflame=(static_cast<int>(env->size())-1);currentflame>=0;currentflame--){
-            for(i=0;i<(*env)[currentflame]->size();i++){
-                localindex++;
-                if(callee==(*(*env)[currentflame])[i].first){
-                    //–¼‘O‚ªˆê’v
-                    found=true;
-                    vector<TypeAST *> currentarg=(*(*env)[currentflame])[i].second->ParseFunctionType();
-                    if(args.size()+1==currentarg.size()){ //+1‚·‚é‚Ì‚ÍAargs‚É‚Í–ß‚è’l‚ÌŒ^‚ªŠÜ‚Ü‚ê‚Ä‚¢‚È‚¢‚©‚ç
-                        for(unsigned int j=0;j<args.size();j++){
-                            if(*(args[j]->CheckType(NULL,geninfo)) != *(currentarg[j])){
-                                goto nextfunc1;
-                            }
-                        }
-                        type=currentarg.back(); //ŠÖ”‚ÌŒ^‚Å‚Í‚È‚­ŠÖ”‚Ì–ß‚è’l‚ÌŒ^‚ğ‘ã“ü
-                        if(currentflame==0){
-                            //ƒgƒbƒvƒŒƒxƒ‹‚ÉŠÖ”‚ª‚ ‚éê‡‚Íƒrƒ‹ƒgƒCƒ“ŠÖ”‚ğ‹^‚¤
-                            for(unsigned int k=0;k<geninfo->FunctionList.size();k++){
-                                if(geninfo->FunctionList[k]->GetName()==callee){
-                                    isBuiltin=geninfo->FunctionList[k]->isBuiltin;
-                                }
-                            }
-                        }
-                        return type;
-                    }
-                }
+    UnaryExprAST(string opc,ExprAST *oprnd):Operator(opc),Operand(oprnd){TypeInfo=NULL;}
+    virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
+    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo);
+    virtual vector<int> FindChildFunction(){return vector<int>();}; //ASTæœªæ§‹ç¯‰ãªã®ã§å‘¼ã³å‡ºã•ã‚Œã‚‹ã“ã¨ã¯ãªã„ã€‚
+};
 
-                nextfunc1:
-                if(type==NULL){}; //ƒ‰ƒxƒ‹‚ÌŒã‚É®‚ª‚È‚¢‚ÆƒGƒ‰[‚Æ‚È‚é‚½‚ßA–³ˆÓ–¡‚È®‚ğ‚Ğ‚Æ‚Â
-            }
-        }
+class BinaryExprAST : public ExprAST{
+public:
+	string Operator;
+    ExprAST *LHS,*RHS;
 
-        if(found==true){
-            error(NULL,"ˆø”‚ÌŒ^‚ªˆê’v‚µ‚Ü‚¹‚ñ:"+callee);
-        }else{
-            error(NULL,"–¢’è‹`‚Ü‚½‚ÍƒXƒR[ƒvŠO‚ÌŠÖ”‚Å‚·:"+callee);
-        }
-
-        return NULL;
-    }
+    BinaryExprAST(string opc,ExprAST *lhs,ExprAST *rhs):Operator(opc),LHS(lhs),RHS(rhs){TypeInfo=NULL;}
+    virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
+    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo);
+    virtual vector<int> FindChildFunction(){return vector<int>();}; //ASTæœªæ§‹ç¯‰ãªã®ã§å‘¼ã³å‡ºã•ã‚Œã‚‹ã“ã¨ã¯ãªã„ã€‚
 };
 
 
 
-//‘€ÔêƒAƒ‹ƒSƒŠƒYƒ€‚Å‚Ì‚İg—p
-class OperatorAST : public ExprAST{
-private:
-    string name;
+class StatementAST{
 public:
-    OperatorAST(string &n):name(n){};
-    string GetName(){return name;}
-    virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo){}
-    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){return NULL;}
+    virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo)=0;
+    virtual void CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo)=0;
+	virtual vector<int> FindChildFunction()=0;
+};
+
+class IfStatementAST : public StatementAST{
+public:
+    ExprAST *Condition;
+    vector<StatementAST *> *ThenBody;
+    vector<StatementAST *> *ElseBody;
+
+    IfStatementAST(ExprAST *cond,vector<StatementAST*> *thenbody,vector<StatementAST*> *elsebody):Condition(cond),ThenBody(thenbody),ElseBody(elsebody){}
+    virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
+    virtual void CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo);
+    virtual vector<int> FindChildFunction();
+};
+
+class ReturnStatementAST : public StatementAST{
+public:
+    ExprAST *Expression;
+
+    ReturnStatementAST(ExprAST *exp):Expression(exp){};
+    virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
+    virtual void CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo);
+    virtual vector<int> FindChildFunction();
+};
+
+class VariableDefStatementAST : public StatementAST{
+public:
+    pair<string,TypeAST *> *Variable;
+    ExprAST* InitialValue; //åˆæœŸå€¤ï¼ˆåˆæœŸå€¤ãŒæœªè¨­å®šã®æ™‚ã¯NULLï¼‰
+    int LocalIndex;
+
+    VariableDefStatementAST(pair<string,TypeAST *> *var,ExprAST* initval):Variable(var),InitialValue(initval){}
+    virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
+    virtual void CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo);
+    virtual vector<int> FindChildFunction();
+};
+
+class ExpressionStatementAST : public StatementAST{
+public:
+    ExprAST *Expression;
+
+    ExpressionStatementAST(ExprAST* evalexpr):Expression(evalexpr){}
+    virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
+    virtual void CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo);
+    virtual vector<int> FindChildFunction();
 };

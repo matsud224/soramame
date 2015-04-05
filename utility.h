@@ -1,6 +1,4 @@
 #pragma once
 #include <string>
 
-class Lexer;
-
-void error(Lexer *,std::string);
+void error(std::string);

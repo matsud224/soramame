@@ -7,480 +7,235 @@
 #include <stack>
 #include <queue>
 #include <typeinfo>
+#include "color_text.h"
 
 
-FunctionAST* Parser::ParseFunction()
+
+void Compiler::ASTgen()
 {
-    string fname;
-    vector< pair<string,TypeAST *> > args;
-    TypeAST *rettype;
-    vector<ExprAST *> body;
+    //æ¼”ç®—å­ã®æº–å‚™
+    genInfo->OperatorList["+"]=new OperatorInfo(Binary,Left,20);
+    genInfo->OperatorList["-"]=new OperatorInfo(Binary,Left,20);
+    genInfo->OperatorList["*"]=new OperatorInfo(Binary,Left,40);
+    genInfo->OperatorList["/"]=new OperatorInfo(Binary,Left,40);
+    genInfo->OperatorList[">>"]=new OperatorInfo(Binary,Left,10);
+    genInfo->OperatorList["<<"]=new OperatorInfo(Binary,Left,10);
+    genInfo->OperatorList["%"]=new OperatorInfo(Binary,Left,40);
+    genInfo->OperatorList["&&"]=new OperatorInfo(Binary,Left,5);
+    genInfo->OperatorList["||"]=new OperatorInfo(Binary,Left,5);
+    genInfo->OperatorList["!"]=new OperatorInfo(Unary,Right,70);
 
-    if(lexer->CurrentToken!=token_func){
-        error(lexer,"ŠÖ”éŒ¾‚Å‚È‚¢‚à‚Ì‚ª‚ ‚è‚Ü‚·B");
-    }
-    lexer->GetNextToken();
+    genInfo->OperatorList["<"]=new OperatorInfo(Binary,Left,8);
+    genInfo->OperatorList[">"]=new OperatorInfo(Binary,Left,8);
+    genInfo->OperatorList["<="]=new OperatorInfo(Binary,Left,8);
+    genInfo->OperatorList[">="]=new OperatorInfo(Binary,Left,8);
+    genInfo->OperatorList["=="]=new OperatorInfo(Binary,Left,6);
+    genInfo->OperatorList["!="]=new OperatorInfo(Binary,Left,6);
 
-    if(lexer->CurrentToken!=token_identifier){
-        error(lexer,"ŠÖ”–¼‚ª‚ ‚è‚Ü‚¹‚ñB");
-    }else{
-        fname=lexer->CurrentIdentifier;
-        if(lexer->GetNextToken(),lexer->CurrentToken!='('){
-            error(lexer,"ˆø”ƒŠƒXƒg‚ÌŠJ‚«Š‡ŒÊ‚ª‚ ‚è‚Ü‚¹‚ñB");
-        }else{
-            //ˆø”ƒŠƒXƒgæ“¾
-            lexer->GetNextToken();
-            rettype=new TypeAST("void");
-            while(lexer->CurrentToken!=')'){
-                string argname;
-                if(lexer->CurrentToken!=token_identifier){
-                    error(lexer,"ˆø”–¼‚ª‚ ‚è‚Ü‚¹‚ñB");
-                }else{
-                    argname=lexer->CurrentIdentifier;
-                    if(lexer->GetNextToken(),lexer->CurrentToken!=':'){
-                        error(lexer,"ˆø”ƒŠƒXƒg‚ÌƒRƒƒ“‚ª‚ ‚è‚Ü‚¹‚ñB");
-                    }else{
-                        lexer->GetNextToken();
-                        args.push_back(pair<string,TypeAST *>(argname,ParseType()));
-                        if(lexer->CurrentToken==','){
-                            lexer->GetNextToken();
-                        }
-                    }
-                }
-            }
-            if(lexer->GetNextToken(),lexer->CurrentToken==token_operator && lexer->CurrentOperator=="=>"){
-                //–ß‚è’l‚ÌŒ^‚ªw’è‚³‚ê‚Ä‚¢‚é
-                lexer->GetNextToken();
-                delete rettype;
-                rettype=ParseType();
-            }
-        }
-    }
-
-    string thistype="(";
-    vector< pair<string,TypeAST *> >::iterator iter;
-    bool is_noitem=true;
-    for(iter=args.begin();iter!=args.end();iter++){
-        thistype+=(*iter).second->GetName()+",";
-        is_noitem=false;
-    }
-    if(!is_noitem){
-        thistype.erase( --thistype.end() ); //ÅŒã‚ÌƒJƒ“ƒ}‚ğíœ
-    }
-    thistype+=")=>"+rettype->GetName();
-
-    cout<<" EƒgƒbƒvƒŒƒxƒ‹‚ÌŠÖ”@@–¼‘O:"<<fname<<" ˆø”‚Ì”:"<<args.size()<<" Œ^:"<< thistype<<endl;
-
-    vector<int> *childpoolindex=new vector<int>;
-    if(lexer->CurrentToken!='{'){
-        error(lexer,"ŠÖ”éŒ¾‚ÌŠJ‚«”gŠ‡ŒÊ‚ª‚ ‚è‚Ü‚¹‚ñB");
-    }else{
-        lexer->GetNextToken();
-
-        while(lexer->CurrentToken!='}'){
-            //return•¶‚Í“Á•Êˆµ‚¢
-            if(lexer->CurrentToken==token_return){
-                body.push_back(ParseReturnExpr(childpoolindex));
-            }else if(lexer->CurrentToken==token_var){
-            	body.push_back(ParseVariableDefineExpr());
-			}else{
-                body.push_back(ParseExpression(childpoolindex));
-            }
-        }
-    }
-    lexer->GetNextToken();
-    return new FunctionAST(&genInfo,fname,args,new TypeAST(thistype),body,childpoolindex);
-}
-
-TypeAST* Parser::ParseType()
-{
-    TypeAST *ret;
-    if(lexer->CurrentToken=='('){
-        //ŠÖ”Œ^‚Ìê‡
-        string functiontypename="(";
-        bool is_noarg=true;
-        lexer->GetNextToken();
-        while(lexer->CurrentToken!=')'){
-            is_noarg=false;
-            functiontypename+=ParseType()->GetName()+",";
-            if(lexer->CurrentToken==','){
-                lexer->GetNextToken();
-            }
-        }
-        if(!is_noarg){
-            functiontypename.erase( --functiontypename.end() );
-        }
-        functiontypename+=")";
-        lexer->GetNextToken();
-        if(lexer->CurrentToken!=token_operator || lexer->CurrentOperator!="=>"){
-            error(lexer,"ŠÖ”Œ^‚Ì'–ß‚è’l‚ÌŒ^'‚Ì‹Lq‚ª‚ ‚è‚Ü‚¹‚ñB");
-        }
-        lexer->GetNextToken();
-        ret=new TypeAST(functiontypename+"=>"+(ParseType()->GetName()));
-    }else{
-        ret=new TypeAST(lexer->CurrentIdentifier);
-        lexer->GetNextToken();
-    }
-
-    return ret;
-}
-
-ExprAST* Parser::ParsePrimary(vector<int> *childpoolindex)
-{
-    switch(lexer->CurrentToken){
-    case token_intval:
-        return ParseIntValExpr();
-    case token_floatval:
-        return ParseFloatValExpr();
-    case token_boolval:
-        return ParseBoolValExpr();
-    case token_stringval:
-        return ParseStringValExpr();
-    case token_identifier:
-        return ParseIdentifierExpr(childpoolindex);
-    case '(':
-        return ParseParenExpr(childpoolindex);
-    default:
-        error(lexer,"®‚ª‚ ‚è‚Ü‚¹‚ñB");
-    }
-
-    return NULL;
-}
-
-ExprAST* Parser::ParseIntValExpr()
-{
-    IntValExprAST *ret=new IntValExprAST(lexer->CurrentIntVal);
-    lexer->GetNextToken();
-    return ret;
-}
-
-ExprAST* Parser::ParseBoolValExpr()
-{
-    BoolValExprAST *ret=new BoolValExprAST(lexer->CurrentBoolVal);
-    lexer->GetNextToken();
-    return ret;
-}
-
-ExprAST* Parser::ParseStringValExpr()
-{
-    StringValExprAST *ret=new StringValExprAST(&genInfo,lexer->CurrentStringVal);
-    lexer->GetNextToken();
-    return ret;
-}
-
-ExprAST* Parser::ParseClosureExpr(vector<int> *childpoolindex){
-    TypeAST *rettype;
-    vector< pair<string,TypeAST *> > args;
-    vector<ExprAST *> body;
-    vector<int> *mychildpoolindex=new vector<int>();
-
-    if(lexer->CurrentToken!='('){
-        error(lexer,"ƒNƒ[ƒWƒƒ‚Ìˆø”ƒŠƒXƒg‚ÌŠJ‚«Š‡ŒÊ‚ª‚ ‚è‚Ü‚¹‚ñB");
-    }else{
-        //ˆø”ƒŠƒXƒgæ“¾
-        lexer->GetNextToken();
-        while(lexer->CurrentToken!=')'){
-            string argname;
-            if(lexer->CurrentToken!=token_identifier){
-                error(lexer,"ƒNƒ[ƒWƒƒ‚Ìˆø”–¼‚ª‚ ‚è‚Ü‚¹‚ñB");
-            }else{
-                argname=lexer->CurrentIdentifier;
-                if(lexer->GetNextToken(),lexer->CurrentToken!=':'){
-                    error(lexer,"ƒNƒ[ƒWƒƒ‚Ìˆø”ƒŠƒXƒg‚ÌƒRƒƒ“‚ª‚ ‚è‚Ü‚¹‚ñB");
-                }else{
-                    lexer->GetNextToken();
-                    args.push_back(pair<string,TypeAST *>(argname,ParseType()));
-                    if(lexer->CurrentToken==','){
-                        lexer->GetNextToken();
-                    }
-                }
-            }
-        }
-
-        lexer->GetNextToken();
-        if(lexer->CurrentToken==token_operator && lexer->CurrentOperator=="=>"){
-            string fname="<closure>";
-            lexer->GetNextToken();
-            rettype=ParseType();
-
-            string thistype="(";
-            vector< pair<string,TypeAST *> >::iterator iter;
-            bool is_noitem=true;
-            for(iter=args.begin();iter!=args.end();iter++){
-                thistype+=(*iter).second->GetName()+",";
-                is_noitem=false;
-            }
-            if(!is_noitem){
-                thistype.erase( --thistype.end() ); //ÅŒã‚ÌƒJƒ“ƒ}‚ğíœ
-            }
-            thistype+=")=>"+rettype->GetName();
-
-
-            if(lexer->CurrentToken!='{'){
-                error(lexer,"ƒNƒ[ƒWƒƒ‚ÌŠJ‚«”gŠ‡ŒÊ‚ª‚ ‚è‚Ü‚¹‚ñB");
-            }else{
-                lexer->GetNextToken();
-                while(lexer->CurrentToken!='}'){
-                    //return•¶‚Í“Á•Êˆµ‚¢
-					if(lexer->CurrentToken==token_return){
-						body.push_back(ParseReturnExpr(mychildpoolindex));
-					}else if(lexer->CurrentToken==token_var){
-						body.push_back(ParseVariableDefineExpr());
-					}else{
-						body.push_back(ParseExpression(mychildpoolindex));
-					}
-                }
-            }
-            lexer->GetNextToken();
-            FunctionAST *res=new FunctionAST(&genInfo,fname,args,new TypeAST(thistype),body,mychildpoolindex);
-            childpoolindex->push_back(res->poolindex);
-            return res;
-        }else{
-            error(lexer,"'ƒNƒ[ƒWƒƒ‚Ì–ß‚è’l'‚ÌŒ^‚ªw’è‚³‚ê‚Ä‚¢‚Ü‚¹‚ñB");
-        }
-    }
-
-    return NULL;
-}
-
-ExprAST* Parser::ParseIdentifierExpr(vector<int> *childpoolindex)
-{
-    string idname=lexer->CurrentIdentifier;
-    lexer->GetNextToken();
-
-    if(lexer->CurrentToken!='('){
-        //’P‚È‚é•Ï”
-        return new VariableExprAST(idname);
-    }else{
-        //ŠÖ”ŒÄ‚Ño‚µ
-        vector<ExprAST *> args;
-        lexer->GetNextToken();
-        while(lexer->CurrentToken!=')'){
-            args.push_back(ParseExpression(childpoolindex));
-            if(lexer->CurrentToken==','){
-                lexer->GetNextToken();
-            }else if(lexer->CurrentToken!=')'){
-                error(lexer,"ŠÖ”ŒÄ‚Ño‚µ‚Ìˆø”ƒŠƒXƒg‚ÉƒJƒ“ƒ}‚Ü‚½‚Í•Â‚¶Š‡ŒÊ‚ª‚ ‚è‚Ü‚¹‚ñB");
-            }
-        }
-        lexer->GetNextToken();
-        return new CallExprAST(idname,args);
-    }
-}
-
-ExprAST* Parser::ParseFloatValExpr()
-{
-    FloatValExprAST *ret=new FloatValExprAST(lexer->CurrentFloatVal);
-    lexer->GetNextToken();
-    return ret;
-}
-
-ExprAST* Parser::ParseParenExpr(vector<int> *childpoolindex)
-{
-    //•Â‚¶‚©‚Á‚±‚ğ’T‚µA‚»‚ÌŒã‚ë‚ª=>‚È‚ç‚ÎƒNƒ[ƒWƒƒ
-    if(lexer->isClosureAfterParen()){
-        //ƒNƒ[ƒWƒƒ
-        return ParseClosureExpr(childpoolindex);
-    }
-
-    lexer->GetNextToken();
-    ExprAST *v=ParseExpression(childpoolindex);
-
-    if(lexer->CurrentToken!=')'){
-        error(lexer,"•Â‚¶Š‡ŒÊ‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñB");
-    }else{
-        lexer->GetNextToken();
-        return v;
-    }
-
-    return NULL;
-}
-
-ExprAST* Parser::ParseVariableDefineExpr(){
-	vector< pair<string,TypeAST *> > *vars=new vector< pair<string,TypeAST *> >();
-	lexer->GetNextToken(); // var‚ğÁ”ï
-	while(lexer->CurrentToken==token_identifier){
-		string name=lexer->CurrentIdentifier;
-
-		if(lexer->GetNextToken(),lexer->CurrentToken!=':'){
-			error(lexer,"•Ï”’è‹`‚É‚¨‚¢‚ÄŒ^‚ªw’è‚³‚ê‚Ä‚¢‚Ü‚¹‚ñB");
-		}else{
-		    lexer->GetNextToken();
-			vars->push_back(pair<string,TypeAST *>(name,ParseType()));
-		}
-		if(lexer->CurrentToken==','){
-            lexer->GetNextToken();
-		}else{
-            break;
-		}
-	}
-	return new VariableDefineExprAST(vars);
-}
-
-
-ExprAST* Parser::ParseExpression(vector<int> *childpoolindex)
-{
-    //®‚Ì‰ğÍ‚ğ‘€ÔêƒAƒ‹ƒSƒŠƒYƒ€‚Ås‚¤
-    //ˆê’URPN‚É’¼‚µ‚ÄA‚»‚ê‚©‚çAST‚É‚·‚é
-    queue<ExprAST *> output;
-    stack<OperatorAST *> operatorstack;
-
-    while(1){
-        if(lexer->CurrentToken==')' || lexer->CurrentToken=='}' || lexer->CurrentToken==';'){
-            //®‚ÌI’[‚ÌŒˆ‚ß•û‚ª‚æ‚­‚í‚©‚ç‚È‚¢‚Ì‚Å‚Æ‚è‚ ‚¦‚¸‚±‚¤‚µ‚Ä‚¨‚­
-            break;
-        }else if(lexer->CurrentToken!=token_operator){
-            output.push(ParsePrimary(childpoolindex));
-        }else{
-            if(genInfo.OperatorList.count(lexer->CurrentOperator)==0){
-                //–¢“o˜^‚Ì‰‰Zq
-                error(lexer,"–¢’è‹`‚Ì‰‰Zq‚Å‚·:"+lexer->CurrentOperator);
-            }
-            while(!operatorstack.empty()){
-                string op1=lexer->CurrentOperator;
-                string op2=operatorstack.top()->GetName();
-                if((genInfo.OperatorList[op1]->GetAssociativity()==Left && genInfo.OperatorList[op1]->GetPrecedence()<=genInfo.OperatorList[op2]->GetPrecedence()) || (genInfo.OperatorList[op1]->GetPrecedence()<genInfo.OperatorList[op2]->GetPrecedence())){
-                    output.push(new OperatorAST(op2));
-                    operatorstack.pop();
-                }else{
-                    break;
-                }
-            }
-            operatorstack.push(new OperatorAST(lexer->CurrentOperator));
-            lexer->GetNextToken();
-
-        }
-
-
-    }
-    while(!operatorstack.empty()){
-        output.push(operatorstack.top());
-        operatorstack.pop();
-    }
-
-    //‚±‚Ì“_‚Åoutput‚ÉRPNŒ`®‚Å®‚ª“ü‚Á‚Ä‚¢‚é
-    stack<ExprAST *> calcstack; //ƒXƒ^ƒbƒN‚ğg‚¢RPN‚ğ“WŠJ‚µ‚Ä‚¢‚­
-    while(!output.empty()){
-        calcstack.push(output.front());
-        output.pop();
-        if(typeid(*(calcstack.top()))==typeid(OperatorAST)){
-            OperatorAST *op=dynamic_cast<OperatorAST *>(calcstack.top()); calcstack.pop();
-            ExprAST *operand1,*operand2;
-            if(genInfo.OperatorList[op->GetName()]->GetUnaryOrBinary()==Binary){
-                operand2=calcstack.top(); calcstack.pop();
-                operand1=calcstack.top(); calcstack.pop();
-                calcstack.push(new BinaryExprAST(op->GetName(),operand1,operand2)); //ƒ}[ƒW
-            }else{
-                operand1=calcstack.top(); calcstack.pop();
-                calcstack.push(new UnaryExprAST(op->GetName(),operand1)); //ƒ}[ƒW
-            }
-        }
-    }
-
-    if(calcstack.size()!=1){
-        error(lexer,"expression‚É–â‘è‚ª‚ ‚è‚Ü‚·B");
-    }
-
-    return calcstack.top();
-}
-
-
-void Parser::Parse()
-{
-    //‰‰Zq‚Ì€”õ
-    genInfo.OperatorList["+"]=new OperatorInfo(Binary,Left,20);
-    genInfo.OperatorList["-"]=new OperatorInfo(Binary,Left,20);
-    genInfo.OperatorList["*"]=new OperatorInfo(Binary,Left,40);
-    genInfo.OperatorList["/"]=new OperatorInfo(Binary,Left,40);
-    genInfo.OperatorList[">>"]=new OperatorInfo(Binary,Left,10);
-    genInfo.OperatorList["<<"]=new OperatorInfo(Binary,Left,10);
-    genInfo.OperatorList["%"]=new OperatorInfo(Binary,Left,40);
-    genInfo.OperatorList["&&"]=new OperatorInfo(Binary,Left,5);
-    genInfo.OperatorList["||"]=new OperatorInfo(Binary,Left,5);
-    genInfo.OperatorList["!"]=new OperatorInfo(Unary,Right,70);
-
-    genInfo.OperatorList["<"]=new OperatorInfo(Binary,Left,8);
-    genInfo.OperatorList[">"]=new OperatorInfo(Binary,Left,8);
-    genInfo.OperatorList["<="]=new OperatorInfo(Binary,Left,8);
-    genInfo.OperatorList[">="]=new OperatorInfo(Binary,Left,8);
-    genInfo.OperatorList["=="]=new OperatorInfo(Binary,Left,6);
-    genInfo.OperatorList["!="]=new OperatorInfo(Binary,Left,6);
-
-	genInfo.OperatorList["="]=new OperatorInfo(Binary,Left,2); //‘ã“ü
+	genInfo->OperatorList["="]=new OperatorInfo(Binary,Left,2); //ä»£å…¥
 
 
 
     vector< pair<string,TypeAST *> > arglist;
-    arglist.push_back(pair<string,TypeAST *>("val",new TypeAST("int")));
-    genInfo.FunctionList.push_back(new FunctionAST(&genInfo,"printint",new vector< pair<string,TypeAST *> >(arglist),new TypeAST("(int)=>void")));
-    arglist[0]=pair<string,TypeAST *>("val",new TypeAST("float"));
-    genInfo.FunctionList.push_back(new FunctionAST(&genInfo,"printfloat",new vector< pair<string,TypeAST *> >(arglist),new TypeAST("(float)=>void")));
-    arglist[0]=pair<string,TypeAST *>("val",new TypeAST("bool"));
-    genInfo.FunctionList.push_back(new FunctionAST(&genInfo,"printbool",new vector< pair<string,TypeAST *> >(arglist),new TypeAST("(bool)=>void")));
-    arglist[0]=pair<string,TypeAST *>("str",new TypeAST("string"));
-    genInfo.FunctionList.push_back(new FunctionAST(&genInfo,"print",new vector< pair<string,TypeAST *> >(arglist),new TypeAST("(string)=>void")));
-    arglist[0]=pair<string,TypeAST *>("val",new TypeAST("int"));
-    genInfo.FunctionList.push_back(new FunctionAST(&genInfo,"abs",new vector< pair<string,TypeAST *> >(arglist),new TypeAST("(int)=>int")));
 
-    lexer->GetNextToken();
-    while(lexer->CurrentToken!=token_eof){
-        genInfo.FunctionList.push_back(ParseFunction());
-    }
+	genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"rand",new vector< pair<string,TypeAST *> >(arglist),new BasicTypeAST("int")));
+
+    arglist.push_back(pair<string,TypeAST *>("val",new BasicTypeAST("int")));
+    genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"printint",new vector< pair<string,TypeAST *> >(arglist),new BasicTypeAST("void")));
+
+    arglist[0]=pair<string,TypeAST *>("val",new BasicTypeAST("bool"));
+    genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"printbool",new vector< pair<string,TypeAST *> >(arglist),new BasicTypeAST("void")));
+
+    arglist[0]=pair<string,TypeAST *>("str",new BasicTypeAST("string"));
+    genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"print",new vector< pair<string,TypeAST *> >(arglist),new BasicTypeAST("void")));
+
+    arglist[0]=pair<string,TypeAST *>("val",new BasicTypeAST("int"));
+    genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"abs",new vector< pair<string,TypeAST *> >(arglist),new BasicTypeAST("int")));
+
+    arglist[0]=pair<string,TypeAST *>("str",new BasicTypeAST("string"));
+    genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"strlen",new vector< pair<string,TypeAST *> >(arglist),new BasicTypeAST("int")));
+
+	arglist[0]=pair<string,TypeAST *>("val1",new BasicTypeAST("int"));
+	arglist.push_back(pair<string,TypeAST *>("val2",new BasicTypeAST("int")));
+    genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"pow",new vector< pair<string,TypeAST *> >(arglist),new BasicTypeAST("int")));
+
+
+	while(!parser->IsAccepted()){
+		pair<Symbol,TokenValue> token=lexer->Get();
+		//cout<< CYAN "å–å¾—ã—ãŸãƒˆãƒ¼ã‚¯ãƒ³ï¼š" <<Parser::Symbol2Str(token.first)<<RESET<<endl;
+		parser->Put(lexer,genInfo,token);
+	}
 
 }
 
 
-void Parser::TypeCheck()
+void Compiler::TypeCheck()
 {
-    vector< vector< pair<string,TypeAST *> > *> environment; //Œ»İ‰Â‹ó‘Ô‚É‚ ‚é•Ï”iƒgƒbƒvƒŒƒxƒ‹‚ÌŠÖ”‚à•Ï”‚Æ‚İ‚È‚·j‚ÌƒXƒ^ƒbƒNiƒtƒŒ[ƒ€‚ğÏ‚İd‚Ë‚Ä‚¢‚­j
+    vector< vector< pair<string,TypeAST *> > *> environment; //ç¾åœ¨å¯è¦–çŠ¶æ…‹ã«ã‚ã‚‹å¤‰æ•°ï¼ˆãƒˆãƒƒãƒ—ãƒ¬ãƒ™ãƒ«ã®é–¢æ•°ã‚‚å¤‰æ•°ã¨ã¿ãªã™ï¼‰ã®ã‚¹ã‚¿ãƒƒã‚¯ï¼ˆãƒ•ãƒ¬ãƒ¼ãƒ ã‚’ç©ã¿é‡ã­ã¦ã„ãï¼‰
 
-    vector<FunctionAST *>::iterator iter;
-    vector<ExprAST *>::iterator iter2;
+    vector<FunctionAST *>::iterator fun_iter;
+    vector<VariableDefStatementAST *>::iterator var_iter;
 
     vector< pair<string,TypeAST *> > *rootflame=new vector< pair<string,TypeAST *> >();
-    for(iter=genInfo.FunctionList.begin();iter!=genInfo.FunctionList.end();iter++){
-        rootflame->push_back(pair<string,TypeAST *>((*iter)->GetName(),(*iter)->GetType()));
-    }
-    environment.push_back(rootflame); //ƒgƒbƒvƒŒƒxƒ‹‚ÌƒtƒŒ[ƒ€
 
-    for(iter=genInfo.FunctionList.begin();iter!=genInfo.FunctionList.end();iter++){
-        (*iter)->CheckType(&environment,&genInfo);
+    //å‹æ¤œæŸ»å‰ã«ã€ãƒˆãƒƒãƒ—ãƒ¬ãƒ™ãƒ«ã®ã‚·ãƒ³ãƒœãƒ«ã‚’ã™ã¹ã¦ç™»éŒ²ã—ã¦ãŠã
+    for(var_iter=genInfo->TopLevelVariableDef.begin();var_iter!=genInfo->TopLevelVariableDef.end();var_iter++){
+		rootflame->push_back(pair<string,TypeAST *>((*var_iter)->Variable->first,(*var_iter)->Variable->second));
+    }
+    for(fun_iter=genInfo->TopLevelFunction.begin();fun_iter!=genInfo->TopLevelFunction.end();fun_iter++){
+		rootflame->push_back(pair<string,TypeAST *>((*fun_iter)->Name,(*fun_iter)->TypeInfo));
+    }
+    environment.push_back(rootflame); //ãƒˆãƒƒãƒ—ãƒ¬ãƒ™ãƒ«ã®ãƒ•ãƒ¬ãƒ¼ãƒ 
+
+    for(var_iter=genInfo->TopLevelVariableDef.begin();var_iter!=genInfo->TopLevelVariableDef.end();var_iter++){
+        (*var_iter)->CheckType(&environment,genInfo);
+    }
+    for(fun_iter=genInfo->TopLevelFunction.begin();fun_iter!=genInfo->TopLevelFunction.end();fun_iter++){
+		if((*fun_iter)->isBuiltin==false){
+			(*fun_iter)->CheckType(&environment,genInfo);
+		}
     }
 }
 
-
-
-void FloatValExprAST::Codegen(vector<int>* bytecodes,CodegenInfo *geninfo)
+void Compiler::RegisterChildClosure()
 {
-    bytecodes->push_back(fpush);
-    bytecodes->push_back(value);
-    return;
+	//é–¢æ•°ã®å­ã‚¯ãƒ­ãƒ¼ã‚¸ãƒ£ã®ç™»éŒ²ã‚’è¡Œã†
+	vector<FunctionAST*>::iterator fun_iter;
+	vector<VariableDefStatementAST*>::iterator var_iter;
+	vector<int> temp;
+
+	for(var_iter=genInfo->TopLevelVariableDef.begin();var_iter!=genInfo->TopLevelVariableDef.end();var_iter++){
+		temp=(*var_iter)->FindChildFunction();
+		genInfo->ChildPoolIndex.insert(genInfo->ChildPoolIndex.end(),temp.begin(),temp.end());
+    }
+
+	for(fun_iter=genInfo->TopLevelFunction.begin();fun_iter!=genInfo->TopLevelFunction.end();fun_iter++){
+		if((*fun_iter)->isBuiltin==false){
+			temp=(*fun_iter)->FindChildFunction();
+			genInfo->ChildPoolIndex.insert(genInfo->ChildPoolIndex.end(),temp.begin(),temp.end());
+		}
+    }
 }
+
+vector<int> FunctionAST::FindChildFunction()
+{
+	vector<int> list_tmp;
+    vector<StatementAST *>::iterator iter;
+
+    ChildPoolIndex=new vector<int>();
+
+    for(iter=Body->begin();iter!=Body->end();iter++){
+		list_tmp=(*iter)->FindChildFunction();
+		ChildPoolIndex->insert(ChildPoolIndex->end(),list_tmp.begin(),list_tmp.end());
+    }
+
+    //è‡ªèº«ã®ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‚’è¿”ã™
+    vector<int> result; result.push_back(PoolIndex);
+    return result;
+}
+
+vector<int> IfStatementAST::FindChildFunction()
+{
+	vector<int> result_list;
+	vector<int> list_tmp;
+
+	list_tmp=Condition->FindChildFunction();
+	result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
+
+    vector<StatementAST *>::iterator iter;
+    for(iter=ThenBody->begin();iter!=ThenBody->end();iter++){
+		list_tmp=(*iter)->FindChildFunction();
+		result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
+    }
+	for(iter=ElseBody->begin();iter!=ElseBody->end();iter++){
+		list_tmp=(*iter)->FindChildFunction();
+		result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
+    }
+
+    return result_list;
+}
+
+vector<int> ReturnStatementAST::FindChildFunction()
+{
+	vector<int> result_list;
+	vector<int> list_tmp;
+
+	if(Expression){
+		list_tmp=Expression->FindChildFunction();
+	}
+	result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
+
+	return result_list;
+}
+
+vector<int> VariableDefStatementAST::FindChildFunction()
+{
+	vector<int> result_list;
+	vector<int> list_tmp;
+
+	if(InitialValue){
+		list_tmp=InitialValue->FindChildFunction();
+	}
+	result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
+
+	return result_list;
+}
+
+vector<int> ExpressionStatementAST::FindChildFunction()
+{
+	vector<int> result_list;
+	vector<int> list_tmp;
+
+	list_tmp=Expression->FindChildFunction();
+
+	result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
+
+	return result_list;
+}
+
+vector<int> UnBuiltExprAST::FindChildFunction()
+{
+	vector<int> result_list;
+	vector<int> list_tmp;
+	vector<ExprAST*>::iterator iter;
+
+	for(iter=ExprList->begin();iter!=ExprList->end();iter++){
+		list_tmp=(*iter)->FindChildFunction();
+		result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
+    }
+
+	return result_list;
+}
+
+vector<int> CallExprAST::FindChildFunction()
+{
+	vector<int> result_list;
+	vector<int> list_tmp;
+	vector<ExprAST*>::iterator iter;
+
+	for(iter=args->begin();iter!=args->end();iter++){
+		list_tmp=(*iter)->FindChildFunction();
+		result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
+    }
+
+	return result_list;
+}
+
+
 
 void VariableExprAST::Codegen(vector<int>* bytecodes,CodegenInfo *geninfo)
 {
-    if(type->GetName()=="int"){
-        bytecodes->push_back(iloadlocal);
-        bytecodes->push_back(localindex);
-    }else if(type->GetName()=="float"){
-        bytecodes->push_back(floadlocal);
-        bytecodes->push_back(localindex);
-    }else if(type->GetName()=="bool"){
-        bytecodes->push_back(bloadlocal);
-        bytecodes->push_back(localindex);
-    }else{
-        bytecodes->push_back(rloadlocal);
-        bytecodes->push_back(localindex);
-    }
+	bytecodes->push_back(iloadlocal);
+	bytecodes->push_back(LocalIndex);
 
     return;
 }
 
 void UnaryExprAST::Codegen(vector<int>* bytecodes,CodegenInfo *geninfo)
 {
-    operand->Codegen(bytecodes,geninfo);
-    if(opcode=="!"){
-        if(type->GetName()=="bool"){
+    Operand->Codegen(bytecodes,geninfo);
+    if(Operator=="!"){
+        if(TypeInfo->GetName()=="bool"){
             bytecodes->push_back(bnot);
         }
     }
@@ -489,111 +244,54 @@ void UnaryExprAST::Codegen(vector<int>* bytecodes,CodegenInfo *geninfo)
 
 void BinaryExprAST::Codegen(vector<int>* bytecodes,CodegenInfo *geninfo)
 {
-    //‘ã“ü‚¾‚¯“Áê‚ÅA¶•Ó‚ğ•]‰¿‚µ‚È‚¢
-    if(opcode=="="){
+    //ä»£å…¥ã ã‘ç‰¹æ®Šã§ã€å·¦è¾ºã‚’è©•ä¾¡ã—ãªã„
+    if(Operator=="="){
         RHS->Codegen(bytecodes,geninfo);
-        if(LHS->CheckType(NULL,NULL)->GetName()=="bool"){
-            bytecodes->push_back(dynamic_cast<VariableExprAST *>(LHS)->localindex);
-            bytecodes->push_back(bstorelocal);
-        }else if(LHS->CheckType(NULL,NULL)->GetName()=="int"){
-            bytecodes->push_back(dynamic_cast<VariableExprAST *>(LHS)->localindex);
-            bytecodes->push_back(istorelocal);
-        }else if(LHS->CheckType(NULL,NULL)->GetName()=="float"){
-            bytecodes->push_back(dynamic_cast<VariableExprAST *>(LHS)->localindex);
-            bytecodes->push_back(fstorelocal);
-        }else{
-            bytecodes->push_back(dynamic_cast<VariableExprAST *>(LHS)->localindex);
-            bytecodes->push_back(rstorelocal);
-        }
+
+		bytecodes->push_back(istorelocal);
+		bytecodes->push_back(dynamic_cast<VariableExprAST *>(LHS)->LocalIndex);
+
         return;
     }
 
     LHS->Codegen(bytecodes,geninfo);
     RHS->Codegen(bytecodes,geninfo);
 
-    if(opcode=="+"){
-        if(type->GetName()=="int"){
+    if(Operator=="+"){
+        if(TypeInfo->GetName()=="int"){
             bytecodes->push_back(iadd);
-        }else if(type->GetName()=="float"){
-            bytecodes->push_back(fadd);
         }
-    }else if(opcode=="-"){
-        if(type->GetName()=="int"){
+    }else if(Operator=="-"){
+        if(TypeInfo->GetName()=="int"){
             bytecodes->push_back(isub);
-        }else if(type->GetName()=="float"){
-            bytecodes->push_back(fsub);
         }
-    }else if(opcode=="*"){
-        if(type->GetName()=="int"){
+    }else if(Operator=="*"){
+        if(TypeInfo->GetName()=="int"){
             bytecodes->push_back(imul);
-        }else if(type->GetName()=="float"){
-            bytecodes->push_back(fmul);
         }
-    }else if(opcode=="/"){
-        if(type->GetName()=="int"){
+    }else if(Operator=="/"){
+        if(TypeInfo->GetName()=="int"){
             bytecodes->push_back(idiv);
-        }else if(type->GetName()=="float"){
-            bytecodes->push_back(fdiv);
         }
-    }else if(opcode=="<<"){
-        if(type->GetName()=="int"){
+    }else if(Operator=="<<"){
+        if(TypeInfo->GetName()=="int"){
             bytecodes->push_back(ilshift);
         }
-    }else if(opcode==">>"){
-        if(type->GetName()=="int"){
+    }else if(Operator==">>"){
+        if(TypeInfo->GetName()=="int"){
             bytecodes->push_back(irshift);
         }
-    }else if(opcode=="%"){
-        if(type->GetName()=="int"){
+    }else if(Operator=="%"){
+        if(TypeInfo->GetName()=="int"){
             bytecodes->push_back(imod);
         }
-    }else if(opcode=="&&"){
-        if(type->GetName()=="bool"){
+    }else if(Operator=="&&"){
+        if(TypeInfo->GetName()=="bool"){
             bytecodes->push_back(band);
         }
-    }else if(opcode=="||"){
-        if(type->GetName()=="bool"){
+    }else if(Operator=="||"){
+        if(TypeInfo->GetName()=="bool"){
             bytecodes->push_back(bor);
-        }
-    }else if(opcode=="<"){
-        if(LHS->CheckType(NULL,NULL)->GetName()=="int"){
-            bytecodes->push_back(if_icmplt);
-        }else if(LHS->CheckType(NULL,NULL)->GetName()=="float"){
-            bytecodes->push_back(if_fcmplt);
-        }
-    }else if(opcode==">"){
-        if(LHS->CheckType(NULL,NULL)->GetName()=="int"){
-            bytecodes->push_back(if_icmpgt);
-        }else if(LHS->CheckType(NULL,NULL)->GetName()=="float"){
-            bytecodes->push_back(if_fcmpgt);
-        }
-    }else if(opcode=="<="){
-        if(LHS->CheckType(NULL,NULL)->GetName()=="int"){
-            bytecodes->push_back(if_icmple);
-        }else if(LHS->CheckType(NULL,NULL)->GetName()=="float"){
-            bytecodes->push_back(if_fcmple);
-        }
-    }else if(opcode==">="){
-        if(LHS->CheckType(NULL,NULL)->GetName()=="int"){
-            bytecodes->push_back(if_icmpge);
-        }else if(LHS->CheckType(NULL,NULL)->GetName()=="float"){
-            bytecodes->push_back(if_fcmpge);
-        }
-    }else if(opcode=="=="){
-        if(LHS->CheckType(NULL,NULL)->GetName()=="bool"){
-            bytecodes->push_back(if_bcmpeq);
-        }else if(LHS->CheckType(NULL,NULL)->GetName()=="int"){
-            bytecodes->push_back(if_icmpeq);
-        }else if(LHS->CheckType(NULL,NULL)->GetName()=="float"){
-            bytecodes->push_back(if_fcmpeq);
-        }
-    }else if(opcode=="!="){
-        if(LHS->CheckType(NULL,NULL)->GetName()=="bool"){
-            bytecodes->push_back(if_bcmpne);
-        }else if(LHS->CheckType(NULL,NULL)->GetName()=="int"){
-            bytecodes->push_back(if_icmpne);
-        }else if(LHS->CheckType(NULL,NULL)->GetName()=="float"){
-            bytecodes->push_back(if_fcmpne);
         }
     }
     return;
@@ -601,83 +299,68 @@ void BinaryExprAST::Codegen(vector<int>* bytecodes,CodegenInfo *geninfo)
 
 void CallExprAST::Codegen(vector<int>* bytecodes,CodegenInfo *geninfo)
 {
-    vector<ExprAST *>::iterator iter;
-    for(iter=args.begin();iter!=args.end();iter++){
+    vector<ExprAST *>::reverse_iterator iter;
+    for(iter=args->rbegin();iter!=args->rend();iter++){
         (*iter)->Codegen(bytecodes,geninfo);
     }
-    if(isBuiltin){
-        //ƒrƒ‹ƒgƒCƒ“ŠÖ”‚Ìê‡‚ÍAƒtƒŒ[ƒ€‚ğì‚ç‚¸A’¼‚É’l‚ğƒXƒ^ƒbƒN‚É’u‚­
-        StringValExprAST *builtin_name=new StringValExprAST(geninfo,callee);
-        bytecodes->push_back(ldc);
-        bytecodes->push_back(builtin_name->poolindex);
-        bytecodes->push_back(invokebuiltin);
+    if(PoolIndex!=-1){
+		//ã‚¯ãƒ­ãƒ¼ã‚¸ãƒ£ç›´å‘¼ã³å‡ºã—
+		bytecodes->push_back(ipush);
+        bytecodes->push_back(PoolIndex);
+        bytecodes->push_back(invoke);
     }else{
-        bytecodes->push_back(rloadlocal);
-        bytecodes->push_back(localindex);
+        bytecodes->push_back(iloadlocal);
+        bytecodes->push_back(LocalIndex);
         bytecodes->push_back(invoke);
     }
 }
 
-
-//©g‚ªŠÖ”‚È‚ç‚Îbody‚ÌƒR[ƒh¶¬‚ğs‚¤B
-//©g‚ªƒNƒ[ƒWƒƒ‚È‚ç‚»‚ê‚É‰Á‚¦‚ÄƒXƒ^ƒbƒN‚É©g‚Ìƒ|ƒCƒ“ƒ^‚ğ’u‚­ƒR[ƒh‚ğ‘‚­
+//è‡ªèº«ãŒé–¢æ•°ãªã‚‰ã°bodyã®ã‚³ãƒ¼ãƒ‰ç”Ÿæˆã‚’è¡Œã†ã€‚
+//è‡ªèº«ãŒã‚¯ãƒ­ãƒ¼ã‚¸ãƒ£ãªã‚‰ãã‚Œã«åŠ ãˆã¦ã‚¹ã‚¿ãƒƒã‚¯ã«è‡ªèº«ã®ãƒã‚¤ãƒ³ã‚¿ã‚’ç½®ãã‚³ãƒ¼ãƒ‰ã‚’æ›¸ã
 void FunctionAST::Codegen(vector<int> *bytecodes_given,CodegenInfo *geninfo)
 {
     vector<int> codes;
 
-    vector<ExprAST *>::iterator itere;
-    for(itere=body.begin();itere!=body.end();itere++){
+    vector<StatementAST *>::iterator itere;
+    for(itere=Body->begin();itere!=Body->end();itere++){
         (*itere)->Codegen(&codes,geninfo);
     }
 
-    //ÅŒã‚Éreturn‚ğ‘}“üireturn•¶‚ªÈ—ª‚³‚ê‚½‚Ì‚½‚ßj
-    //–ß‚è’l‚ÌŒ^‚Åê‡•ª‚¯
-    TypeAST *rettype=type->ParseFunctionType().back();;
+    //æœ€å¾Œã«returnã‚’æŒ¿å…¥ï¼ˆreturnæ–‡ãŒçœç•¥ã•ã‚ŒãŸæ™‚ã®ãŸã‚ï¼‰
+    //æˆ»ã‚Šå€¤ã®å‹ã§å ´åˆåˆ†ã‘
+    TypeAST *rettype=dynamic_cast<FunctionTypeAST *>(TypeInfo)->TypeList.back();
     if(rettype->GetName()=="void"){
         codes.push_back(ret);
-    }else if(rettype->GetName()=="int"){
-        codes.push_back(iret);
-    }else if(rettype->GetName()=="float"){
-        codes.push_back(fret);
-    }else if(rettype->GetName()=="bool"){
-        codes.push_back(bret);
     }else{
-        codes.push_back(rret);
+        codes.push_back(iret);
     }
 
     bytecodes=codes;
 
-    if(name=="<closure>"){
-        bytecodes_given->push_back(ldc);
-        bytecodes_given->push_back(poolindex);
+    if(Name=="<closure>"){
+        bytecodes_given->push_back(makeclosure);
+        bytecodes_given->push_back(PoolIndex);
     }
 
     string bytecode_names[]={
-        "ipush","fpush",
-        "btruepush","bfalsepush",
-        "iadd","fadd",
-        "isub","fsub",
-        "imul","fmul",
-        "idiv","fdiv",
-        "band","bor",
-        "imod",
-        "ineg","fneg","bnot",
-        "ilshift","irshift",
-        "iprint","fprint","bprint",
-        "if_icmpeq","if_icmpne","if_icmplt","if_icmpgt","if_icmple","if_icmpge",
-        "if_fcmpeq","if_fcmpne","if_fcmplt","if_fcmpgt","if_fcmple","if_fcmpge",
-        "if_bcmpeq","if_bcmpne",
-        "ldc",
-        "invoke",
-        "iloadlocal","floadlocal","bloadlocal","rloadlocal", //local‚Æ‚¢‚¤–¼‘O‚¾‚ªAŒ‹‹Ç‚ÍƒtƒŒ[ƒ€‚ğ‘k‚Á‚Ä‚¢‚­‚Ì‚ÅƒOƒ[ƒoƒ‹•Ï”‚És‚«’…‚­‚©‚à‚µ‚ê‚È‚¢
-        "ret","iret","fret","bret","rret",
-        "invokebuiltin", //ƒrƒ‹ƒgƒCƒ“ŠÖ”ŒÄ‚Ño‚µiƒXƒ^ƒbƒNƒgƒbƒv‚Ì•¶š—ñ‚ª‘g‚İ‚İŠÖ”–¼j
-        "istorelocal","fstorelocal","bstorelocal","rstorelocal"
-
-    };
-    cout<<endl<<"ŠÖ”:"<<name<<"‚ÌƒR[ƒh"<<endl;
+		"ipush",
+		"iadd",
+		"isub",
+		"imul",
+		"idiv",
+		"band","bor",
+		"imod",
+		"ineg","bnot",
+		"ilshift","irshift",
+		"invoke",
+		"iloadlocal", //localã¨ã„ã†åå‰ã ãŒã€çµå±€ã¯ãƒ•ãƒ¬ãƒ¼ãƒ ã‚’é¡ã£ã¦ã„ãã®ã§ã‚°ãƒ­ãƒ¼ãƒãƒ«å¤‰æ•°ã«è¡Œãç€ãã‹ã‚‚ã—ã‚Œãªã„
+		"ret","iret",
+		"istorelocal",
+		"makeclosure"
+	};
+    cout<<endl<<"é–¢æ•°:"<<Name<<"ã®ã‚³ãƒ¼ãƒ‰"<<endl;
     for(unsigned int i=0;i<bytecodes.size();i++){
-        cout<<bytecodes[i]<<" ("<< ((bytecodes[i]>=0 && bytecodes[i]<= 52)?bytecode_names[bytecodes[i]]:"undefined") <<")"<<endl;
+        cout<<bytecodes[i]<<" ("<< ((bytecodes[i]>=0 && bytecodes[i]<= 17)?bytecode_names[bytecodes[i]]:"undefined") <<")"<<endl;
     }
     cout<<endl;
     return;
@@ -685,74 +368,422 @@ void FunctionAST::Codegen(vector<int> *bytecodes_given,CodegenInfo *geninfo)
 
 void IntValExprAST::Codegen(vector<int>* bytecodes,CodegenInfo *geninfo){
     bytecodes->push_back(ipush);
-    bytecodes->push_back(value);
+    bytecodes->push_back(Value);
     return;
 }
 
-void Parser::Codegen()
+void Compiler::Codegen()
 {
     vector<FunctionAST *>::iterator iterf;
+    vector<VariableDefStatementAST *>::iterator iterv;
 
-    for(iterf=genInfo.FunctionList.begin();iterf!=genInfo.FunctionList.end();iterf++){
-            //‘g‚İ‚İŠÖ”‚ÌƒR[ƒh¶¬‚Ís‚í‚È‚¢
-        if((*iterf)->isBuiltinFunction()==false){
-            (*iterf)->Codegen(NULL,&genInfo);
+    for(iterf=genInfo->TopLevelFunction.begin();iterf!=genInfo->TopLevelFunction.end();iterf++){
+            //çµ„ã¿è¾¼ã¿é–¢æ•°ã®ã‚³ãƒ¼ãƒ‰ç”Ÿæˆã¯è¡Œã‚ãªã„
+        if((*iterf)->isBuiltin==false){
+            (*iterf)->Codegen(NULL,genInfo);
         }
     }
 
-    //mainŠÖ”iˆø”‚È‚µ‚ÅA–ß‚è’l‚ªvoid‚Å‚ ‚é‚à‚Ìj‚ğ’T‚·
+    //mainé–¢æ•°ï¼ˆå¼•æ•°ãªã—ã§ã€æˆ»ã‚Šå€¤ãŒvoidã§ã‚ã‚‹ã‚‚ã®ï¼‰ã‚’æ¢ã™
     int main_index=-1;
-    for(iterf=genInfo.FunctionList.begin();iterf!=genInfo.FunctionList.end();iterf++){
-        if((*iterf)->GetName()=="main" && (*iterf)->GetType()->GetName()=="()=>void"){
-            main_index=(*iterf)->poolindex;
+    for(iterf=genInfo->TopLevelFunction.begin();iterf!=genInfo->TopLevelFunction.end();iterf++){
+        if((*iterf)->Name=="main" && (*iterf)->TypeInfo->GetName()=="()=>void"){
+            main_index=(*iterf)->PoolIndex;
         }
     }
     if(main_index==-1){
-        error(lexer,"“KØ‚ÈmainŠÖ”‚ªŒ©‚Â‚©‚è‚Ü‚¹‚ñB");
+        error("é©åˆ‡ãªmainé–¢æ•°ãŒè¦‹ã¤ã‹ã‚Šã¾ã›ã‚“ã€‚");
     }
-    genInfo.main_poolindex=main_index;
+    genInfo->MainFuncPoolIndex=main_index;
+
+
+	//ãƒ–ãƒ¼ãƒˆã‚¹ãƒˆãƒ©ãƒƒãƒ—ãƒ­ãƒ¼ãƒ€ã‚’ã¤ãã‚‹
+	//ã‚°ãƒ­ãƒ¼ãƒãƒ«å¤‰æ•°ã®åˆæœŸåŒ–
+    for(iterv=genInfo->TopLevelVariableDef.begin();iterv!=genInfo->TopLevelVariableDef.end();iterv++){
+		(*iterv)->Codegen(&(genInfo->Bootstrap),genInfo);
+    }
+    //mainé–¢æ•°ã®å‘¼ã³å‡ºã—
+    genInfo->Bootstrap.push_back(makeclosure);
+	genInfo->Bootstrap.push_back(genInfo->MainFuncPoolIndex);
+	genInfo->Bootstrap.push_back(invoke);
+	genInfo->Bootstrap.push_back(ret);
 
 }
 
 void BoolValExprAST::Codegen(vector<int>* bytecodes,CodegenInfo *geninfo)
 {
-    if(value){
-        bytecodes->push_back(btruepush);
+    if(Value){
+        bytecodes->push_back(ipush);
+        bytecodes->push_back(1);
     }else{
-        bytecodes->push_back(bfalsepush);
+        bytecodes->push_back(ipush);
+        bytecodes->push_back(0);
     }
 }
 
 void StringValExprAST::Codegen(vector<int>* bytecodes,CodegenInfo *geninfo)
 {
-    bytecodes->push_back(ldc);
-    bytecodes->push_back(poolindex);
+    bytecodes->push_back(ipush);
+    bytecodes->push_back(PoolIndex);
 }
 
-ExprAST *Parser::ParseReturnExpr(vector<int> *childpoolindex)
+void ReturnStatementAST::Codegen(vector<int>* bytecodes, CodegenInfo* geninfo)
 {
-    lexer->GetNextToken(); //return‚ğÁ”ï
-    if(lexer->CurrentToken=='}' || lexer->CurrentToken==')'){
-        return new ReturnExprAST(NULL);
-    }else{
-        return new ReturnExprAST(ParseExpression(childpoolindex));
-    }
-}
-
-void ReturnExprAST::Codegen(vector<int>* bytecodes, CodegenInfo* geninfo)
-{
-    expression->Codegen(bytecodes,geninfo);
-
-    if(type->GetName()=="void"){
+	if(Expression!=NULL){
+		Expression->Codegen(bytecodes,geninfo);
+		bytecodes->push_back(iret);
+	}else{
         bytecodes->push_back(ret);
-    }else if(type->GetName()=="int"){
-        bytecodes->push_back(iret);
-    }else if(type->GetName()=="float"){
-        bytecodes->push_back(fret);
-    }else if(type->GetName()=="bool"){
-        bytecodes->push_back(bret);
-    }else{
-        bytecodes->push_back(rret);
     }
 }
 
+ExprAST* UnBuiltExprAST::BuildAST(CodegenInfo* geninfo)
+{
+    //å¼ã®è§£æã‚’æ“è»Šå ´ã‚¢ãƒ«ã‚´ãƒªã‚ºãƒ ã§è¡Œã†
+    //ä¸€æ—¦RPNã«ã—ã¦ã€ãã‚Œã‹ã‚‰ASTã«ã™ã‚‹
+    queue<ExprAST *> output;
+    stack<OperatorAST *> operatorstack;
+	int input_pos=0;
+
+    while(input_pos < ExprList->size()){
+        if(typeid(OperatorAST) == typeid(*(ExprList->at(input_pos)))){
+            if(geninfo->OperatorList.count(dynamic_cast<OperatorAST*>(ExprList->at(input_pos))->Operator)==0){
+                //æœªç™»éŒ²ã®æ¼”ç®—å­
+                error("æœªå®šç¾©ã®æ¼”ç®—å­ã§ã™:"+dynamic_cast<OperatorAST*>(ExprList->at(input_pos))->Operator);
+            }
+            while(!operatorstack.empty()){
+                string op1=dynamic_cast<OperatorAST*>(ExprList->at(input_pos))->Operator;
+                string op2=operatorstack.top()->Operator;
+                if((geninfo->OperatorList[op1]->GetAssociativity()==Left && geninfo->OperatorList[op1]->GetPrecedence()<=geninfo->OperatorList[op2]->GetPrecedence()) || (geninfo->OperatorList[op1]->GetPrecedence()<geninfo->OperatorList[op2]->GetPrecedence())){
+                    output.push(operatorstack.top());
+                    operatorstack.pop();
+                }else{
+                    break;
+                }
+            }
+            operatorstack.push(dynamic_cast<OperatorAST*>(ExprList->at(input_pos)));
+
+        }else{
+        	//æ¼”ç®—å­ä»¥å¤–ã®ã‚‚ã®
+        	if(ExprList->at(input_pos)->IsBuilt()){
+				output.push(ExprList->at(input_pos));
+        	}else{
+        		//ASTç”ŸæˆãŒã¾ã ãªã‚‰å†å¸°çš„ã«ASTæ§‹ç¯‰
+        		output.push(dynamic_cast<UnBuiltExprAST*>(ExprList->at(input_pos))->BuildAST(geninfo));
+        	}
+        }
+
+        input_pos++;
+    }
+    while(!operatorstack.empty()){
+        output.push(operatorstack.top());
+        operatorstack.pop();
+    }
+
+    //ã“ã®æ™‚ç‚¹ã§outputã«RPNå½¢å¼ã§å¼ãŒå…¥ã£ã¦ã„ã‚‹
+    stack<ExprAST *> calcstack; //ã‚¹ã‚¿ãƒƒã‚¯ã‚’ä½¿ã„RPNã‚’å±•é–‹ã—ã¦ã„ã
+    while(!output.empty()){
+        calcstack.push(output.front());
+        output.pop();
+        if(typeid(*(calcstack.top()))==typeid(OperatorAST)){
+            OperatorAST *op=dynamic_cast<OperatorAST *>(calcstack.top()); calcstack.pop();
+            ExprAST *operand1,*operand2;
+            if(geninfo->OperatorList[op->Operator]->GetUnaryOrBinary()==Binary){
+                operand2=calcstack.top(); calcstack.pop();
+                operand1=calcstack.top(); calcstack.pop();
+                calcstack.push(new BinaryExprAST(op->Operator,operand1,operand2)); //ãƒãƒ¼ã‚¸
+            }else{
+                operand1=calcstack.top(); calcstack.pop();
+                calcstack.push(new UnaryExprAST(op->Operator,operand1)); //ãƒãƒ¼ã‚¸
+            }
+        }
+    }
+
+    if(calcstack.size()!=1){
+        error("expressionã«å•é¡ŒãŒã‚ã‚Šã¾ã™ã€‚");
+    }
+
+    return calcstack.top();
+}
+
+void IfStatementAST::Codegen(vector<int>* bytecodes, CodegenInfo* geninfo)
+{
+	error("ifstatementã¯å®Ÿè£…ã•ã‚Œã¦ã„ã¾ã›ã‚“!");
+}
+
+void VariableDefStatementAST::Codegen(vector<int>* bytecodes, CodegenInfo* geninfo)
+{
+	if(InitialValue!=NULL){
+		InitialValue->Codegen(bytecodes,geninfo);
+		bytecodes->push_back(istorelocal);
+		bytecodes->push_back(LocalIndex);
+	}
+}
+
+void ExpressionStatementAST::Codegen(vector<int>* bytecodes, CodegenInfo* geninfo)
+{
+	Expression->Codegen(bytecodes,geninfo);
+}
+
+
+void VariableDefStatementAST::CheckType(vector< vector< pair<string, TypeAST* > >* >* env, CodegenInfo* geninfo)
+{
+	LocalIndex=-1;
+	for(int i=0;i<(*env)[(static_cast<int>(env->size())-1)]->size();i++){
+		LocalIndex++;
+		if(Variable->first==(*(*env)[(static_cast<int>(env->size())-1)])[i].first){
+			//åå‰ãŒä¸€è‡´
+			goto out_for;
+		}
+	}
+	out_for:
+
+	if(InitialValue!=NULL){
+		if(InitialValue->IsBuilt()==false){
+			InitialValue=dynamic_cast<UnBuiltExprAST*>(InitialValue)->BuildAST(geninfo);
+		}
+		InitialValue->CheckType(env,geninfo);
+		if(InitialValue->TypeInfo->GetName() != Variable->second->GetName()){
+			error("åˆæœŸåŒ–ã§ãã¾ã›ã‚“ã€‚å‹ãŒä¸€è‡´ã—ã¾ã›ã‚“ã€‚");
+		}
+	}
+	return;
+}
+
+TypeAST* VariableExprAST::CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
+	//åå‰ãŒä¸€è‡´ã™ã‚‹ã‚‚ã®ãŒã‚ã‚‹ã‹ä¸Šä½ã®ãƒ•ãƒ¬ãƒ¼ãƒ ã«é¡ã‚ŠãªãŒã‚‰æ¢ã™
+	bool found=false;
+	int currentflame;
+	unsigned int i;
+	LocalIndex=-1;
+	for(currentflame=(static_cast<int>(env->size())-1);currentflame>=0;currentflame--){
+		for(i=0;i<(*env)[currentflame]->size();i++){
+			LocalIndex++;
+			if(Name==(*(*env)[currentflame])[i].first){
+				//åå‰ãŒä¸€è‡´
+				TypeInfo=(*(*env)[currentflame])[i].second; //è‡ªèº«ã®å‹ã‚’æ±ºå®š
+				found=true;
+				goto out_for;
+			}
+		}
+	}
+	out_for:
+	if(!found){
+		error("å¤‰æ•°:"+Name+"ã¯æœªå®šç¾©ã¾ãŸã¯ã‚¹ã‚³ãƒ¼ãƒ—å¤–ã§ã™ã€‚");
+	}
+	//cout<<Name<<":"<<localindex<<endl;
+	return TypeInfo;
+}
+
+TypeAST* UnaryExprAST::CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
+	//å¾ªç’°é˜²æ­¢ã®ç‚º
+	if(TypeInfo!=NULL){
+		return TypeInfo;
+	}
+
+	TypeAST *oprandt=Operand->CheckType(env,geninfo);
+	if(Operator=="!"){
+		if(oprandt->GetName()!="bool"){
+			error("å‹ã«å•é¡ŒãŒã‚ã‚Šã¾ã™ã€‚å˜é …æ¼”ç®—å­:"+Operator+" ã‚ªãƒšãƒ©ãƒ³ãƒ‰:"+oprandt->GetName());
+		}
+		TypeInfo=oprandt;
+	}
+
+	if(TypeInfo==NULL){
+		error("æœªçŸ¥ã®å˜é …æ¼”ç®—å­ã§ã™:"+Operator);
+	}
+
+	return TypeInfo;
+}
+
+TypeAST* BinaryExprAST::CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
+	TypeAST *lhst=LHS->CheckType(env,geninfo);
+	TypeAST *rhst=RHS->CheckType(env,geninfo);
+	TypeInfo=NULL;
+
+	//çµ„ã¿è¾¼ã¿å‹ã®å‹ãƒã‚§ãƒƒã‚¯
+	if(Operator=="+" || Operator=="-" || Operator=="*" || Operator=="/"){
+		if(*lhst!=*rhst || (lhst->GetName()!="int" && lhst->GetName()!="float")){
+			error("å‹ã«å•é¡ŒãŒã‚ã‚Šã¾ã™ã€‚äºŒé …æ¼”ç®—å­:"+Operator+" å·¦è¾º:"+lhst->GetName()+" å³è¾º:"+rhst->GetName());
+		}
+
+		TypeInfo=lhst; //ã‚ªãƒšãƒ©ãƒ³ãƒ‰ã®å‹ã‚’å…ƒã«è‡ªã‚‰ã®å‹ã‚’æ±ºã‚ã‚‹
+	}else if(Operator=="%" || Operator=="<<" || Operator==">>"){
+		if(*lhst!=*rhst || (lhst->GetName()!="int")){
+			error("å‹ã«å•é¡ŒãŒã‚ã‚Šã¾ã™ã€‚äºŒé …æ¼”ç®—å­:"+Operator+" å·¦è¾º:"+lhst->GetName()+" å³è¾º:"+rhst->GetName());
+		}
+		TypeInfo=lhst;
+	}else if(Operator=="&&" || Operator=="||"){
+		if(*lhst!=*rhst || (lhst->GetName()!="bool")){
+			error("å‹ã«å•é¡ŒãŒã‚ã‚Šã¾ã™ã€‚äºŒé …æ¼”ç®—å­:"+Operator+" å·¦è¾º:"+lhst->GetName()+" å³è¾º:"+rhst->GetName());
+		}
+		TypeInfo=lhst;
+	}else if(Operator=="<" || Operator==">" || Operator=="<=" || Operator==">="){
+		if(*lhst!=*rhst || (lhst->GetName()!="int" && lhst->GetName()!="float")){
+			error("å‹ã«å•é¡ŒãŒã‚ã‚Šã¾ã™ã€‚äºŒé …æ¼”ç®—å­:"+Operator+" å·¦è¾º:"+lhst->GetName()+" å³è¾º:"+rhst->GetName());
+		}
+		TypeInfo=new BasicTypeAST("bool");
+	}else if(Operator=="==" || Operator=="!="){
+		if(*lhst!=*rhst || (lhst->GetName()!="int" && lhst->GetName()!="float" && lhst->GetName()!="bool")){
+			error("å‹ã«å•é¡ŒãŒã‚ã‚Šã¾ã™ã€‚äºŒé …æ¼”ç®—å­:"+Operator+" å·¦è¾º:"+lhst->GetName()+" å³è¾º:"+rhst->GetName());
+		}
+		TypeInfo=new BasicTypeAST("bool");
+	}else if(Operator=="="){
+		if(*lhst!=*rhst){
+			error("å‹ã«å•é¡ŒãŒã‚ã‚Šã¾ã™ã€‚äºŒé …æ¼”ç®—å­:"+Operator+" å·¦è¾º:"+lhst->GetName()+" å³è¾º:"+rhst->GetName());
+		}else if(typeid(*LHS)!=typeid(VariableExprAST)){
+			error("ä»£å…¥å¼ã®å·¦è¾ºãŒå¤‰æ•°ã§ã¯ã‚ã‚Šã¾ã›ã‚“ã€‚");
+		}
+		TypeInfo=lhst;
+	}
+
+	if(TypeInfo==NULL){
+		error("æœªçŸ¥ã®äºŒé …æ¼”ç®—å­ã§ã™:"+Operator);
+	}
+
+	return TypeInfo;
+}
+
+void ReturnStatementAST::CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
+	if(Expression==NULL){return;}
+	if(Expression->IsBuilt()==false){
+		Expression=dynamic_cast<UnBuiltExprAST*>(Expression)->BuildAST(geninfo);
+	}
+	Expression->CheckType(env,geninfo);
+}
+
+void IfStatementAST::CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
+	if(Condition->IsBuilt()==false){
+		Condition=dynamic_cast<UnBuiltExprAST*>(Condition)->BuildAST(geninfo);
+	}
+	Condition->CheckType(env,geninfo);
+	if(Condition->TypeInfo->GetName()!="bool"){
+		error("æ¡ä»¶å¼ã®å‹ãŒboolã§ã¯ã‚ã‚Šã¾ã›ã‚“");
+	}
+
+	vector<StatementAST*>::iterator iter;
+	for(iter=ThenBody->begin();iter!=ThenBody->end();iter++){
+		(*iter)->CheckType(env,geninfo);
+	}
+	for(iter=ElseBody->begin();iter!=ElseBody->end();iter++){
+		(*iter)->CheckType(env,geninfo);
+	}
+
+	return;
+}
+
+void ExpressionStatementAST::CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
+	if(Expression->IsBuilt()==false){
+		Expression=dynamic_cast<UnBuiltExprAST*>(Expression)->BuildAST(geninfo);
+	}
+	Expression->CheckType(env,geninfo);
+}
+
+TypeAST* FunctionAST::CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
+	vector< pair<string,TypeAST *> > *fflame=new vector< pair<string,TypeAST *> >();
+	//å¼•æ•°ã‚’ç’°å¢ƒã«è¿½åŠ 
+	vector< pair<string,TypeAST *> >::iterator argiter;
+	for(argiter=Args->begin();argiter!=Args->end();argiter++){
+		fflame->push_back(*argiter);
+	}
+	env->push_back(fflame);
+	vector<StatementAST *>::iterator iter2;
+
+	LocalVariables=new vector< pair<string,TypeAST*> >();
+
+	for(iter2=Body->begin();iter2!=Body->end();iter2++){
+		if(typeid(*(*iter2))==typeid(VariableDefStatementAST)){
+			//å¤‰æ•°å®£è¨€ã‚’è¦‹ã¤ã‘ãŸã‚‰å¤‰æ•°ãƒªã‚¹ãƒˆã¸éšæ™‚è¿½åŠ ã—ã¦ã„ã
+			env->back()->push_back(*(dynamic_cast<VariableDefStatementAST *>(*iter2)->Variable));
+		}
+	}
+
+	for(iter2=Body->begin();iter2!=Body->end();iter2++){
+		if(typeid(*(*iter2))==typeid(VariableDefStatementAST)){
+			//å¤‰æ•°å®£è¨€ã‚’è¦‹ã¤ã‘ãŸã‚‰å¤‰æ•°ãƒªã‚¹ãƒˆã¸éšæ™‚è¿½åŠ ã—ã¦ã„ã
+			LocalVariables->push_back(*(dynamic_cast<VariableDefStatementAST *>(*iter2)->Variable));
+		}
+
+		(*iter2)->CheckType(env,geninfo);
+
+		if(typeid(*(*iter2))==typeid(ReturnStatementAST)){
+			//returnæ–‡ã®å ´åˆç‰¹åˆ¥æ‰±ã„ã€‚è¿”ã™å€¤ã®å‹ã¨ã“ã®é–¢æ•°ã®è¿”ã‚Šå€¤ã®å‹ãŒä¸ä¸€è‡´ãªã‚‰ã°ã‚¨ãƒ©ãƒ¼
+			if(dynamic_cast<ReturnStatementAST *>(*iter2)->Expression==NULL){
+				if(dynamic_cast<FunctionTypeAST*>(TypeInfo)->TypeList.back()->GetName() != "void"){
+					error("'returnã™ã‚‹å€¤ã®å‹'ã¨ã€'é–¢æ•°ã®æˆ»ã‚Šå€¤ã®å‹'ãŒä¸€è‡´ã—ã¾ã›ã‚“ã€‚");
+				}
+			}else if(dynamic_cast<FunctionTypeAST*>(TypeInfo)->TypeList.back()->GetName() != dynamic_cast<ReturnStatementAST *>(*iter2)->Expression->TypeInfo->GetName()){
+				error("'returnã™ã‚‹å€¤ã®å‹'ã¨ã€'é–¢æ•°ã®æˆ»ã‚Šå€¤ã®å‹'ãŒä¸€è‡´ã—ã¾ã›ã‚“ã€‚");
+			}
+		}
+	}
+
+	delete env->back();
+	env->pop_back(); //æœ€å¾Œå°¾ã®ãƒ•ãƒ¬ãƒ¼ãƒ ã‚’å‰Šé™¤
+
+
+	return TypeInfo; //è‡ªã‚‰ã®å‹ã‚’ä¸€å¿œè¿”ã—ã¦ãŠã
+}
+
+TypeAST* CallExprAST::CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
+	if(PoolIndex!=-1){
+		//ã‚¯ãƒ­ãƒ¼ã‚¸ãƒ£ç›´å‘¼ã³å‡ºã—ã®ã¨ã
+		TypeAST* func_t=reinterpret_cast<FunctionAST *>(geninfo->PublicConstantPool.GetReference(PoolIndex))->CheckType(env,geninfo);
+		this->TypeInfo=dynamic_cast<FunctionTypeAST*>(func_t)->TypeList.back();
+	}else{
+		//å¤‰æ•°ã‚’ä»‹ã—ã¦ã®å‘¼ã³å‡ºã—ã®ã¨ã
+
+		//å¼•æ•°ã®å‹ã‚’é †ã«æ±ºã‚ã¦ã„ã
+		vector<ExprAST *>::iterator iter2;
+		for(iter2=args->begin();iter2!=args->end();iter2++){
+			if((*iter2)->IsBuilt()==false){
+				(*iter2)=(dynamic_cast<UnBuiltExprAST*>(*iter2))->BuildAST(geninfo);
+			}
+			(*iter2)->CheckType(env,geninfo);
+		}
+
+		//åå‰ãŒä¸€è‡´ã™ã‚‹ã‚‚ã®ãŒã‚ã‚‹ã‹ä¸Šä½ã®ãƒ•ãƒ¬ãƒ¼ãƒ ã«é¡ã‚ŠãªãŒã‚‰æ¢ã™
+		bool found=false;
+		int currentflame;
+		unsigned int i;
+		LocalIndex=-1;
+		for(currentflame=(static_cast<int>(env->size())-1);currentflame>=0;currentflame--){
+			for(i=0;i<(*env)[currentflame]->size();i++){
+				LocalIndex++;
+				if(callee==(*(*env)[currentflame])[i].first && typeid(*((*(*env)[currentflame])[i].second))==typeid(FunctionTypeAST)){
+					//åå‰ãŒä¸€è‡´
+					found=true;
+					vector<TypeAST*> currentarg=dynamic_cast<FunctionTypeAST *>((*(*env)[currentflame])[i].second)->TypeList;
+					if(args->size()+1==currentarg.size()){ //+1ã™ã‚‹ã®ã¯ã€argsã«ã¯æˆ»ã‚Šå€¤ã®å‹ãŒå«ã¾ã‚Œã¦ã„ãªã„ã‹ã‚‰
+						for(unsigned int j=0;j<args->size();j++){
+							if(*(args->at(j)->TypeInfo) != *(currentarg[j])){
+								goto nextfunc1;
+							}
+						}
+						TypeInfo=currentarg.back(); //é–¢æ•°ã®å‹ã§ã¯ãªãé–¢æ•°ã®æˆ»ã‚Šå€¤ã®å‹ã‚’ä»£å…¥
+						if(currentflame==0){
+							//ãƒˆãƒƒãƒ—ãƒ¬ãƒ™ãƒ«ã«é–¢æ•°ãŒã‚ã‚‹å ´åˆã¯ãƒ“ãƒ«ãƒˆã‚¤ãƒ³é–¢æ•°ã‚’ç–‘ã†
+							for(unsigned int k=0;k<geninfo->TopLevelFunction.size();k++){
+								if(geninfo->TopLevelFunction[k]->Name==callee){
+									isBuiltin=geninfo->TopLevelFunction[k]->isBuiltin;
+								}
+							}
+						}
+						return TypeInfo;
+					}
+				}
+
+				nextfunc1:
+				if(TypeInfo==NULL){}; //ãƒ©ãƒ™ãƒ«ã®å¾Œã«å¼ãŒãªã„ã¨ã‚¨ãƒ©ãƒ¼ã¨ãªã‚‹ãŸã‚ã€ç„¡æ„å‘³ãªå¼ã‚’ã²ã¨ã¤
+			}
+		}
+
+		if(found){
+			error("é–¢æ•°å®šç¾©ã¨å‹ãŒä¸€è‡´ã—ã¾ã›ã‚“");
+		}else{
+			error(callee+"ã¯æœªå®šç¾©ã¾ãŸã¯ã‚¹ã‚³ãƒ¼ãƒ—å¤–ã§ã™");
+		}
+	}
+
+	return TypeInfo;
+}

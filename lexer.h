@@ -1,54 +1,71 @@
 #pragma once
-
+#include <vector>
 #include <string>
 #include <map>
-#include <vector>
+#include <set>
+#include <string.h>
+#include <iostream>
+#include "common.h"
+#include "oniguruma.h"
 
 using namespace std;
 
-enum Token{
-    token_eof=-1,
-    token_func=-2,
-    token_identifier=-3,
-    token_intval=-4,
-    token_operator=-5, //記号3文字
-    token_floatval=-6,
-    token_boolval=-7,
-    token_stringval=-8,
-    token_return=-9,
-    token_var=-10,
-    token_eol=-11
+
+class Lexer;
+
+enum State{INITIAL,COMMENT};
+
+struct TokenRule{
+    char *rule;
+    State state;
+    bool hasValue;
+    pair<Symbol,TokenValue> (* callback)(char *str,Lexer *lexer);
 };
 
-bool iseol(char);
+extern TokenRule TOKENRULE[];
+
+class LexerException{
+
+};
+
+class NoMatchRule : public LexerException{
+
+};
+
+class OnigurumaException : public LexerException{
+public:
+	unsigned char *Message;
+	OnigurumaException(unsigned char *message):Message(message){}
+};
 
 class Lexer{
-public:
-    int CurrentLineNumber;
-    int CurrentCharPosition; // 現在の行内での左端からの位置
-
-    string CurrentIdentifier;
-    string CurrentOperator;
-    int CurrentIntVal;
-    bool CurrentBoolVal;
-    float CurrentFloatVal;
-    string CurrentStringVal;
-
-    int CurrentToken;
-
-    bool isClosureAfterParen(); //閉じかっこを探して、かっこの後に=>があるかを調べる（クロージャの検出用）
-
-    void GetNextToken();
-
-    void SetOrigin(){nowpos=0;lastchar=' ';CurrentToken=0;}
-
-    Lexer(string &code):rawcode(code){lastchar=' ';nowpos=0;CurrentToken=0;CurrentLineNumber=1;CurrentCharPosition=-1;};
-
-    string &rawcode;
 private:
+    const char *rawcode;
+    regex_t* regex_objs[TOKENRULECOUNT];
+public:
+	static TokenValue dummy;
 
-    char lastchar;
-    unsigned int nowpos;
+	int curr_index;
+	State curr_state;
+	int curr_line;
 
-    char getnextchar();
+    Lexer(const char *code):rawcode(code){
+        curr_index=0;
+        curr_line=1;
+        curr_state=INITIAL;
+
+        int r;
+        OnigErrorInfo einfo;
+        for(int i=0;i<TOKENRULECOUNT;i++){
+            r=onig_new(&regex_objs[i],reinterpret_cast<OnigUChar*>(TOKENRULE[i].rule),reinterpret_cast<OnigUChar*>(TOKENRULE[i].rule+strlen(TOKENRULE[i].rule)),
+                       ONIG_OPTION_DEFAULT,ONIG_ENCODING_ASCII,ONIG_SYNTAX_DEFAULT,&einfo);
+            if(r!=ONIG_NORMAL){
+                static unsigned char s[ONIG_MAX_ERROR_MESSAGE_LEN];
+                onig_error_code_to_str(s,r,&einfo);
+                throw OnigurumaException(s);
+                return;
+            }
+        }
+    };
+    pair<Symbol,TokenValue> Get();
 };
