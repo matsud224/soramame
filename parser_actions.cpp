@@ -130,6 +130,12 @@ TokenValue variabledef_withassignment_reduce(CodegenInfo *cgi,vector<TokenValue>
 	return t;
 }
 
+TokenValue variabledef_infer_reduce(CodegenInfo*,vector<TokenValue> values){
+	TokenValue t;
+	t.variabledef_ast=new VariableDefStatementAST(new pair<string,TypeAST*>(values[0].str,NULL),new UnBuiltExprAST(values[4].expression_list));
+	return t;
+}
+
 TokenValue statement_list_empty_reduce(CodegenInfo *cgi,vector<TokenValue> values)
 {
 	TokenValue t;
@@ -184,17 +190,10 @@ TokenValue expression_addparen_reduce(CodegenInfo *cgi,vector<TokenValue> values
 	return t;
 }
 
-TokenValue funcallexpr_variable_reduce(CodegenInfo *cgi,vector<TokenValue> values)
+TokenValue funcallexpr_reduce(CodegenInfo *cgi,vector<TokenValue> values)
 {
 	TokenValue t;
-	t.expression_ast=new CallExprAST(dynamic_cast<VariableExprAST *>(values[0].expression_ast)->Name,values[2].arg_exp_list);
-	return t;
-}
-
-TokenValue funcallexpr_closure_reduce(CodegenInfo *cgi,vector<TokenValue> values)
-{
-	TokenValue t;
-	t.expression_ast=new CallExprAST(dynamic_cast<FunctionAST *>(values[0].expression_ast)->PoolIndex,values[2].arg_exp_list);
+	t.expression_ast=new CallExprAST(values[0].expression_ast,values[2].arg_exp_list);
 	return t;
 }
 
@@ -236,9 +235,16 @@ TokenValue type_normal_reduce(CodegenInfo *cgi,vector<TokenValue> values)
 TokenValue type_fun_reduce(CodegenInfo *cgi,vector<TokenValue> values)
 {
 	TokenValue t;
-	vector<TypeAST*> *v=new vector<TypeAST*>(*values[1].type_list);
-	v->push_back(values[4].type_ast);
+	vector<TypeAST*> *v=new vector<TypeAST*>(*values[2].type_list);
+	v->push_back(values[5].type_ast);
 	t.type_ast=new FunctionTypeAST(*v);
+	return t;
+}
+
+TokenValue type_listtype_reduce(CodegenInfo *cgi, vector<TokenValue> values)
+{
+	TokenValue t;
+	t.type_ast=new ListTypeAST(values[1].type_ast);
 	return t;
 }
 
@@ -268,7 +274,15 @@ TokenValue type_list_addtype_reduce(CodegenInfo *cgi,vector<TokenValue> values)
 TokenValue closureexpr_reduce(CodegenInfo *cgi,vector<TokenValue> values)
 {
 	TokenValue t;
-	t.expression_ast=new FunctionAST(cgi,"<closure>",values[1].parameter_list,values[4].type_ast,values[6].block_ast);
+	t.expression_ast=new FunctionAST(cgi,"<closure>",values[2].parameter_list,values[5].type_ast,values[7].block_ast);
+	return t;
+}
+
+TokenValue closureexpr_rettypeinfer_reduce(CodegenInfo *cgi,vector<TokenValue> values)
+{
+	TokenValue t;
+	//返り値を推論する時は返り値の型をNULLにすると関数の型リストに埋め込まれて識別できないので型名としてありえない文字列にした
+	t.expression_ast=new FunctionAST(cgi,"<closure>",values[2].parameter_list,new BasicTypeAST("!!undefined!!"),values[5].block_ast);
 	return t;
 }
 
@@ -298,7 +312,7 @@ TokenValue arg_list_addexpression_reduce(CodegenInfo *cgi,vector<TokenValue> val
 TokenValue ifstatement_noelse_reduce(CodegenInfo *cgi,vector<TokenValue> values)
 {
 	TokenValue t;
-	t.statement_ast=new IfStatementAST(new UnBuiltExprAST(values[2].expression_list),values[5].block_ast,new BlockAST(new vector<StatementAST*>(),new vector< pair<string,TypeAST*> >()));
+	t.statement_ast=new IfStatementAST(new UnBuiltExprAST(values[2].expression_list),values[5].block_ast,new BlockAST(new vector<StatementAST*>()));
 	return t;
 }
 
@@ -312,7 +326,7 @@ TokenValue ifstatement_withelse_reduce(CodegenInfo *cgi,vector<TokenValue> value
 TokenValue block_reduce(CodegenInfo *cgi,vector<TokenValue> values)
 {
 	TokenValue t;
-	t.block_ast=new BlockAST(values[0].statement_list,new vector< pair<string,TypeAST*> >());
+	t.block_ast=new BlockAST(values[0].statement_list);
 	return t;
 }
 
@@ -320,5 +334,20 @@ TokenValue while_reduce(CodegenInfo *cgi,vector<TokenValue> values)
 {
 	TokenValue t;
 	t.statement_ast=new WhileStatementAST(new UnBuiltExprAST(values[2].expression_list),values[5].block_ast);
+	return t;
+}
+
+TokenValue for_reduce(CodegenInfo *cgi,vector<TokenValue> values)
+{
+	TokenValue t;
+	t.statement_ast=new ForStatementAST(values[2].statement_ast,new UnBuiltExprAST(values[4].expression_list),values[6].statement_ast,values[9].block_ast);
+	return t;
+}
+
+TokenValue listvalexpr_reduce(CodegenInfo *cgi,vector<TokenValue> values){
+	TokenValue t;
+	list<ExprAST*> *lst=new list<ExprAST*>();
+	lst->assign(values[1].arg_exp_list->begin(),values[1].arg_exp_list->end());
+	t.expression_ast=new ListValExprAST(cgi,lst);
 	return t;
 }

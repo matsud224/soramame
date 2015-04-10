@@ -2,11 +2,13 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <list>
 #include "utility.h"
 #include "parser.h"
 #include "lexer.h"
 #include "vm.h"
 #include "color_text.h"
+#include "basic_object.h"
 
 using namespace std;
 
@@ -19,8 +21,22 @@ class Flame;
 class VariableDefStatementAST;
 class TopLevelItem;
 class BlockAST;
-class ClosureObject;
 
+
+class EnvItem{
+public:
+	pair<string,TypeAST*> VariableInfo;
+	int LocalIndex;
+};
+
+class Environment{
+public:
+	vector< EnvItem > Items;
+	bool is_internalblock; //関数内部のブロック（if,whileなど）か？
+	vector< pair<string,TypeAST *> > *LocalVariablesPtr;
+
+	//Environment(bool is_internal,vector< pair<string,TypeAST *> > *localvalsptr):is_internalblock(is_internal),LocalVariablesPtr(localvalsptr){};
+};
 
 class TypeAST{
 public:
@@ -34,8 +50,8 @@ public:
 //単一の型
 class BasicTypeAST : public TypeAST{
 public:
-    BasicTypeAST(string n):Name(n){} //普通の型用
-    string Name; //関数型のためにvectorにしてある
+    BasicTypeAST(string n):Name(n){}
+    string Name;
     virtual string GetName(){
 		return Name;
     }
@@ -47,7 +63,7 @@ public:
 	FunctionTypeAST(vector<TypeAST*> t_list):TypeList(t_list){}
 	vector<TypeAST*> TypeList;
 	virtual string GetName(){
-		string s="(";
+		string s="fun(";
 		for(int i=0;i<TypeList.size()-1;i++){
 			s+=TypeList[i]->GetName();
 			if(i!=TypeList.size()-2){
@@ -60,14 +76,26 @@ public:
 
 };
 
+//リスト型
+class ListTypeAST : public TypeAST{
+public:
+    ListTypeAST(TypeAST *t):ContainType(t){}
+    TypeAST* ContainType;
+    virtual string GetName(){
+		return "["+ContainType->GetName()+"]";
+    }
+};
+
 class ExprAST{
 public:
 	TypeAST *TypeInfo;
 
     virtual ~ExprAST(){}
     virtual bool IsBuilt(){return true;}; //ASTが構築されたか
+    virtual bool IsConstant()=0; //定数か
+    virtual int GetVMValue(CodegenInfo*)=0; //スタックに置かれるintの値（整数値なら整数、他ならコンスタントプールのインデックス）
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo)=0;
-    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo)=0;
+    virtual TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars)=0;
     virtual vector<int> FindChildFunction()=0;
 };
 
@@ -76,8 +104,10 @@ public:
 	vector<ExprAST*> *ExprList;
     UnBuiltExprAST(vector<ExprAST*> *val):ExprList(val){TypeInfo=NULL;}
     virtual bool IsBuilt(){return false;}
+    virtual bool IsConstant(){return false;}
+    int GetVMValue(CodegenInfo *cgi){return -1;}
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo){};
-    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){return TypeInfo;}
+    virtual TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars){return TypeInfo;}
     ExprAST *BuildAST(CodegenInfo*);
     virtual vector<int> FindChildFunction();
 };
@@ -86,8 +116,10 @@ class IntValExprAST : public ExprAST{
 public:
 	int Value;
     IntValExprAST(int val):Value(val){TypeInfo=new BasicTypeAST("int");}
+    virtual bool IsConstant(){return true;}
+    int GetVMValue(CodegenInfo *cgi){return Value;}
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
-    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){return TypeInfo;}
+    virtual TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars){return TypeInfo;}
     virtual vector<int> FindChildFunction(){return vector<int>();};
 };
 
@@ -95,8 +127,10 @@ class BoolValExprAST : public ExprAST{
 public:
 	bool Value;
     BoolValExprAST(bool val):Value(val){TypeInfo=new BasicTypeAST("bool");}
+    virtual bool IsConstant(){return true;}
+    int GetVMValue(CodegenInfo *cgi){return Value;}
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
-    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){return TypeInfo;}
+    virtual TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars){return TypeInfo;}
     virtual vector<int> FindChildFunction(){return vector<int>();};
 };
 
@@ -111,8 +145,33 @@ public:
         cout<<"#"<<PoolIndex<<" : <string>"<<Value<<endl;
     }
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
-    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){return TypeInfo;}
+    virtual bool IsConstant(){return true;}
+    int GetVMValue(CodegenInfo *cgi){return PoolIndex;}
+    virtual TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars){return TypeInfo;}
     virtual vector<int> FindChildFunction(){return vector<int>();};
+};
+
+class ListValExprAST : public ExprAST{
+public:
+    list<ExprAST*> *Value;
+    int PoolIndex;
+    ListValExprAST(CodegenInfo *cgi,list<ExprAST*> *val):Value(val){
+        TypeInfo=NULL;
+        PoolIndex=-1;
+    }
+    virtual bool IsConstant(){
+		list<ExprAST*>::iterator iter;
+		for(iter=Value->begin();iter!=Value->end();iter++){
+			if((*iter)->IsConstant()==false){
+				return false;
+			}
+		}
+		return true;
+    }
+    int GetVMValue(CodegenInfo *cgi){return PoolIndex;}
+    virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
+    virtual TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
+    virtual vector<int> FindChildFunction();
 };
 
 //操車場アルゴリズムのために
@@ -121,8 +180,10 @@ public:
     string Operator;
 
     OperatorAST(string n):Operator(n){};
+    virtual bool IsConstant(){return true;}
+    int GetVMValue(CodegenInfo *cgi){return -1;}
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo){}
-    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){return NULL;}
+    virtual TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars){return NULL;}
     virtual vector<int> FindChildFunction(){return vector<int>();};
 };
 
@@ -136,9 +197,14 @@ public:
     bool isBuiltin;
 	string Name;
 	BlockAST *Body;
+	vector< pair<string,TypeAST *> > *LocalVariables; //Argsを含む
+	virtual bool IsConstant(){return false;}
+	int GetVMValue(CodegenInfo *cgi){
+		return -1;
+	}
 
     //自らの型を返すだけでなく、bodyについて型検査を実施する
-    TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo);
+    TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
     vector<int> FindChildFunction(); //関数内で作られるクロージャを探し、ChildPoolIndexへ登録します。
 
     FunctionAST(CodegenInfo *cgi,string n,vector< pair<string,TypeAST *> > *a,TypeAST *rett,BlockAST *bdy):Name(n),Args(a),Body(bdy){
@@ -177,25 +243,27 @@ class VariableExprAST : public ExprAST{
 public:
     string Name;
     int LocalIndex;//ローカル変数のインデックス番号（フレーム配列のインデックス）
+    int FlameBack; //フレームを何回遡るか
 
     VariableExprAST(const string &name):Name(name){TypeInfo=NULL;}
+    virtual bool IsConstant(){return false;}
+    int GetVMValue(CodegenInfo *cgi){return -1;}
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
-    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo);
+    virtual TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
     virtual vector<int> FindChildFunction(){return vector<int>();};
 };
 
 class CallExprAST : public ExprAST{
 public:
-    string callee;
+    ExprAST* callee;
     vector<ExprAST *> *args;
-    int PoolIndex;
-    int LocalIndex;
-    bool isBuiltin;
 
-    CallExprAST(const string &callee_func,vector<ExprAST *> *args_list):callee(callee_func),args(args_list){TypeInfo=NULL;PoolIndex=-1;LocalIndex=-1;}
-    CallExprAST(int poolidx,vector<ExprAST *> *args_list):PoolIndex(poolidx),args(args_list){TypeInfo=NULL;callee="<closure>";LocalIndex=-1;}
+    CallExprAST(ExprAST* callee_func,vector<ExprAST *> *args_list):callee(callee_func),args(args_list){TypeInfo=NULL;}
+
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
-    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo);
+    virtual bool IsConstant(){return false;}
+    int GetVMValue(CodegenInfo *cgi){return -1;}
+    virtual TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
     virtual vector<int> FindChildFunction();
 };
 
@@ -206,7 +274,9 @@ public:
 
     UnaryExprAST(string opc,ExprAST *oprnd):Operator(opc),Operand(oprnd){TypeInfo=NULL;}
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
-    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo);
+    virtual bool IsConstant(){return false;}
+    int GetVMValue(CodegenInfo *cgi){return -1;}
+    virtual TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
     virtual vector<int> FindChildFunction(){return vector<int>();}; //AST未構築なので呼び出されることはない。
 };
 
@@ -217,7 +287,9 @@ public:
 
     BinaryExprAST(string opc,ExprAST *lhs,ExprAST *rhs):Operator(opc),LHS(lhs),RHS(rhs){TypeInfo=NULL;}
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
-    virtual TypeAST *CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo);
+    virtual bool IsConstant(){return false;}
+    int GetVMValue(CodegenInfo *cgi){return -1;}
+    virtual TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
     virtual vector<int> FindChildFunction(){return vector<int>();}; //AST未構築なので呼び出されることはない。
 };
 
@@ -226,8 +298,9 @@ public:
 class StatementAST{
 public:
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo)=0;
-    virtual void CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo)=0;
+    virtual void CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars)=0;
 	virtual vector<int> FindChildFunction()=0;
+	//virtual vector< pair<string,TypeAST*> > GetInternalVariables()=0;
 };
 
 class IfStatementAST : public StatementAST{
@@ -238,8 +311,9 @@ public:
 
     IfStatementAST(ExprAST *cond,BlockAST *thenbody,BlockAST *elsebody):Condition(cond),ThenBody(thenbody),ElseBody(elsebody){}
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
-    virtual void CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo);
+    virtual void CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
     virtual vector<int> FindChildFunction();
+    //virtual vector< pair<string,TypeAST*> > GetInternalVariables();
 };
 
 class WhileStatementAST : public StatementAST{
@@ -249,8 +323,23 @@ public:
 
     WhileStatementAST(ExprAST *cond,BlockAST *body):Condition(cond),Body(body){}
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
-    virtual void CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo);
+    virtual void CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
     virtual vector<int> FindChildFunction();
+    //virtual vector< pair<string,TypeAST*> > GetInternalVariables();
+};
+
+class ForStatementAST : public StatementAST{
+public:
+	StatementAST *Initialize;
+    ExprAST *Condition;
+    StatementAST *Next;
+	BlockAST *Body;
+
+    ForStatementAST(StatementAST *init,ExprAST *cond,StatementAST *next,BlockAST *body):Initialize(init),Condition(cond),Next(next),Body(body){}
+    virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
+    virtual void CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
+    virtual vector<int> FindChildFunction();
+    //virtual vector< pair<string,TypeAST*> > GetInternalVariables();
 };
 
 class ReturnStatementAST : public StatementAST{
@@ -259,8 +348,9 @@ public:
 
     ReturnStatementAST(ExprAST *exp):Expression(exp){};
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
-    virtual void CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo);
+    virtual void CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
     virtual vector<int> FindChildFunction();
+    //virtual vector< pair<string,TypeAST*> > GetInternalVariables();
 };
 
 class VariableDefStatementAST : public StatementAST{
@@ -268,11 +358,13 @@ public:
     pair<string,TypeAST *> *Variable;
     ExprAST* InitialValue; //初期値（初期値が未設定の時はNULL）
     int LocalIndex;
+    int FlameBack; //常に0
 
     VariableDefStatementAST(pair<string,TypeAST *> *var,ExprAST* initval):Variable(var),InitialValue(initval){}
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
-    virtual void CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo);
+    virtual void CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
     virtual vector<int> FindChildFunction();
+    //virtual vector< pair<string,TypeAST*> > GetInternalVariables();
 };
 
 class ExpressionStatementAST : public StatementAST{
@@ -281,18 +373,19 @@ public:
 
     ExpressionStatementAST(ExprAST* evalexpr):Expression(evalexpr){}
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
-    virtual void CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo);
+    virtual void CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
     virtual vector<int> FindChildFunction();
+    //virtual vector< pair<string,TypeAST*> > GetInternalVariables();
 };
 
 class BlockAST{
 public:
 	vector<StatementAST *> *Body;
-	vector< pair<string,TypeAST *> > *LocalVariables;
 
-	BlockAST(vector<StatementAST *> *body,vector< pair<string,TypeAST *> > *local):Body(body),LocalVariables(local){}
+	BlockAST(vector<StatementAST *> *body):Body(body){}
 
 	void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
-	void CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo);
+	void CheckType(vector<Environment> *env,CodegenInfo *geninfo,bool isinternalblock,vector< pair<string,TypeAST*> > *CurrentLocalVars);
     vector<int> FindChildFunction();
+    //virtual vector< pair<string,TypeAST*> > GetInternalVariables();
 };

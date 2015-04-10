@@ -4,16 +4,16 @@
 
 using namespace std;
 
-const int TOKENRULECOUNT=26;
-const int SYNTAXRULECOUNT=55;
-const int SYMBOLCOUNT=44; //SYNTAXEND,INPUTEND,EMPTYをのぞく
+const int TOKENRULECOUNT=29;
+const int SYNTAXRULECOUNT=63;
+const int SYMBOLCOUNT=49; //SYNTAXEND,INPUTEND,EMPTYをのぞく
 
 
 enum Symbol{
 	SYNTAXEND=-3,INPUTEND=-2,EMPTY=-1,S,VAR,FUN,IF,ELSE,RETURN_S,INTVAL,BOOLVAL,STRINGVAL,IDENT,OPERATOR,program,function,parameter_list,parameter,
 	variabledef_list,variabledef,statement_list,statement,operator_n/*operatorはキーワードなので*/,expression,arg_list,intvalexpr,boolvalexpr,stringvalexpr,primary,
 	variableexpr, parenexpr, funcallexpr, closureexpr, returnstatement,type,type_list,ifstatement,
-	SEMICOLON,LPAREN,RPAREN,LBRACE,RBRACE,COMMA,COLON,block,WHILE,whilestatement
+	SEMICOLON,LPAREN,RPAREN,LBRACE,RBRACE,LBRACKET,RBRACKET,COMMA,COLON,block,WHILE,whilestatement,FOR,forstatement,listvalexpr
 };
 
 class FunctionAST;

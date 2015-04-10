@@ -58,6 +58,26 @@ vector<int> WhileStatementAST::FindChildFunction()
     return result_list;
 }
 
+vector<int> ForStatementAST::FindChildFunction()
+{
+	vector<int> result_list;
+	vector<int> list_tmp;
+
+	list_tmp=Initialize->FindChildFunction();
+	result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
+
+	list_tmp=Condition->FindChildFunction();
+	result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
+
+	list_tmp=Next->FindChildFunction();
+	result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
+
+	list_tmp=Body->FindChildFunction();
+	result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
+
+    return result_list;
+}
+
 vector<int> ReturnStatementAST::FindChildFunction()
 {
 	vector<int> result_list;
@@ -116,6 +136,9 @@ vector<int> CallExprAST::FindChildFunction()
 	vector<int> list_tmp;
 	vector<ExprAST*>::iterator iter;
 
+	list_tmp=callee->FindChildFunction();
+	result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
+
 	for(iter=args->begin();iter!=args->end();iter++){
 		list_tmp=(*iter)->FindChildFunction();
 		result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
@@ -129,6 +152,7 @@ vector<int> CallExprAST::FindChildFunction()
 void VariableExprAST::Codegen(vector<int>* bytecodes,CodegenInfo *geninfo)
 {
 	bytecodes->push_back(iloadlocal);
+	bytecodes->push_back(FlameBack);
 	bytecodes->push_back(LocalIndex);
 
     return;
@@ -152,6 +176,7 @@ void BinaryExprAST::Codegen(vector<int>* bytecodes,CodegenInfo *geninfo)
         RHS->Codegen(bytecodes,geninfo);
 
 		bytecodes->push_back(istorelocal);
+		bytecodes->push_back(dynamic_cast<VariableExprAST *>(LHS)->FlameBack);
 		bytecodes->push_back(dynamic_cast<VariableExprAST *>(LHS)->LocalIndex);
 
         return;
@@ -230,16 +255,8 @@ void CallExprAST::Codegen(vector<int>* bytecodes,CodegenInfo *geninfo)
     for(iter=args->rbegin();iter!=args->rend();iter++){
         (*iter)->Codegen(bytecodes,geninfo);
     }
-    if(PoolIndex!=-1){
-		//クロージャ直呼び出し
-		bytecodes->push_back(ipush);
-        bytecodes->push_back(PoolIndex);
-        bytecodes->push_back(invoke);
-    }else{
-        bytecodes->push_back(iloadlocal);
-        bytecodes->push_back(LocalIndex);
-        bytecodes->push_back(invoke);
-    }
+    callee->Codegen(bytecodes,geninfo);
+    bytecodes->push_back(invoke);
 }
 
 //自身が関数ならばbodyのコード生成を行う。
@@ -256,6 +273,9 @@ void FunctionAST::Codegen(vector<int> *bytecodes_given,CodegenInfo *geninfo)
     if(rettype->GetName()=="void"){
         codes.push_back(ret);
     }else{
+    	//非voidな関数でreturnされないときは-1を返す
+    	codes.push_back(ipush);
+    	codes.push_back(-1);
         codes.push_back(iret);
     }
 
@@ -283,11 +303,12 @@ void FunctionAST::Codegen(vector<int> *bytecodes_given,CodegenInfo *geninfo)
 		"makeclosure",
 		"skip",
 		"iffalse_skip",
-		"back"
+		"back",
+		"makelist"
 	};
     cout<<endl<<"関数:"<<Name<<"のコード"<<endl;
     for(unsigned int i=0;i<bytecodes.size();i++){
-        cout<<bytecodes[i]<<" ("<< ((bytecodes[i]>=0 && bytecodes[i]<= 20)?bytecode_names[bytecodes[i]]:"undefined") <<")"<<endl;
+        cout<<bytecodes[i]<<" ("<< ((bytecodes[i]>=0 && bytecodes[i]<= 21)?bytecode_names[bytecodes[i]]:"undefined") <<")"<<endl;
     }
     cout<<endl;
     return;
@@ -436,11 +457,34 @@ void WhileStatementAST::Codegen(vector<int>* bytecodes, CodegenInfo* geninfo)
 	bytecodes->insert(bytecodes->end(),bodycode->begin(),bodycode->end());
 }
 
+void ForStatementAST::Codegen(vector<int>* bytecodes, CodegenInfo* geninfo)
+{
+	vector<int> *initcode=new vector<int>();
+	Initialize->Codegen(initcode,geninfo);
+    vector<int> *condcode=new vector<int>();
+	Condition->Codegen(condcode,geninfo);
+	vector<int> *nextcode=new vector<int>();
+	Next->Codegen(nextcode,geninfo);
+	vector<int> *bodycode=new vector<int>();
+	Body->Codegen(bodycode,geninfo);
+
+	condcode->push_back(iffalse_skip);
+	condcode->push_back(bodycode->size()+2+nextcode->size()+2);
+	nextcode->push_back(back);
+	nextcode->push_back(nextcode->size()+bodycode->size()+condcode->size());
+
+	bytecodes->insert(bytecodes->end(),initcode->begin(),initcode->end());
+	bytecodes->insert(bytecodes->end(),condcode->begin(),condcode->end());
+	bytecodes->insert(bytecodes->end(),bodycode->begin(),bodycode->end());
+	bytecodes->insert(bytecodes->end(),nextcode->begin(),nextcode->end());
+}
+
 void VariableDefStatementAST::Codegen(vector<int>* bytecodes, CodegenInfo* geninfo)
 {
 	if(InitialValue!=NULL){
 		InitialValue->Codegen(bytecodes,geninfo);
 		bytecodes->push_back(istorelocal);
+		bytecodes->push_back(FlameBack);
 		bytecodes->push_back(LocalIndex);
 	}
 }
@@ -451,62 +495,70 @@ void ExpressionStatementAST::Codegen(vector<int>* bytecodes, CodegenInfo* geninf
 }
 
 
-void VariableDefStatementAST::CheckType(vector< vector< pair<string, TypeAST* > >* >* env, CodegenInfo* geninfo)
+void VariableDefStatementAST::CheckType(vector<Environment> *env, CodegenInfo* geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars)
 {
-	LocalIndex=-1;
-	for(int i=0;i<(*env)[(static_cast<int>(env->size())-1)]->size();i++){
-		LocalIndex++;
-		if(Variable->first==(*(*env)[(static_cast<int>(env->size())-1)])[i].first){
-			//名前が一致
-			goto out_for;
-		}
-	}
-	out_for:
+	FlameBack=0;
+	LocalIndex=CurrentLocalVars->size();
+	CurrentLocalVars->push_back(*Variable);
+	env->back().Items.push_back({*Variable,LocalIndex});
 
 	if(InitialValue!=NULL){
 		if(InitialValue->IsBuilt()==false){
 			InitialValue=dynamic_cast<UnBuiltExprAST*>(InitialValue)->BuildAST(geninfo);
 		}
-		InitialValue->CheckType(env,geninfo);
-		if(InitialValue->TypeInfo->GetName() != Variable->second->GetName()){
+		InitialValue->CheckType(env,geninfo,CurrentLocalVars);
+		if(Variable->second==NULL){
+			//型が未指定だったとき
+			Variable->second=InitialValue->TypeInfo;
+			CurrentLocalVars->back()=*Variable;
+			env->back().Items.back()={*Variable,LocalIndex};
+		}else if(InitialValue->TypeInfo->GetName() != Variable->second->GetName()){
 			error("初期化できません。型が一致しません。");
 		}
 	}
 	return;
 }
 
-TypeAST* VariableExprAST::CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
+TypeAST* VariableExprAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars){
+	//変数を介しての呼び出しのとき
+
 	//名前が一致するものがあるか上位のフレームに遡りながら探す
-	bool found=false;
-	int currentflame;
-	unsigned int i;
-	LocalIndex=-1;
-	for(currentflame=(static_cast<int>(env->size())-1);currentflame>=0;currentflame--){
-		for(i=0;i<(*env)[currentflame]->size();i++){
-			LocalIndex++;
-			if(Name==(*(*env)[currentflame])[i].first){
+	int currentenv;
+	int i;
+	FlameBack=0;
+	for(currentenv=(static_cast<int>(env->size())-1);currentenv>=0;currentenv--){
+		for(i=(*env)[currentenv].Items.size()-1;i>=0;i--){
+			if(Name==(*env)[currentenv].Items[i].VariableInfo.first){
 				//名前が一致
-				TypeInfo=(*(*env)[currentflame])[i].second; //自身の型を決定
-				found=true;
-				goto out_for;
+				TypeInfo=(*env)[currentenv].Items[i].VariableInfo.second;
+
+				/*if((*env)[currentenv].Items[i].LocalIndex==-1){
+					(*env)[currentenv].Items[i].LocalIndex=CurrentLocalVars->size();
+					CurrentLocalVars->push_back((*env)[currentenv].Items[i].VariableInfo);
+				}*/
+
+				LocalIndex=(*env)[currentenv].Items[i].LocalIndex;
+
+				return TypeInfo;
 			}
 		}
+		if((*env)[currentenv].is_internalblock==false){
+			FlameBack++;
+		}
 	}
-	out_for:
-	if(!found){
-		error("変数:"+Name+"は未定義またはスコープ外です。");
-	}
-	//cout<<Name<<":"<<localindex<<endl;
+
+	error(Name+"は未定義またはスコープ外です");
+
 	return TypeInfo;
 }
 
-TypeAST* UnaryExprAST::CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
+TypeAST* UnaryExprAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars){
 	//循環防止の為
 	if(TypeInfo!=NULL){
 		return TypeInfo;
 	}
 
-	TypeAST *oprandt=Operand->CheckType(env,geninfo);
+	TypeAST *oprandt=Operand->CheckType(env,geninfo,CurrentLocalVars);
 	if(Operator=="!"){
 		if(oprandt->GetName()!="bool"){
 			error("型に問題があります。単項演算子:"+Operator+" オペランド:"+oprandt->GetName());
@@ -521,9 +573,9 @@ TypeAST* UnaryExprAST::CheckType(vector< vector< pair<string,TypeAST *> > *> *en
 	return TypeInfo;
 }
 
-TypeAST* BinaryExprAST::CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
-	TypeAST *lhst=LHS->CheckType(env,geninfo);
-	TypeAST *rhst=RHS->CheckType(env,geninfo);
+TypeAST* BinaryExprAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars){
+	TypeAST *lhst=LHS->CheckType(env,geninfo,CurrentLocalVars);
+	TypeAST *rhst=RHS->CheckType(env,geninfo,CurrentLocalVars);
 	TypeInfo=NULL;
 
 	//組み込み型の型チェック
@@ -569,58 +621,62 @@ TypeAST* BinaryExprAST::CheckType(vector< vector< pair<string,TypeAST *> > *> *e
 	return TypeInfo;
 }
 
-void ReturnStatementAST::CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
+void ReturnStatementAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars){
 	if(Expression==NULL){return;}
 	if(Expression->IsBuilt()==false){
 		Expression=dynamic_cast<UnBuiltExprAST*>(Expression)->BuildAST(geninfo);
 	}
-	Expression->CheckType(env,geninfo);
+	Expression->CheckType(env,geninfo,CurrentLocalVars);
 }
 
-void IfStatementAST::CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
+void IfStatementAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars){
 	if(Condition->IsBuilt()==false){
 		Condition=dynamic_cast<UnBuiltExprAST*>(Condition)->BuildAST(geninfo);
 	}
-	Condition->CheckType(env,geninfo);
+	Condition->CheckType(env,geninfo,CurrentLocalVars);
 	if(Condition->TypeInfo->GetName()!="bool"){
 		error("条件式の型がboolではありません");
 	}
 
-	ThenBody->CheckType(env,geninfo);
-	ElseBody->CheckType(env,geninfo);
+	ThenBody->CheckType(env,geninfo,false,CurrentLocalVars);
+	ElseBody->CheckType(env,geninfo,false,CurrentLocalVars);
 
 	return;
 }
 
-void WhileStatementAST::CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
+void WhileStatementAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars){
 	if(Condition->IsBuilt()==false){
 		Condition=dynamic_cast<UnBuiltExprAST*>(Condition)->BuildAST(geninfo);
 	}
-	Condition->CheckType(env,geninfo);
+	Condition->CheckType(env,geninfo,CurrentLocalVars);
 	if(Condition->TypeInfo->GetName()!="bool"){
 		error("条件式の型がboolではありません");
 	}
 
-	Body->CheckType(env,geninfo);
+	Body->CheckType(env,geninfo,false,CurrentLocalVars);
 
 	return;
 }
 
-void ExpressionStatementAST::CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
+void ForStatementAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars){
+	error("forは未実装です");
+}
+
+void ExpressionStatementAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars){
 	if(Expression->IsBuilt()==false){
 		Expression=dynamic_cast<UnBuiltExprAST*>(Expression)->BuildAST(geninfo);
 	}
-	Expression->CheckType(env,geninfo);
+	Expression->CheckType(env,geninfo,CurrentLocalVars);
 }
 
-TypeAST* FunctionAST::CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
-	//引数を環境に追加
+TypeAST* FunctionAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars){
 	vector< pair<string,TypeAST *> >::iterator argiter;
 	for(argiter=Args->begin();argiter!=Args->end();argiter++){
-		Body->LocalVariables->push_back(*argiter);
+		LocalVariables->push_back(*argiter);
 	}
 
-	Body->CheckType(env,geninfo);
+	LocalVariables=new vector< pair<string,TypeAST*> >();
+	Body->CheckType(env,geninfo,true,LocalVariables);
 
 	vector<StatementAST *>::iterator iter2;
 
@@ -628,80 +684,65 @@ TypeAST* FunctionAST::CheckType(vector< vector< pair<string,TypeAST *> > *> *env
 		if(typeid(*(*iter2))==typeid(ReturnStatementAST)){
 			//return文の場合特別扱い。返す値の型とこの関数の返り値の型が不一致ならばエラー
 			if(dynamic_cast<ReturnStatementAST *>(*iter2)->Expression==NULL){
-				if(dynamic_cast<FunctionTypeAST*>(TypeInfo)->TypeList.back()->GetName() != "void"){
+				if(dynamic_cast<FunctionTypeAST*>(TypeInfo)->TypeList.back()->GetName()=="!!undefined!!"){
+					//推論が必要
+					dynamic_cast<FunctionTypeAST*>(TypeInfo)->TypeList.pop_back();
+					dynamic_cast<FunctionTypeAST*>(TypeInfo)->TypeList.push_back(new BasicTypeAST("void"));
+				}else if(dynamic_cast<FunctionTypeAST*>(TypeInfo)->TypeList.back()->GetName() != "void"){
 					error("'returnする値の型'と、'関数の戻り値の型'が一致しません。");
 				}
+			}else if(dynamic_cast<FunctionTypeAST*>(TypeInfo)->TypeList.back()->GetName()=="!!undefined!!"){
+				//推論が必要
+				dynamic_cast<FunctionTypeAST*>(TypeInfo)->TypeList.pop_back();
+				dynamic_cast<FunctionTypeAST*>(TypeInfo)->TypeList.push_back(dynamic_cast<ReturnStatementAST *>(*iter2)->Expression->TypeInfo);
 			}else if(dynamic_cast<FunctionTypeAST*>(TypeInfo)->TypeList.back()->GetName() != dynamic_cast<ReturnStatementAST *>(*iter2)->Expression->TypeInfo->GetName()){
 				error("'returnする値の型'と、'関数の戻り値の型'が一致しません。");
 			}
 		}
 	}
 
+	if(dynamic_cast<FunctionTypeAST*>(TypeInfo)->TypeList.back()->GetName()=="!!undefined!!"){
+		dynamic_cast<FunctionTypeAST*>(TypeInfo)->TypeList.pop_back();
+		dynamic_cast<FunctionTypeAST*>(TypeInfo)->TypeList.push_back(new BasicTypeAST("void"));
+	}
+
 	return TypeInfo; //自らの型を一応返しておく
 }
 
-TypeAST* CallExprAST::CheckType(vector< vector< pair<string,TypeAST *> > *> *env,CodegenInfo *geninfo){
-	if(PoolIndex!=-1){
-		//クロージャ直呼び出しのとき
-		TypeAST* func_t=reinterpret_cast<FunctionAST *>(geninfo->PublicConstantPool.GetReference(PoolIndex))->CheckType(env,geninfo);
-		this->TypeInfo=dynamic_cast<FunctionTypeAST*>(func_t)->TypeList.back();
-	}else{
-		//変数を介しての呼び出しのとき
+TypeAST* CallExprAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars){
+	if(callee->IsBuilt()==false){
+		callee=dynamic_cast<UnBuiltExprAST*>(callee)->BuildAST(geninfo);
+	}
+	callee->CheckType(env,geninfo,CurrentLocalVars);
 
-		//引数の型を順に決めていく
-		vector<ExprAST *>::iterator iter2;
-		for(iter2=args->begin();iter2!=args->end();iter2++){
-			if((*iter2)->IsBuilt()==false){
-				(*iter2)=(dynamic_cast<UnBuiltExprAST*>(*iter2))->BuildAST(geninfo);
-			}
-			(*iter2)->CheckType(env,geninfo);
-		}
-
-		//名前が一致するものがあるか上位のフレームに遡りながら探す
-		bool found=false;
-		int currentflame;
-		unsigned int i;
-		LocalIndex=-1;
-		for(currentflame=(static_cast<int>(env->size())-1);currentflame>=0;currentflame--){
-			for(i=0;i<(*env)[currentflame]->size();i++){
-				LocalIndex++;
-				if(callee==(*(*env)[currentflame])[i].first && typeid(*((*(*env)[currentflame])[i].second))==typeid(FunctionTypeAST)){
-					//名前が一致
-					found=true;
-					vector<TypeAST*> currentarg=dynamic_cast<FunctionTypeAST *>((*(*env)[currentflame])[i].second)->TypeList;
-					if(args->size()+1==currentarg.size()){ //+1するのは、argsには戻り値の型が含まれていないから
-						for(unsigned int j=0;j<args->size();j++){
-							if(*(args->at(j)->TypeInfo) != *(currentarg[j])){
-								goto nextfunc1;
-							}
-						}
-						TypeInfo=currentarg.back(); //関数の型ではなく関数の戻り値の型を代入
-						if(currentflame==0){
-							//トップレベルに関数がある場合はビルトイン関数を疑う
-							for(unsigned int k=0;k<geninfo->TopLevelFunction.size();k++){
-								if(geninfo->TopLevelFunction[k]->Name==callee){
-									isBuiltin=geninfo->TopLevelFunction[k]->isBuiltin;
-								}
-							}
-						}
-						return TypeInfo;
-					}
-				}
-
-				nextfunc1:
-				if(TypeInfo==NULL){}; //ラベルの後に式がないとエラーとなるため、無意味な式をひとつ
-			}
-		}
-
-		if(found){
-			error("関数定義と型が一致しません");
-		}else{
-			error(callee+"は未定義またはスコープ外です");
-		}
+	if(typeid(FunctionTypeAST) != typeid(*(callee->TypeInfo))){
+		error("calleeが関数ではありません");
 	}
 
-	return TypeInfo;
+	//引数の型を順に決めていく
+	vector<ExprAST *>::iterator iter2;
+	for(iter2=args->begin();iter2!=args->end();iter2++){
+		if((*iter2)->IsBuilt()==false){
+			(*iter2)=(dynamic_cast<UnBuiltExprAST*>(*iter2))->BuildAST(geninfo);
+		}
+		(*iter2)->CheckType(env,geninfo,CurrentLocalVars);
+	}
+
+	vector<TypeAST*> currentarg=dynamic_cast<FunctionTypeAST *>(callee->TypeInfo)->TypeList;
+	if(args->size()+1==currentarg.size()){ //+1するのは、argsには戻り値の型が含まれていないから
+		for(unsigned int j=0;j<args->size();j++){
+			if(*(args->at(j)->TypeInfo) != *(currentarg[j])){
+				goto type_error;
+			}
+		}
+		TypeInfo=currentarg.back(); //関数の型ではなく関数の戻り値の型を代入
+
+		return TypeInfo;
+	}
+	type_error:
+	error("引数リストの型とcalleeの引数の型が一致しません");
 }
+
 
 void BlockAST::Codegen(vector<int>* bytecodes, CodegenInfo* geninfo)
 {
@@ -717,35 +758,28 @@ void BlockAST::Codegen(vector<int>* bytecodes, CodegenInfo* geninfo)
     return;
 }
 
-void BlockAST::CheckType(vector< vector< pair<string, TypeAST* > >* >* env, CodegenInfo* geninfo)
+void BlockAST::CheckType(vector<Environment> *env, CodegenInfo* geninfo,bool addargs,vector< pair<string,TypeAST*> > *CurrentLocalVars/*現在の関数のローカル変数領域へのポインタ*/)
 {
-	vector< pair<string,TypeAST *> > *fflame=new vector< pair<string,TypeAST *> >();
-	//引数を環境に追加(Localvariablesに事前に登録してあった変数を登録（ブロックないの変数定義はこれから追加していく）)
-	vector< pair<string,TypeAST *> >::iterator argiter;
-	for(argiter=LocalVariables->begin();argiter!=LocalVariables->end();argiter++){
-		fflame->push_back(*argiter);
+	Environment newflame;
+	newflame.LocalVariablesPtr=CurrentLocalVars;
+
+	if(addargs){
+		//引数を追加する場合、つまり関数ブロックである場合（if,whileでは呼ばれない）
+		newflame.is_internalblock=false;
+		for(int i=0;i<CurrentLocalVars->size();i++){
+			newflame.Items.push_back({CurrentLocalVars->at(i),i});
+		}
+	}else{
+		newflame.is_internalblock=true;
 	}
-	env->push_back(fflame);
+
+	env->push_back(newflame);
+
 	vector<StatementAST *>::iterator iter2;
-
-	LocalVariables=new vector< pair<string,TypeAST*> >();
-
 	for(iter2=Body->begin();iter2!=Body->end();iter2++){
-		if(typeid(*(*iter2))==typeid(VariableDefStatementAST)){
-			env->back()->push_back(*(dynamic_cast<VariableDefStatementAST *>(*iter2)->Variable));
-		}
+		(*iter2)->CheckType(env,geninfo,CurrentLocalVars);
 	}
 
-	for(iter2=Body->begin();iter2!=Body->end();iter2++){
-		if(typeid(*(*iter2))==typeid(VariableDefStatementAST)){
-			//変数宣言を見つけたら変数リストへ随時追加していく
-			LocalVariables->push_back(*(dynamic_cast<VariableDefStatementAST *>(*iter2)->Variable));
-		}
-
-		(*iter2)->CheckType(env,geninfo);
-	}
-
-	delete env->back();
 	env->pop_back(); //最後尾のフレームを削除
 }
 
@@ -762,3 +796,149 @@ vector<int> BlockAST::FindChildFunction()
 
     return result;
 }
+
+void ListValExprAST::Codegen(vector<int>* bytecodes, CodegenInfo* geninfo)
+{
+	if(PoolIndex!=-1){
+		bytecodes->push_back(ipush);
+		bytecodes->push_back(PoolIndex);
+		//定数としてリストが生成されたが，例えばクロージャなら内部のコード生成が必要
+		//でも、bytecodesに余計なコードが入るといけないので新たなベクタにコードを吐かせてそれは捨てる
+		vector<int> dummy;
+		list<ExprAST*>::iterator iter;
+		for(iter=Value->begin();iter!=Value->end();iter++){
+			(*iter)->Codegen(&dummy,geninfo);
+		}
+	}else{
+		list<ExprAST*>::iterator iter;
+		for(iter=Value->begin();iter!=Value->end();iter++){
+			(*iter)->Codegen(bytecodes,geninfo);
+		}
+		bytecodes->push_back(makelist);
+		bytecodes->push_back(Value->size());
+	}
+}
+
+vector<int> ListValExprAST::FindChildFunction()
+{
+	vector<int> result_list;
+	vector<int> list_tmp;
+
+    list<ExprAST *>::iterator iter;
+    for(iter=Value->begin();iter!=Value->end();iter++){
+		list_tmp=(*iter)->FindChildFunction();
+		result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
+    }
+
+    return result_list;
+}
+
+TypeAST* ListValExprAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars)
+{
+	list<ExprAST*>::iterator iter;
+    for(iter=Value->begin();iter!=Value->end();iter++){
+		if((*iter)->IsBuilt()==false){
+			(*iter)=(dynamic_cast<UnBuiltExprAST*>(*iter))->BuildAST(geninfo);
+		}
+		(*iter)->CheckType(env,geninfo,CurrentLocalVars);
+		if(TypeInfo==NULL){
+			TypeInfo=(*iter)->TypeInfo;
+		}else{
+			if(TypeInfo->GetName()!=(*iter)->TypeInfo->GetName()){
+				error("リストの要素の型がバラバラです。");
+			}
+		}
+    }
+	TypeInfo=new ListTypeAST(TypeInfo); //要素の型のリスト
+
+	if(IsConstant()){
+		list<int> *const_list=new list<int>();
+		list<ExprAST*>::iterator iter;
+		for(iter=Value->begin();iter!=Value->end();iter++){
+			const_list->push_back((*iter)->GetVMValue(geninfo));
+		}
+		PoolIndex=geninfo->PublicConstantPool.SetReference(const_list);
+		cout<<"#"<<PoolIndex<<" : <list>"<<TypeInfo->GetName()<<endl;
+	}
+
+    return TypeInfo;
+}
+
+
+/*
+vector< pair<string,TypeAST*> > IfStatementAST::GetInternalVariables()
+{
+	vector< pair<string,TypeAST*> > result;
+	vector< pair<string,TypeAST*> > list_tmp;
+
+	vector<StatementAST*>::iterator iter;
+	for(iter=ThenBody->Body->begin();iter!=ThenBody->Body->end();iter++){
+		list_tmp=(*iter)->GetInternalVariables();
+		result.insert(result.end(),list_tmp.begin(),list_tmp.end());
+    }
+
+	for(iter=ElseBody->Body->begin();iter!=ElseBody->Body->end();iter++){
+		list_tmp=(*iter)->GetInternalVariables();
+		result.insert(result.end(),list_tmp.begin(),list_tmp.end());
+    }
+
+	return result;
+}
+
+vector< pair<string,TypeAST*> > WhileStatementAST::GetInternalVariables()
+{
+	vector< pair<string,TypeAST*> > result;
+	vector< pair<string,TypeAST*> > list_tmp;
+
+	vector<StatementAST*>::iterator iter;
+	for(iter=Body->Body->begin();iter!=Body->Body->end();iter++){
+		list_tmp=(*iter)->GetInternalVariables();
+		result.insert(result.end(),list_tmp.begin(),list_tmp.end());
+    }
+
+	return result;
+}
+
+vector< pair<string,TypeAST*> > ForStatementAST::GetInternalVariables()
+{
+
+}
+
+vector< pair<string,TypeAST*> > ReturnStatementAST::GetInternalVariables()
+{
+	vector< pair<string,TypeAST*> > result;
+
+	return result;
+}
+
+vector< pair<string,TypeAST*> > VariableDefStatementAST::GetInternalVariables()
+{
+	vector< pair<string,TypeAST*> > result;
+
+	result.push_back(*Variable);
+
+	return result;
+}
+
+vector< pair<string,TypeAST*> > ExpressionStatementAST::GetInternalVariables()
+{
+	vector< pair<string,TypeAST*> > result;
+
+	return result;
+}
+
+
+vector< pair<string,TypeAST*> > BlockAST::GetInternalVariables()
+{
+	vector< pair<string,TypeAST*> > result;
+	vector< pair<string,TypeAST*> > list_tmp;
+
+	vector<StatementAST*>::iterator iter;
+	for(iter=Body->begin();iter!=Body->end();iter++){
+		list_tmp=(*iter)->GetInternalVariables();
+		result.insert(result.end(),list_tmp.begin(),list_tmp.end());
+    }
+
+	return result;
+}
+*/

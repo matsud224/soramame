@@ -33,11 +33,11 @@ void VM::Run()
 
     int iopr1,iopr2;
     bool bopr1,bopr2;
-    int localindex;
+    int flameback,localindex;
 
     Flame *currentflame;
     int counter;
-	unsigned int i;
+	int i;
 
     while(true){
         if(Environment.size()==0){
@@ -163,6 +163,31 @@ void VM::Run()
 					}else if(builtin_name=="strlen"){
 						string str=*(reinterpret_cast<string *>(CodeInfo->PublicConstantPool.GetReference(Environment.back()->OperandStack.top()))); Environment.back()->OperandStack.pop();
 						Environment.back()->OperandStack.push(str.length());
+					}else if(builtin_name=="get_intlist"){
+						list<int> *lst=(reinterpret_cast<list<int> *>(CodeInfo->PublicConstantPool.GetReference(Environment.back()->OperandStack.top()))); Environment.back()->OperandStack.pop();
+						iopr1=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop();
+						list<int>::iterator iter=lst->begin();
+						for(int i=0;i<iopr1;i++){
+							iter++;
+						}
+						Environment.back()->OperandStack.push(*iter);
+					}else if(builtin_name=="get_boollist"){
+						list<int> *lst=(reinterpret_cast<list<int> *>(CodeInfo->PublicConstantPool.GetReference(Environment.back()->OperandStack.top()))); Environment.back()->OperandStack.pop();
+						iopr1=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop();
+						list<int>::iterator iter=lst->begin();
+						for(int i=0;i<iopr1;i++){
+							iter++;
+						}
+						Environment.back()->OperandStack.push(*iter);
+					}else if(builtin_name=="get_funlist"){
+						list<int> *lst=(reinterpret_cast<list<int> *>(CodeInfo->PublicConstantPool.GetReference(Environment.back()->OperandStack.top()))); Environment.back()->OperandStack.pop();
+						//cout<<endl<<lst->size()<<endl;
+						iopr1=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop();
+						list<int>::iterator iter=lst->begin();
+						for(int i=0;i<iopr1;i++){
+							iter++;
+						}
+						Environment.back()->OperandStack.push(*iter);
 					}
                 }else{
 					//フレームを作成
@@ -173,8 +198,8 @@ void VM::Run()
 						Environment.back()->OperandStack.pop();
 					}
 					//ローカル変数の準備
-					for(int i=callee->Body->LocalVariables->size()-1;i>=0;i--){
-						(*vars).push_back(pair<string,int>(callee->Body->LocalVariables->at(i).first,0)); //ローカル変数はすべて0に初期化される
+					for(int i=callee->LocalVariables->size()-1;i>=0;i--){
+						(*vars).push_back(pair<string,int>(callee->LocalVariables->at(i).first,0)); //ローカル変数はすべて0に初期化される
 					}
 					Flame *inv_flame=new Flame(vars,&(callee->bytecodes),cobj->ParentFlame);
 					for(unsigned int i=0;i<callee->ChildPoolIndex->size();i++){
@@ -186,22 +211,14 @@ void VM::Run()
             }
             break;
         case iloadlocal:
+        	flameback=(*(Environment.back()->CodePtr))[Environment.back()->PC++];
             localindex=(*(Environment.back()->CodePtr))[Environment.back()->PC++];
-			counter=-1;
-            //cout<<"localindex:"<<localindex<<endl;
+            counter=flameback;
 			currentflame=Environment.back();
-			do{
-				for(i=0;i<currentflame->Variables->size();i++){
-					counter++;
-					if(localindex==counter){
-                        //cout<<"push:"<<((*(Environment[currentflame]->Variables))[i].second)<<endl;
-						Environment.back()->OperandStack.push((*(currentflame->Variables))[i].second);
-						//cout<<(*(Environment[currentflame]->Variables))[i].second<<endl;
-						goto fin1;
-					}
-				}
-			}while(currentflame=currentflame->StaticLink);
-			fin1:
+			for(i=0;i<flameback;i++){
+				currentflame=currentflame->StaticLink;
+			}
+			Environment.back()->OperandStack.push((*(currentflame->Variables))[localindex].second);
             break;
         case ret:
             Environment.pop_back();
@@ -214,22 +231,15 @@ void VM::Run()
             }
             break;
         case istorelocal:
-            //スタックトップにlocalindexが、その下に値がおいてある
-            iopr1=(*(Environment.back()->CodePtr))[Environment.back()->PC++]; //localindex
+            flameback=(*(Environment.back()->CodePtr))[Environment.back()->PC++];
+            localindex=(*(Environment.back()->CodePtr))[Environment.back()->PC++]; //localindex
             iopr2=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop(); //値
-            counter=iopr1;
             //cout<<"localindex:"<<localindex<<endl;
             currentflame=Environment.back();
-			do{
-				for(i=0;i<currentflame->Variables->size();i++){
-					counter--;
-					if(counter==-1){
-						(*(currentflame->Variables))[i].second=iopr2;
-						goto fin6;
-					}
-				}
-			}while(currentflame=currentflame->StaticLink);
-			fin6:
+			for(i=0;i<flameback;i++){
+				currentflame=currentflame->StaticLink;
+			}
+			(*(currentflame->Variables))[localindex].second=iopr2;
             break;
 		case makeclosure:
 			{
@@ -255,6 +265,17 @@ void VM::Run()
 			iopr1=(*(Environment.back()->CodePtr))[Environment.back()->PC++];
 			Environment.back()->PC-=iopr1;
 			break;
+		case makelist:
+			{
+				list<int> *newlist=new list<int>();
+				iopr1=(*(Environment.back()->CodePtr))[Environment.back()->PC++]; //リストサイズ
+				for(int i=0;i<iopr1;i++){
+					iopr2=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop(); //リストの要素
+					newlist->push_back(iopr2);
+				}
+				Environment.back()->OperandStack.push(CodeInfo->PublicConstantPool.SetReference(newlist));
+				break;
+			}
         default:
             error("不正な命令です");
             break;

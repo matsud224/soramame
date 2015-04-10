@@ -49,12 +49,24 @@ void Compiler::ASTgen()
 	arglist.push_back(pair<string,TypeAST *>("val2",new BasicTypeAST("int")));
     genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"pow",new vector< pair<string,TypeAST *> >(arglist),new BasicTypeAST("int")));
 
+	arglist[0]=pair<string,TypeAST *>("list",new ListTypeAST(new BasicTypeAST("int")));
+	arglist[1]=pair<string,TypeAST *>("index",new BasicTypeAST("int"));
+    genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"get_intlist",new vector< pair<string,TypeAST *> >(arglist),new BasicTypeAST("int")));
+
+	arglist[0]=pair<string,TypeAST *>("list",new ListTypeAST(new BasicTypeAST("bool")));
+	arglist[1]=pair<string,TypeAST *>("index",new BasicTypeAST("int"));
+    genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"get_boollist",new vector< pair<string,TypeAST *> >(arglist),new BasicTypeAST("bool")));
+
+	vector<TypeAST*> fargs;
+	fargs.push_back(new BasicTypeAST("void"));
+	arglist[0]=pair<string,TypeAST *>("list",new ListTypeAST(new FunctionTypeAST(fargs)));
+	arglist[1]=pair<string,TypeAST *>("index",new BasicTypeAST("int"));
+    genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"get_funlist",new vector< pair<string,TypeAST *> >(arglist),new FunctionTypeAST(fargs)));
+
 
 	while(!parser->IsAccepted()){
 		pair<Symbol,TokenValue> token=lexer->Get();
-		#ifdef PARSER_DEBUG
-		cout<< CYAN "取得したトークン：" <<Parser::Symbol2Str(token.first)<<RESET<<endl;
-		#endif
+		//cout<< CYAN "取得したトークン：" <<Parser::Symbol2Str(token.first)<<RESET<<endl;
 		parser->Put(lexer,genInfo,token);
 	}
 
@@ -62,28 +74,32 @@ void Compiler::ASTgen()
 
 void Compiler::TypeCheck()
 {
-    vector< vector< pair<string,TypeAST *> > *> environment; //現在可視状態にある変数（トップレベルの関数も変数とみなす）のスタック（フレームを積み重ねていく）
+    vector<Environment> environment; //現在可視状態にある変数（トップレベルの関数も変数とみなす）のスタック（フレームを積み重ねていく）
 
     vector<FunctionAST *>::iterator fun_iter;
     vector<VariableDefStatementAST *>::iterator var_iter;
 
-    vector< pair<string,TypeAST *> > *rootflame=new vector< pair<string,TypeAST *> >();
+    Environment rootflame;
+	rootflame.is_internalblock=false;
+	rootflame.LocalVariablesPtr=&(genInfo->LocalVariables);
 
-    //型検査前に、トップレベルのシンボルをすべて登録しておく
-    for(var_iter=genInfo->TopLevelVariableDef.begin();var_iter!=genInfo->TopLevelVariableDef.end();var_iter++){
-		rootflame->push_back(pair<string,TypeAST *>((*var_iter)->Variable->first,(*var_iter)->Variable->second));
+	int cnt=0;
+	for(var_iter=genInfo->TopLevelVariableDef.begin();var_iter!=genInfo->TopLevelVariableDef.end();var_iter++){
+        rootflame.Items.push_back({*((*var_iter)->Variable),cnt});
+        cnt++;
     }
     for(fun_iter=genInfo->TopLevelFunction.begin();fun_iter!=genInfo->TopLevelFunction.end();fun_iter++){
-		rootflame->push_back(pair<string,TypeAST *>((*fun_iter)->Name,(*fun_iter)->TypeInfo));
+		rootflame.Items.push_back({pair<string,TypeAST *>((*fun_iter)->Name,(*fun_iter)->TypeInfo),cnt});
+		cnt++;
     }
     environment.push_back(rootflame); //トップレベルのフレーム
 
     for(var_iter=genInfo->TopLevelVariableDef.begin();var_iter!=genInfo->TopLevelVariableDef.end();var_iter++){
-        (*var_iter)->CheckType(&environment,genInfo);
+        (*var_iter)->CheckType(&environment,genInfo,&(genInfo->LocalVariables));
     }
     for(fun_iter=genInfo->TopLevelFunction.begin();fun_iter!=genInfo->TopLevelFunction.end();fun_iter++){
 		if((*fun_iter)->isBuiltin==false){
-			(*fun_iter)->CheckType(&environment,genInfo);
+			(*fun_iter)->CheckType(&environment,genInfo,&(genInfo->LocalVariables));
 		}
     }
 }
@@ -124,7 +140,7 @@ void Compiler::Codegen()
     //main関数（引数なしで、戻り値がvoidであるもの）を探す
     int main_index=-1;
     for(iterf=genInfo->TopLevelFunction.begin();iterf!=genInfo->TopLevelFunction.end();iterf++){
-        if((*iterf)->Name=="main" && (*iterf)->TypeInfo->GetName()=="()=>void"){
+        if((*iterf)->Name=="main" && (*iterf)->TypeInfo->GetName()=="fun()=>void"){
             main_index=(*iterf)->PoolIndex;
         }
     }

@@ -68,6 +68,7 @@ private:
 	set<int> conflict_state;
     set<int> stt_checked; //状態遷移表の作成をしたアイテム集合の番号（2重にチェックするのを避けるため）
 
+
     bool is_nonterminal(Symbol s);
     bool is_terminal(Symbol s);
     void BuildStateTable();
@@ -87,6 +88,7 @@ private:
     bool is_accepted;
 public:
 	static TokenValue dummy;
+	set<int> error_candidates; //バックトラックする度に行番号を記録
 
     Parser(){
     	is_accepted=false;

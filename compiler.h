@@ -55,6 +55,7 @@ public:
     ConstantPool PublicConstantPool;
     int MainFuncPoolIndex; //main関数のコンスタントプール・インデックス
 	vector<int> ChildPoolIndex;
+	vector< pair<string,TypeAST*> > LocalVariables;
 };
 
 class Compiler{

@@ -34,6 +34,7 @@ pair<Symbol,TokenValue> var_lex(char *str,Lexer *lex){return pair<Symbol,TokenVa
 pair<Symbol,TokenValue> fun_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(FUN ,Lexer::dummy);};
 pair<Symbol,TokenValue> if_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(IF ,Lexer::dummy);};
 pair<Symbol,TokenValue> while_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(WHILE ,Lexer::dummy);};
+pair<Symbol,TokenValue> for_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(FOR ,Lexer::dummy);};
 pair<Symbol,TokenValue> else_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(ELSE ,Lexer::dummy);};
 pair<Symbol,TokenValue> return_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(RETURN_S ,Lexer::dummy);};
 pair<Symbol,TokenValue> boolval_lex(char *str,Lexer *lex){
@@ -53,6 +54,8 @@ pair<Symbol,TokenValue> lparen_lex(char *str,Lexer *lex){return pair<Symbol,Toke
 pair<Symbol,TokenValue> rparen_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(RPAREN ,Lexer::dummy);};
 pair<Symbol,TokenValue> lbrace_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(LBRACE ,Lexer::dummy);};
 pair<Symbol,TokenValue> rbrace_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(RBRACE ,Lexer::dummy);};
+pair<Symbol,TokenValue> lbracket_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(LBRACKET ,Lexer::dummy);};
+pair<Symbol,TokenValue> rbracket_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(RBRACKET ,Lexer::dummy);};
 pair<Symbol,TokenValue> ident_lex(char *str,Lexer *lex){
 	TokenValue t;
 	t.str=str;
@@ -94,6 +97,7 @@ TokenRule TOKENRULE[TOKENRULECOUNT]={
 	{"fun",INITIAL,true,fun_lex},
     {"if",INITIAL,true,if_lex},
     {"while",INITIAL,true,while_lex},
+    {"for",INITIAL,true,for_lex},
     {"else",INITIAL,true,else_lex},
     {"return",INITIAL,true,return_lex},
     {"true",INITIAL,true,boolval_lex},
@@ -105,6 +109,8 @@ TokenRule TOKENRULE[TOKENRULECOUNT]={
     {"\\)",INITIAL,true,rparen_lex},
     {"\\{",INITIAL,true,lbrace_lex},
     {"\\}",INITIAL,true,rbrace_lex},
+    {"\\[",INITIAL,true,lbracket_lex},
+    {"\\]",INITIAL,true,rbracket_lex},
     {"[a-zA-Z_][a-zA-Z0-9_]*",INITIAL,true,ident_lex},
     {"[%=~\\|\\^\\+\\-\\*/<>&!]{1,3}",INITIAL,true,operator_lex},
     {"\\d+",INITIAL,true,intval_lex},
@@ -135,6 +141,7 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{variabledef_list,variabledef_list,COMMA,variabledef,SYNTAXEND},variabledef_list_addvariabledef_reduce},
     {{variabledef,IDENT,COLON,type,SYNTAXEND},variabledef_nonassignment_reduce},
     {{variabledef,IDENT,COLON,type,operator_n,expression,SYNTAXEND},variabledef_withassignment_reduce},
+    {{variabledef,IDENT,operator_n,expression,SYNTAXEND},variabledef_infer_reduce},
     {{statement_list,EMPTY,SYNTAXEND},statement_list_empty_reduce},
     {{statement_list,statement_list,statement,SYNTAXEND},statement_list_addstatement},
     {{statement_list,statement_list,VAR,variabledef_list,SEMICOLON,SYNTAXEND},statement_list_variabledef_reduce},
@@ -142,29 +149,34 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{statement,returnstatement,SEMICOLON,SYNTAXEND},NULL},
     {{statement,ifstatement,SYNTAXEND},NULL},
     {{statement,whilestatement,SYNTAXEND},NULL},
+    {{statement,forstatement,SYNTAXEND},NULL},
     {{expression,primary,SYNTAXEND},expression_primary_reduce},
     {{expression,parenexpr,SYNTAXEND},NULL},
     {{expression,expression,primary,SYNTAXEND},expression_add_reduce},
     {{expression,expression,parenexpr,SYNTAXEND},expression_addparen_reduce},
-    {{funcallexpr,variableexpr,LPAREN,arg_list,RPAREN,SYNTAXEND},funcallexpr_variable_reduce},
-    {{funcallexpr,closureexpr,LPAREN,arg_list,RPAREN,SYNTAXEND},funcallexpr_closure_reduce},
+    {{funcallexpr,funcallexpr,LPAREN,arg_list,RPAREN,SYNTAXEND},funcallexpr_reduce},
+    {{funcallexpr,closureexpr,LPAREN,arg_list,RPAREN,SYNTAXEND},funcallexpr_reduce},
+    {{funcallexpr,variableexpr,LPAREN,arg_list,RPAREN,SYNTAXEND},funcallexpr_reduce},
     {{primary,intvalexpr,SYNTAXEND},NULL},
     {{primary,boolvalexpr,SYNTAXEND},NULL},
     {{primary,stringvalexpr,SYNTAXEND},NULL},
     {{primary,funcallexpr,SYNTAXEND},NULL},
     {{primary,closureexpr,SYNTAXEND},NULL},
     {{primary,variableexpr,SYNTAXEND},NULL},
+    {{primary,listvalexpr,SYNTAXEND},NULL},
 	{{primary,operator_n,SYNTAXEND},NULL},
     {{variableexpr,IDENT,SYNTAXEND},variableexpr_reduce},
     {{parenexpr,LPAREN,expression,RPAREN,SYNTAXEND},parenexpr_reduce},
     {{returnstatement,RETURN_S,expression,SYNTAXEND},returnstatement_reduce},
 	{{returnstatement,RETURN_S,SYNTAXEND},returnstatement_noexp_reduce},
     {{type,IDENT,SYNTAXEND},type_normal_reduce},
-    {{type,LPAREN,type_list,RPAREN,operator_n,type,SYNTAXEND},type_fun_reduce},
+    {{type,FUN,LPAREN,type_list,RPAREN,operator_n,type,SYNTAXEND},type_fun_reduce},
+    {{type,LBRACKET,type,RBRACKET,SYNTAXEND},type_listtype_reduce},
     {{type_list,EMPTY,SYNTAXEND},type_list_empty_reduce},
     {{type_list,type,SYNTAXEND},type_list_type_reduce},
     {{type_list,type_list,COMMA,type,SYNTAXEND},type_list_addtype_reduce},
-    {{closureexpr,LPAREN,parameter_list,RPAREN,operator_n,type,LBRACE,block,RBRACE,SYNTAXEND},closureexpr_reduce},
+    {{closureexpr,FUN,LPAREN,parameter_list,RPAREN,operator_n,type,LBRACE,block,RBRACE,SYNTAXEND},closureexpr_reduce},
+    {{closureexpr,FUN,LPAREN,parameter_list,RPAREN,LBRACE,block,RBRACE,SYNTAXEND},closureexpr_rettypeinfer_reduce},
     {{arg_list,EMPTY,SYNTAXEND},arg_list_empty_reduce},
     {{arg_list,expression,SYNTAXEND},arg_list_expression_reduce},
     {{arg_list,arg_list,COMMA,expression,SYNTAXEND},arg_list_addexpression_reduce},
@@ -172,6 +184,8 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{ifstatement,IF,LPAREN,expression,RPAREN,LBRACE,block,RBRACE,ELSE,LBRACE,block,RBRACE,SYNTAXEND},ifstatement_withelse_reduce},
     {{block,statement_list,SYNTAXEND},block_reduce},
     {{whilestatement,WHILE,LPAREN,expression,RPAREN,LBRACE,block,RBRACE,SYNTAXEND},while_reduce},
+    {{forstatement,FOR,LPAREN,statement,SEMICOLON,expression,SEMICOLON,statement,RPAREN,LBRACE,block,RBRACE,SYNTAXEND},for_reduce},
+    {{listvalexpr,LBRACKET,arg_list,RBRACKET,SYNTAXEND},listvalexpr_reduce},
 };
 
 
@@ -182,6 +196,7 @@ int main()
 	srand((unsigned int)time(NULL));
 
 	Lexer *lexer;
+	Parser parser;
 	try{
 		string str="";
 		char c;
@@ -190,11 +205,16 @@ int main()
 		}
 		lexer=new Lexer(str.c_str());
 
-		Parser parser;
 		Compiler compiler(lexer,&parser);
 		compiler.Compile();
     }catch(SyntaxError){
-        cerr<<BG_RED"Syntax error  line:"<<lexer->curr_line<<RESET<<endl;
+        cerr<<BG_RED"Syntax error  line:";
+        set<int>::iterator iter;
+        parser.error_candidates.insert(lexer->curr_line);
+        for(iter=parser.error_candidates.begin();iter!=parser.error_candidates.end();iter++){
+			cerr<<(*iter)<<",";
+        }
+        cerr<<RESET<<endl;
     }catch(NoMatchRule){
         cerr<<BG_RED"トークンを生成できません"RESET<<endl;
     }catch(OnigurumaException ex){

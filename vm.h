@@ -25,7 +25,8 @@ enum{
     makeclosure,
     skip,iffalse_skip,
     icmpeq,icmpne,icmplt,icmple,icmpgt,icmpge,
-    back
+    back,
+    makelist
 };
 
 

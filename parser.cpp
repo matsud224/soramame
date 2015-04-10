@@ -101,6 +101,10 @@ string Parser::Symbol2Str(Symbol s){
     	return "{";
     case RBRACE:
     	return "}";
+	case RBRACKET:
+		return "[";
+	case LBRACKET:
+		return "]";
     case COMMA:
     	return ",";
     case COLON:
@@ -111,6 +115,12 @@ string Parser::Symbol2Str(Symbol s){
 		return "WHILE";
 	case whilestatement:
 		return "whilestatement";
+	case FOR:
+		return "FOR";
+	case forstatement:
+		return "forstatement";
+	case listvalexpr:
+		return "listvalexpr";
     default:
         return "<UNKNOWN SYMBOL>";
     }
@@ -423,6 +433,8 @@ void Parser::Put(Lexer *lexer,CodegenInfo *cgi,pair<Symbol,TokenValue> input){
 			cout<<BG_MAGENTA"バックトラックします"RESET<<endl;
 			#endif
 
+			error_candidates.insert(lexer->curr_line);
+
 			BacktrackingPoint btp=BacktrackingPoint_list.top();
 
 			lexer->curr_index=btp.CodePosition;
@@ -535,6 +547,7 @@ void Parser::Put(Lexer *lexer,CodegenInfo *cgi,pair<Symbol,TokenValue> input){
 				cout<<BG_MAGENTA"バックトラックします"RESET<<endl;
 				#endif
 
+				error_candidates.insert(lexer->curr_line);
 				BacktrackingPoint btp=BacktrackingPoint_list.top();
 
 				lexer->curr_index=btp.CodePosition;
