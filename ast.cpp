@@ -670,12 +670,13 @@ void ExpressionStatementAST::CheckType(vector<Environment> *env,CodegenInfo *gen
 }
 
 TypeAST* FunctionAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars){
+	LocalVariables=new vector< pair<string,TypeAST*> >();
+
 	vector< pair<string,TypeAST *> >::iterator argiter;
 	for(argiter=Args->begin();argiter!=Args->end();argiter++){
 		LocalVariables->push_back(*argiter);
 	}
 
-	LocalVariables=new vector< pair<string,TypeAST*> >();
 	Body->CheckType(env,geninfo,true,LocalVariables);
 
 	vector<StatementAST *>::iterator iter2;
@@ -714,6 +715,10 @@ TypeAST* CallExprAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo,ve
 		callee=dynamic_cast<UnBuiltExprAST*>(callee)->BuildAST(geninfo);
 	}
 	callee->CheckType(env,geninfo,CurrentLocalVars);
+
+	if(callee->TypeInfo==NULL){
+		error("再帰呼び出しをするには型情報を記述してください");
+	}
 
 	if(typeid(FunctionTypeAST) != typeid(*(callee->TypeInfo))){
 		error("calleeが関数ではありません");

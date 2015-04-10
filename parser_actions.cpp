@@ -132,7 +132,7 @@ TokenValue variabledef_withassignment_reduce(CodegenInfo *cgi,vector<TokenValue>
 
 TokenValue variabledef_infer_reduce(CodegenInfo*,vector<TokenValue> values){
 	TokenValue t;
-	t.variabledef_ast=new VariableDefStatementAST(new pair<string,TypeAST*>(values[0].str,NULL),new UnBuiltExprAST(values[4].expression_list));
+	t.variabledef_ast=new VariableDefStatementAST(new pair<string,TypeAST*>(values[0].str,NULL),new UnBuiltExprAST(values[2].expression_list));
 	return t;
 }
 
