@@ -39,7 +39,7 @@ private:
     int precedence;
     //TypeAST lhstype,rhstype,rettype;
 public:
-    OperatorInfo(int uorb,int assoc,bool is_ctfe=true,int prec=30):unaryorbinary(uorb),associativity(assoc),precedence(prec),IsCTFEable(is_ctfe){}
+    OperatorInfo(int uorb,int assoc,int prec,bool is_ctfe=true):unaryorbinary(uorb),associativity(assoc),precedence(prec),IsCTFEable(is_ctfe){}
     int GetAssociativity(){return associativity;}
     int GetPrecedence(){return precedence;}
     int GetUnaryOrBinary(){return unaryorbinary;}

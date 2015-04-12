@@ -86,6 +86,24 @@ public:
     }
 };
 
+//タプル型
+class TupleTypeAST : public TypeAST{
+public:
+    TupleTypeAST(vector<TypeAST*> t_list):ContainTypeList(t_list){}
+    vector<TypeAST*> ContainTypeList;
+    virtual string GetName(){
+		string name="(";
+		for(int i=0;i<ContainTypeList.size();i++){
+			name+=ContainTypeList[i]->GetName();
+			if(i!=ContainTypeList.size()-1){
+				name+=",";
+			}
+		}
+		name+=")";
+		return name;
+    }
+};
+
 class ExprAST{
 public:
 	TypeAST *TypeInfo;

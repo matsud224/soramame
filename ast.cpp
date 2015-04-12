@@ -372,6 +372,7 @@ ExprAST* UnBuiltExprAST::BuildAST(CodegenInfo* geninfo)
             while(!operatorstack.empty()){
                 string op1=dynamic_cast<OperatorAST*>(ExprList->at(input_pos))->Operator;
                 string op2=operatorstack.top()->Operator;
+                //cout <<(geninfo->OperatorList[op1]->GetAssociativity()==Left)<<endl<<(geninfo->OperatorList[op1]->GetPrecedence())<<(geninfo->OperatorList[op2]->GetPrecedence())<<endl;
                 if((geninfo->OperatorList[op1]->GetAssociativity()==Left && geninfo->OperatorList[op1]->GetPrecedence()<=geninfo->OperatorList[op2]->GetPrecedence()) || (geninfo->OperatorList[op1]->GetPrecedence()<geninfo->OperatorList[op2]->GetPrecedence())){
                     output.push(operatorstack.top());
                     operatorstack.pop();
@@ -828,9 +829,9 @@ void ListValExprAST::Codegen(vector<int>* bytecodes, CodegenInfo* geninfo)
 			(*iter)->Codegen(&dummy,geninfo);
 		}
 	}else{
-		list<ExprAST*>::iterator iter;
-		for(iter=Value->begin();iter!=Value->end();iter++){
-			(*iter)->Codegen(bytecodes,geninfo);
+		list<ExprAST*>::reverse_iterator riter;
+		for(riter=Value->rbegin();riter!=Value->rend();riter++){
+			(*riter)->Codegen(bytecodes,geninfo);
 		}
 		bytecodes->push_back(makelist);
 		bytecodes->push_back(Value->size());
@@ -1007,9 +1008,10 @@ vector<ExprAST*> VariableDefStatementAST::GetCallExprList()
 	vector<ExprAST*> result;
 	vector<ExprAST*> temp;
 
-	temp=InitialValue->GetCallExprList();
-	result.insert(result.end(),temp.begin(),temp.end());
-
+	if(InitialValue!=NULL){
+		temp=InitialValue->GetCallExprList();
+		result.insert(result.end(),temp.begin(),temp.end());
+	}
 	return result;
 }
 
