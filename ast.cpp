@@ -3,6 +3,7 @@
 #include "ast.h"
 #include "vm.h"
 #include "utility.h"
+#include <algorithm>
 #include <iostream>
 #include <stack>
 #include <queue>
@@ -251,6 +252,12 @@ void BinaryExprAST::Codegen(vector<int>* bytecodes,CodegenInfo *geninfo)
 
 void CallExprAST::Codegen(vector<int>* bytecodes,CodegenInfo *geninfo)
 {
+	if(callee==NULL){
+		//計算済み
+		bytecodes->push_back(ipush);
+		bytecodes->push_back(CalculatedValue);
+		return;
+	}
     vector<ExprAST *>::reverse_iterator iter;
     for(iter=args->rbegin();iter!=args->rend();iter++){
         (*iter)->Codegen(bytecodes,geninfo);
@@ -538,6 +545,12 @@ TypeAST* VariableExprAST::CheckType(vector<Environment> *env,CodegenInfo *geninf
 				}*/
 
 				LocalIndex=(*env)[currentenv].Items[i].LocalIndex;
+
+				if(currentenv==0 && geninfo->TopLevelFunction.size()>LocalIndex){
+					is_toplevel_func=true;
+				}else{
+					is_toplevel_func=false;
+				}
 
 				return TypeInfo;
 			}
@@ -870,80 +883,256 @@ TypeAST* ListValExprAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo
 }
 
 
-/*
-vector< pair<string,TypeAST*> > IfStatementAST::GetInternalVariables()
-{
-	vector< pair<string,TypeAST*> > result;
-	vector< pair<string,TypeAST*> > list_tmp;
+bool ListValExprAST::IsCTFEable(CodegenInfo *cgi,int curr_fun_index){
+	list<ExprAST*>::iterator iter;
+	for(iter=Value->begin();iter!=Value->end();iter++){
+		if((*iter)->IsCTFEable(cgi,curr_fun_index)==false){
+			return false;
+		}
+	}
+	return true;
+}
 
+bool FunctionAST::IsCTFEable(CodegenInfo *cgi,int curr_fun_index){
+	if(isBuiltin){
+		return is_builtin_CTFEable;
+	}
+
+	if(Name=="<closure>"){
+		return false; //クロージャはフレームへのポインタを持つため事前実行は不可
+	}
+
+	//curr_fun_indexにはPoolIndexでなく、CodegenInfo.TopLevelFunctionListでのインデックスを指定すべき
+	vector<FunctionAST*>::iterator found=find(cgi->TopLevelFunction.begin(),cgi->TopLevelFunction.end(),const_cast<FunctionAST*>(this));
+	size_t index=distance(cgi->TopLevelFunction.begin(),found);
+	return Body->IsCTFEable(cgi,index);
+}
+
+bool CallExprAST::IsCTFEable(CodegenInfo *cgi,int curr_fun_index){
+	if(callee==NULL){
+		return true;
+	}
+	vector<ExprAST*>::iterator iter;
+	for(iter=args->begin();iter!=args->end();iter++){
+		if((*iter)->IsCTFEable(cgi,curr_fun_index)==false){
+			return false;
+		}
+	}
+
+	return callee->IsCTFEable(cgi,curr_fun_index);
+};
+
+bool IfStatementAST::IsCTFEable(CodegenInfo* cgi,int curr_fun_index){
+	return Condition->IsCTFEable(cgi,curr_fun_index)&&ThenBody->IsCTFEable(cgi,curr_fun_index)&&(ElseBody==NULL?true:ElseBody->IsCTFEable(cgi,curr_fun_index));
+}
+
+bool WhileStatementAST::IsCTFEable(CodegenInfo* cgi,int curr_fun_index){
+	return Condition->IsCTFEable(cgi,curr_fun_index)&&Body->IsCTFEable(cgi,curr_fun_index);
+}
+
+bool ReturnStatementAST::IsCTFEable(CodegenInfo* cgi,int curr_fun_index){
+	return (Expression==NULL?true:Expression->IsCTFEable(cgi,curr_fun_index));
+}
+
+bool VariableDefStatementAST::IsCTFEable(CodegenInfo* cgi,int curr_fun_index){
+	return InitialValue==NULL?true:InitialValue->IsCTFEable(cgi,curr_fun_index);
+}
+
+bool ExpressionStatementAST::IsCTFEable(CodegenInfo* cgi,int curr_fun_index){
+	return Expression->IsCTFEable(cgi,curr_fun_index);
+}
+
+bool BlockAST::IsCTFEable(CodegenInfo* cgi,int curr_fun_index){
 	vector<StatementAST*>::iterator iter;
-	for(iter=ThenBody->Body->begin();iter!=ThenBody->Body->end();iter++){
-		list_tmp=(*iter)->GetInternalVariables();
-		result.insert(result.end(),list_tmp.begin(),list_tmp.end());
-    }
+	for(iter=Body->begin();iter!=Body->end();iter++){
+		if((*iter)->IsCTFEable(cgi,curr_fun_index)==false){
+			return false;
+		}
+	}
+	return true;
+}
 
-	for(iter=ElseBody->Body->begin();iter!=ElseBody->Body->end();iter++){
-		list_tmp=(*iter)->GetInternalVariables();
-		result.insert(result.end(),list_tmp.begin(),list_tmp.end());
-    }
+
+vector<ExprAST*> IfStatementAST::GetCallExprList()
+{
+	vector<ExprAST*> result;
+	vector<ExprAST*> temp;
+
+	temp=Condition->GetCallExprList();
+	result.insert(result.end(),temp.begin(),temp.end());
+
+	temp=ThenBody->GetCallExprList();
+	result.insert(result.end(),temp.begin(),temp.end());
+	if(ElseBody!=NULL){
+		temp=ElseBody->GetCallExprList();
+		result.insert(result.end(),temp.begin(),temp.end());
+	}
 
 	return result;
 }
 
-vector< pair<string,TypeAST*> > WhileStatementAST::GetInternalVariables()
+vector<ExprAST*> WhileStatementAST::GetCallExprList()
 {
-	vector< pair<string,TypeAST*> > result;
-	vector< pair<string,TypeAST*> > list_tmp;
+	vector<ExprAST*> result;
+	vector<ExprAST*> temp;
 
-	vector<StatementAST*>::iterator iter;
-	for(iter=Body->Body->begin();iter!=Body->Body->end();iter++){
-		list_tmp=(*iter)->GetInternalVariables();
-		result.insert(result.end(),list_tmp.begin(),list_tmp.end());
-    }
+	temp=Condition->GetCallExprList();
+	result.insert(result.end(),temp.begin(),temp.end());
+
+	temp=Body->GetCallExprList();
+	result.insert(result.end(),temp.begin(),temp.end());
 
 	return result;
 }
 
-vector< pair<string,TypeAST*> > ForStatementAST::GetInternalVariables()
+vector<ExprAST*> ForStatementAST::GetCallExprList()
 {
-
+	vector<ExprAST*> result;
+	return result;
 }
 
-vector< pair<string,TypeAST*> > ReturnStatementAST::GetInternalVariables()
+vector<ExprAST*> ReturnStatementAST::GetCallExprList()
 {
-	vector< pair<string,TypeAST*> > result;
+	vector<ExprAST*> result;
+	vector<ExprAST*> temp;
+
+	temp=Expression->GetCallExprList();
+	result.insert(result.end(),temp.begin(),temp.end());
 
 	return result;
 }
 
-vector< pair<string,TypeAST*> > VariableDefStatementAST::GetInternalVariables()
+vector<ExprAST*> VariableDefStatementAST::GetCallExprList()
 {
-	vector< pair<string,TypeAST*> > result;
+	vector<ExprAST*> result;
+	vector<ExprAST*> temp;
 
-	result.push_back(*Variable);
+	temp=InitialValue->GetCallExprList();
+	result.insert(result.end(),temp.begin(),temp.end());
 
 	return result;
 }
 
-vector< pair<string,TypeAST*> > ExpressionStatementAST::GetInternalVariables()
+vector<ExprAST*> ExpressionStatementAST::GetCallExprList()
 {
-	vector< pair<string,TypeAST*> > result;
+	vector<ExprAST*> result;
+	vector<ExprAST*> temp;
+
+	temp=Expression->GetCallExprList();
+	result.insert(result.end(),temp.begin(),temp.end());
 
 	return result;
 }
 
-
-vector< pair<string,TypeAST*> > BlockAST::GetInternalVariables()
+vector<ExprAST*> BlockAST::GetCallExprList()
 {
-	vector< pair<string,TypeAST*> > result;
-	vector< pair<string,TypeAST*> > list_tmp;
+	vector<ExprAST*> result;
+	vector<ExprAST*> temp;
 
 	vector<StatementAST*>::iterator iter;
 	for(iter=Body->begin();iter!=Body->end();iter++){
-		list_tmp=(*iter)->GetInternalVariables();
-		result.insert(result.end(),list_tmp.begin(),list_tmp.end());
-    }
+		temp=(*iter)->GetCallExprList();
+		result.insert(result.end(),temp.begin(),temp.end());
+	}
 
 	return result;
 }
-*/
+
+vector<ExprAST*> UnBuiltExprAST::GetCallExprList()
+{
+	vector<ExprAST*> result;
+	return result;
+}
+
+vector<ExprAST*> IntValExprAST::GetCallExprList()
+{
+	vector<ExprAST*> result;
+	return result;
+}
+
+vector<ExprAST*> BoolValExprAST::GetCallExprList()
+{
+	vector<ExprAST*> result;
+	return result;
+}
+
+vector<ExprAST*> StringValExprAST::GetCallExprList()
+{
+	vector<ExprAST*> result;
+	return result;
+}
+
+vector<ExprAST*> ListValExprAST::GetCallExprList()
+{
+	vector<ExprAST*> result;
+	vector<ExprAST*> temp;
+
+	list<ExprAST*>::iterator iter;
+	for(iter=Value->begin();iter!=Value->end();iter++){
+		temp=(*iter)->GetCallExprList();
+		result.insert(result.end(),temp.begin(),temp.end());
+	}
+	return result;
+}
+
+vector<ExprAST*> OperatorAST::GetCallExprList()
+{
+	vector<ExprAST*> result;
+	return result;
+}
+
+vector<ExprAST*> FunctionAST::GetCallExprList()
+{
+	vector<ExprAST*> result;
+	result=Body->GetCallExprList();
+	return result;
+}
+
+vector<ExprAST*> VariableExprAST::GetCallExprList()
+{
+	vector<ExprAST*> result;
+	return result;
+}
+
+vector<ExprAST*> CallExprAST::GetCallExprList()
+{
+	vector<ExprAST*> result;
+	vector<ExprAST*> temp;
+	vector<ExprAST*>::iterator iter;
+	for(iter=args->begin();iter!=args->end();iter++){
+		temp=(*iter)->GetCallExprList();
+		result.insert(result.end(),temp.begin(),temp.end());
+	}
+
+	if(callee!=NULL){
+		temp=callee->GetCallExprList();
+		result.insert(result.end(),temp.begin(),temp.end());
+	}
+	//自身を追加
+	if(callee!=NULL){
+		result.push_back(this);
+	}
+
+	return result;
+}
+
+vector<ExprAST*> UnaryExprAST::GetCallExprList()
+{
+	vector<ExprAST*> result;
+	vector<ExprAST*> temp;
+	temp=Operand->GetCallExprList();
+	result.insert(result.end(),temp.begin(),temp.end());
+	return result;
+}
+
+vector<ExprAST*> BinaryExprAST::GetCallExprList()
+{
+	vector<ExprAST*> result;
+	vector<ExprAST*> temp;
+	temp=LHS->GetCallExprList();
+	result.insert(result.end(),temp.begin(),temp.end());
+	temp=RHS->GetCallExprList();
+	result.insert(result.end(),temp.begin(),temp.end());
+	return result;
+}
+

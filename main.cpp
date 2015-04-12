@@ -81,7 +81,12 @@ pair<Symbol,TokenValue> stringval_lex(char *str,Lexer *lex){
 	for(int i=0;i<str_temp.length()+1;i++){
 		str_a[i]=str_temp[i];
 	}
-	t.str=str_a;
+	string escaped=escape_str(str_a);
+	char *str_final=new char[escaped.length()+1];
+	for(int i=0;i<escaped.length()+1;i++){
+		str_final[i]=escaped[i];
+	}
+	t.str=str_final;
 	return pair<Symbol,TokenValue>(STRINGVAL ,t);
 };
 pair<Symbol,TokenValue> nextline_lex(char *str,Lexer *lex){

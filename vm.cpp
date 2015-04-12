@@ -10,19 +10,19 @@
 using namespace std;
 
 
-void VM::Run()
+int VM::Run()
 {
     //トップレベルのフレームを作成
     vector< pair<string,int> > *toplevel_vars=new vector< pair<string,int> >();
 
     Flame *tl_flame=new Flame(toplevel_vars,&(CodeInfo->Bootstrap),NULL);
 
-    for(unsigned int i=0;i<CodeInfo->TopLevelVariableDef.size();i++){
-        (*toplevel_vars).push_back(pair<string,int>(CodeInfo->TopLevelVariableDef[i]->Variable->first,0)); //値はとりあえず0にしておく
-    }
     for(unsigned int i=0;i<CodeInfo->TopLevelFunction.size();i++){
 		ClosureObject *cobj=new ClosureObject(CodeInfo->TopLevelFunction[i]->PoolIndex, tl_flame);
         (*toplevel_vars).push_back(pair<string,int>(CodeInfo->TopLevelFunction[i]->Name,CodeInfo->PublicConstantPool.SetReference(cobj)));
+    }
+	for(unsigned int i=0;i<CodeInfo->TopLevelVariableDef.size();i++){
+        (*toplevel_vars).push_back(pair<string,int>(CodeInfo->TopLevelVariableDef[i]->Variable->first,0)); //値はとりあえず0にしておく
     }
 
     for(unsigned int i=0;i<CodeInfo->ChildPoolIndex.size();i++){
@@ -41,7 +41,7 @@ void VM::Run()
 
     while(true){
         if(Environment.size()==0){
-            break;
+			return 0;
         }
         switch((*(Environment.back()->CodePtr))[Environment.back()->PC++]){
         case ipush:
@@ -139,7 +139,7 @@ void VM::Run()
                 if(callee->isBuiltin){
 					//ビルトイン関数の場合は、フレームを作らず、直に値をスタックに置く
 					string builtin_name=callee->Name;
-					if(builtin_name=="print"){
+					if(builtin_name=="print" || builtin_name=="debug_print"){
 						string str=*(reinterpret_cast<string *>(CodeInfo->PublicConstantPool.GetReference(Environment.back()->OperandStack.top()))); Environment.back()->OperandStack.pop();
 						cout<<str<<flush;
 					}else if(builtin_name=="printint"){
@@ -225,6 +225,10 @@ void VM::Run()
             break;
         case iret:
             iopr1=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop();
+            if(Environment.size()==2){
+				//ブートストラップコードへのreturn...
+				return iopr1;
+            }
             Environment.pop_back();
             if(!Environment.empty()){
                 Environment.back()->OperandStack.push(iopr1);

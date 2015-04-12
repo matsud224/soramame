@@ -47,7 +47,7 @@ private:
      vector<Flame *> Environment;
 public:
     VM( CodegenInfo *cinfo):CodeInfo(cinfo){}
-    void Run();
+    int Run();
 };
 
 

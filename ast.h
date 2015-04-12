@@ -97,6 +97,8 @@ public:
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo)=0;
     virtual TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars)=0;
     virtual vector<int> FindChildFunction()=0;
+    virtual bool IsCTFEable(CodegenInfo *cgi,int curr_fun_index)=0;
+	virtual vector<ExprAST*> GetCallExprList()=0;
 };
 
 class UnBuiltExprAST : public ExprAST{
@@ -110,6 +112,8 @@ public:
     virtual TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars){return TypeInfo;}
     ExprAST *BuildAST(CodegenInfo*);
     virtual vector<int> FindChildFunction();
+    virtual bool IsCTFEable(CodegenInfo *cgi,int curr_fun_index){return false;}
+	virtual vector<ExprAST*> GetCallExprList();
 };
 
 class IntValExprAST : public ExprAST{
@@ -121,6 +125,8 @@ public:
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
     virtual TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars){return TypeInfo;}
     virtual vector<int> FindChildFunction(){return vector<int>();};
+    virtual bool IsCTFEable(CodegenInfo *cgi,int curr_fun_index){return true;};
+    virtual vector<ExprAST*> GetCallExprList();
 };
 
 class BoolValExprAST : public ExprAST{
@@ -132,6 +138,8 @@ public:
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
     virtual TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars){return TypeInfo;}
     virtual vector<int> FindChildFunction(){return vector<int>();};
+	virtual bool IsCTFEable(CodegenInfo *cgi,int curr_fun_index){return true;}
+	virtual vector<ExprAST*> GetCallExprList();
 };
 
 class StringValExprAST : public ExprAST{
@@ -149,6 +157,8 @@ public:
     int GetVMValue(CodegenInfo *cgi){return PoolIndex;}
     virtual TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars){return TypeInfo;}
     virtual vector<int> FindChildFunction(){return vector<int>();};
+    virtual bool IsCTFEable(CodegenInfo *cgi,int curr_fun_index){return true;};
+    virtual vector<ExprAST*> GetCallExprList();
 };
 
 class ListValExprAST : public ExprAST{
@@ -172,6 +182,8 @@ public:
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
     virtual TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
     virtual vector<int> FindChildFunction();
+    virtual bool IsCTFEable(CodegenInfo*,int);
+    virtual vector<ExprAST*> GetCallExprList();
 };
 
 //操車場アルゴリズムのために
@@ -185,6 +197,8 @@ public:
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo){}
     virtual TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars){return NULL;}
     virtual vector<int> FindChildFunction(){return vector<int>();};
+	virtual bool IsCTFEable(CodegenInfo *cgi,int curr_fun_index){return false;}
+	virtual vector<ExprAST*> GetCallExprList();
 };
 
 class FunctionAST : public ExprAST{
@@ -198,6 +212,7 @@ public:
 	string Name;
 	BlockAST *Body;
 	vector< pair<string,TypeAST *> > *LocalVariables; //Argsを含む
+	bool is_builtin_CTFEable;
 	virtual bool IsConstant(){return false;}
 	int GetVMValue(CodegenInfo *cgi){
 		return -1;
@@ -222,7 +237,7 @@ public:
     }
 
     //組み込み関数用のコンストラクタ
-    FunctionAST(CodegenInfo *cgi,string n,vector< pair<string,TypeAST *> > *a,TypeAST *rett):Name(n),Args(a){
+    FunctionAST(CodegenInfo *cgi,string n,vector< pair<string,TypeAST *> > *a,TypeAST *rett,bool CTFEable):Name(n),Args(a),is_builtin_CTFEable(CTFEable){
 		vector<TypeAST*> typelist;
 		vector< pair<string,TypeAST *> >::iterator iter;
 		for(iter=a->begin();iter!=a->end();iter++){
@@ -236,6 +251,9 @@ public:
     }
 
     virtual void Codegen(vector<int> *unused_argumnt,CodegenInfo *geninfo);
+
+    virtual bool IsCTFEable(CodegenInfo*,int);
+    virtual vector<ExprAST*> GetCallExprList();
 };
 
 
@@ -244,6 +262,7 @@ public:
     string Name;
     int LocalIndex;//ローカル変数のインデックス番号（フレーム配列のインデックス）
     int FlameBack; //フレームを何回遡るか
+    bool is_toplevel_func; //トップレベル関数または組み込み関数かどうか(CheckTypeで分かる)
 
     VariableExprAST(const string &name):Name(name){TypeInfo=NULL;}
     virtual bool IsConstant(){return false;}
@@ -251,20 +270,42 @@ public:
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
     virtual TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
     virtual vector<int> FindChildFunction(){return vector<int>();};
+    virtual bool IsCTFEable(CodegenInfo *cgi,int curr_fun_index){
+    	if(FlameBack==0){return true;}
+    	if(is_toplevel_func){
+			if(LocalIndex==curr_fun_index){
+				return true;
+			}
+			return cgi->TopLevelFunction[LocalIndex]->IsCTFEable(cgi,curr_fun_index);
+    	}
+    	return false;
+	}
+    virtual vector<ExprAST*> GetCallExprList();
 };
 
 class CallExprAST : public ExprAST{
 public:
     ExprAST* callee;
+    int CalculatedValue; //callee==NULLの時はこちらの計算結果を利用
     vector<ExprAST *> *args;
 
     CallExprAST(ExprAST* callee_func,vector<ExprAST *> *args_list):callee(callee_func),args(args_list){TypeInfo=NULL;}
 
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
-    virtual bool IsConstant(){return false;}
-    int GetVMValue(CodegenInfo *cgi){return -1;}
+    virtual bool IsConstant(){
+    	return (callee==NULL);
+	}
+    int GetVMValue(CodegenInfo *cgi){
+    	if(callee==NULL){
+			return CalculatedValue;
+    	}else{
+			return -1;
+    	}
+	}
     virtual TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
     virtual vector<int> FindChildFunction();
+    virtual bool IsCTFEable(CodegenInfo *cgi,int curr_fun_index);
+    virtual vector<ExprAST*> GetCallExprList();
 };
 
 class UnaryExprAST : public ExprAST{
@@ -278,6 +319,8 @@ public:
     int GetVMValue(CodegenInfo *cgi){return -1;}
     virtual TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
     virtual vector<int> FindChildFunction(){return vector<int>();}; //AST未構築なので呼び出されることはない。
+	virtual bool IsCTFEable(CodegenInfo *cgi,int curr_fun_index){return Operand->IsCTFEable(cgi,curr_fun_index)&&cgi->OperatorList[Operator]->IsCTFEable;}
+	virtual vector<ExprAST*> GetCallExprList();
 };
 
 class BinaryExprAST : public ExprAST{
@@ -291,6 +334,8 @@ public:
     int GetVMValue(CodegenInfo *cgi){return -1;}
     virtual TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
     virtual vector<int> FindChildFunction(){return vector<int>();}; //AST未構築なので呼び出されることはない。
+    virtual bool IsCTFEable(CodegenInfo* cgi,int curr_fun_index){return LHS->IsCTFEable(cgi,curr_fun_index)&&RHS->IsCTFEable(cgi,curr_fun_index)&&cgi->OperatorList[Operator]->IsCTFEable;}
+	virtual vector<ExprAST*> GetCallExprList();
 };
 
 
@@ -300,7 +345,8 @@ public:
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo)=0;
     virtual void CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars)=0;
 	virtual vector<int> FindChildFunction()=0;
-	//virtual vector< pair<string,TypeAST*> > GetInternalVariables()=0;
+	virtual bool IsCTFEable(CodegenInfo* cgi,int)=0;
+	virtual vector<ExprAST*> GetCallExprList()=0;
 };
 
 class IfStatementAST : public StatementAST{
@@ -313,7 +359,8 @@ public:
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
     virtual void CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
     virtual vector<int> FindChildFunction();
-    //virtual vector< pair<string,TypeAST*> > GetInternalVariables();
+    virtual bool IsCTFEable(CodegenInfo* cgi,int);
+    virtual vector<ExprAST*> GetCallExprList();
 };
 
 class WhileStatementAST : public StatementAST{
@@ -325,7 +372,8 @@ public:
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
     virtual void CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
     virtual vector<int> FindChildFunction();
-    //virtual vector< pair<string,TypeAST*> > GetInternalVariables();
+    virtual bool IsCTFEable(CodegenInfo* cgi,int);
+    virtual vector<ExprAST*> GetCallExprList();
 };
 
 class ForStatementAST : public StatementAST{
@@ -339,7 +387,8 @@ public:
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
     virtual void CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
     virtual vector<int> FindChildFunction();
-    //virtual vector< pair<string,TypeAST*> > GetInternalVariables();
+    virtual bool IsCTFEable(CodegenInfo* cgi,int){return false;}
+    virtual vector<ExprAST*> GetCallExprList();
 };
 
 class ReturnStatementAST : public StatementAST{
@@ -350,7 +399,8 @@ public:
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
     virtual void CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
     virtual vector<int> FindChildFunction();
-    //virtual vector< pair<string,TypeAST*> > GetInternalVariables();
+    virtual bool IsCTFEable(CodegenInfo* cgi,int);
+    virtual vector<ExprAST*> GetCallExprList();
 };
 
 class VariableDefStatementAST : public StatementAST{
@@ -364,7 +414,8 @@ public:
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
     virtual void CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
     virtual vector<int> FindChildFunction();
-    //virtual vector< pair<string,TypeAST*> > GetInternalVariables();
+    virtual bool IsCTFEable(CodegenInfo* cgi,int);
+    virtual vector<ExprAST*> GetCallExprList();
 };
 
 class ExpressionStatementAST : public StatementAST{
@@ -375,7 +426,8 @@ public:
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
     virtual void CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
     virtual vector<int> FindChildFunction();
-    //virtual vector< pair<string,TypeAST*> > GetInternalVariables();
+    virtual bool IsCTFEable(CodegenInfo* cgi,int);
+    virtual vector<ExprAST*> GetCallExprList();
 };
 
 class BlockAST{
@@ -387,5 +439,6 @@ public:
 	void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
 	void CheckType(vector<Environment> *env,CodegenInfo *geninfo,bool isinternalblock,vector< pair<string,TypeAST*> > *CurrentLocalVars);
     vector<int> FindChildFunction();
-    //virtual vector< pair<string,TypeAST*> > GetInternalVariables();
+    bool IsCTFEable(CodegenInfo* cgi,int);
+    vector<ExprAST*> GetCallExprList();
 };

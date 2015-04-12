@@ -39,10 +39,11 @@ private:
     int precedence;
     //TypeAST lhstype,rhstype,rettype;
 public:
-    OperatorInfo(int uorb,int assoc,int prec=30):unaryorbinary(uorb),associativity(assoc),precedence(prec){}
+    OperatorInfo(int uorb,int assoc,bool is_ctfe=true,int prec=30):unaryorbinary(uorb),associativity(assoc),precedence(prec),IsCTFEable(is_ctfe){}
     int GetAssociativity(){return associativity;}
     int GetPrecedence(){return precedence;}
     int GetUnaryOrBinary(){return unaryorbinary;}
+    bool IsCTFEable;
 };
 
 //パースした時に得た情報を詰め込んでおく
@@ -63,6 +64,7 @@ private:
 	void ASTgen();
     void RegisterChildClosure();
     void TypeCheck();
+    void CTFE(int);
     void Codegen();
 public:
 	Lexer *lexer;
@@ -81,6 +83,8 @@ public:
 		TypeCheck();
 		cout<<BG_GREEN"コード生成を行っています..."RESET<<endl;
 		Codegen();
+		cout<<BG_GREEN"コンパイル時関数実行を行っています..."RESET<<endl;
+		CTFE(3);
 
 		VM vm(genInfo);
 		cout<<BG_BLUE"VMを起動します..."RESET<<endl;
