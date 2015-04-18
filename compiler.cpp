@@ -69,7 +69,7 @@ void Compiler::ASTgen()
 
 	while(!parser->IsAccepted()){
 		pair<Symbol,TokenValue> token=lexer->Get();
-		//cout<< CYAN "取得したトークン：" <<Parser::Symbol2Str(token.first)<<RESET<<endl;
+		cout<< CYAN "取得したトークン：" <<Parser::Symbol2Str(token.first)<<RESET<<endl;
 		parser->Put(lexer,genInfo,token);
 	}
 
@@ -84,6 +84,7 @@ void Compiler::TypeCheck()
 
     Environment rootflame;
 	rootflame.is_internalblock=false;
+
 	rootflame.LocalVariablesPtr=&(genInfo->LocalVariables);
 
 	int cnt=0;
@@ -101,9 +102,11 @@ void Compiler::TypeCheck()
 		if((*fun_iter)->isBuiltin==false){
 			(*fun_iter)->CheckType(&environment,genInfo,&(genInfo->LocalVariables));
 		}
+		rootflame.LocalVariablesPtr->push_back(pair<string,TypeAST*>((*fun_iter)->Name,(*fun_iter)->TypeInfo));
     }
     for(var_iter=genInfo->TopLevelVariableDef.begin();var_iter!=genInfo->TopLevelVariableDef.end();var_iter++){
         (*var_iter)->CheckType(&environment,genInfo,&(genInfo->LocalVariables));
+        rootflame.LocalVariablesPtr->push_back(*((*var_iter)->Variable));
     }
 }
 

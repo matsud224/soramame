@@ -31,12 +31,13 @@ pair<Symbol,TokenValue> commentend_lex(char *str,Lexer *lex){
 	return pair<Symbol,TokenValue>(INPUTEND ,Lexer::dummy);
 };
 pair<Symbol,TokenValue> var_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(VAR ,Lexer::dummy);};
-pair<Symbol,TokenValue> fun_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(FUN ,Lexer::dummy);};
 pair<Symbol,TokenValue> if_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(IF ,Lexer::dummy);};
 pair<Symbol,TokenValue> while_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(WHILE ,Lexer::dummy);};
-pair<Symbol,TokenValue> for_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(FOR ,Lexer::dummy);};
+pair<Symbol,TokenValue> fun_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(FUN ,Lexer::dummy);};
 pair<Symbol,TokenValue> else_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(ELSE ,Lexer::dummy);};
 pair<Symbol,TokenValue> return_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(RETURN_S ,Lexer::dummy);};
+pair<Symbol,TokenValue> data_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(DATA ,Lexer::dummy);};
+pair<Symbol,TokenValue> group_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(GROUP ,Lexer::dummy);};
 pair<Symbol,TokenValue> boolval_lex(char *str,Lexer *lex){
 	TokenValue t;
 	string val(str);
@@ -91,7 +92,7 @@ pair<Symbol,TokenValue> stringval_lex(char *str,Lexer *lex){
 };
 pair<Symbol,TokenValue> nextline_lex(char *str,Lexer *lex){
 	lex->curr_line++;
-	return pair<Symbol,TokenValue>(INPUTEND ,Lexer::dummy);
+	return pair<Symbol,TokenValue>(SYNTAXEND ,Lexer::dummy);
 };
 
 TokenRule TOKENRULE[TOKENRULECOUNT]={
@@ -102,11 +103,12 @@ TokenRule TOKENRULE[TOKENRULECOUNT]={
 	{"fun",INITIAL,true,fun_lex},
     {"if",INITIAL,true,if_lex},
     {"while",INITIAL,true,while_lex},
-    {"for",INITIAL,true,for_lex},
     {"else",INITIAL,true,else_lex},
     {"return",INITIAL,true,return_lex},
     {"true",INITIAL,true,boolval_lex},
     {"false",INITIAL,true,boolval_lex},
+    {"data",INITIAL,true,data_lex},
+    {"group",INITIAL,true,group_lex},
     {";",INITIAL,true,semicolon_lex},
 	{":",INITIAL,true,colon_lex},
     {",",INITIAL,true,comma_lex},
@@ -131,7 +133,9 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{S,program,SYNTAXEND},success},
     {{program,EMPTY,SYNTAXEND},program_empty_reduce},
     {{program,program,function,SYNTAXEND},program_addfundef_reduce},
-    {{program,program,VAR,variabledef_list,SEMICOLON,SYNTAXEND},program_addvardefreduce},
+    {{program,program,VAR,variabledef_list,SEMICOLON,SYNTAXEND},program_addvardef_reduce},
+    {{program,program,datadef,SYNTAXEND},program_adddatadef_reduce},
+    {{program,program,groupdef,SYNTAXEND},program_addgroupdef_reduce},
     {{intvalexpr,INTVAL,SYNTAXEND},intvalexpr_reduce},
     {{boolvalexpr,BOOLVAL,SYNTAXEND},boovalexpr_reduce},
     {{stringvalexpr,STRINGVAL,SYNTAXEND},stringvalexpr_reduce},
@@ -154,7 +158,6 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{statement,returnstatement,SEMICOLON,SYNTAXEND},NULL},
     {{statement,ifstatement,SYNTAXEND},NULL},
     {{statement,whilestatement,SYNTAXEND},NULL},
-    {{statement,forstatement,SYNTAXEND},NULL},
     {{expression,primary,SYNTAXEND},expression_primary_reduce},
     {{expression,parenexpr,SYNTAXEND},NULL},
     {{expression,expression,primary,SYNTAXEND},expression_add_reduce},
@@ -177,6 +180,7 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{type,IDENT,SYNTAXEND},type_normal_reduce},
     {{type,FUN,LPAREN,type_list,RPAREN,operator_n,type,SYNTAXEND},type_fun_reduce},
     {{type,LBRACKET,type,RBRACKET,SYNTAXEND},type_listtype_reduce},
+    {{type,LPAREN,type_list,RPAREN,SYNTAXEND},type_tupletype_reduce},
     {{type_list,EMPTY,SYNTAXEND},type_list_empty_reduce},
     {{type_list,type,SYNTAXEND},type_list_type_reduce},
     {{type_list,type_list,COMMA,type,SYNTAXEND},type_list_addtype_reduce},
@@ -189,8 +193,15 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{ifstatement,IF,LPAREN,expression,RPAREN,LBRACE,block,RBRACE,ELSE,LBRACE,block,RBRACE,SYNTAXEND},ifstatement_withelse_reduce},
     {{block,statement_list,SYNTAXEND},block_reduce},
     {{whilestatement,WHILE,LPAREN,expression,RPAREN,LBRACE,block,RBRACE,SYNTAXEND},while_reduce},
-    {{forstatement,FOR,LPAREN,statement,SEMICOLON,expression,SEMICOLON,statement,RPAREN,LBRACE,block,RBRACE,SYNTAXEND},for_reduce},
     {{listvalexpr,LBRACKET,arg_list,RBRACKET,SYNTAXEND},listvalexpr_reduce},
+    {{tuplevalexpr,LPAREN,arg_list,RPAREN,SYNTAXEND},tuplevalexpr_reduce},
+    {{datadef,DATA,IDENT,LBRACE,datamember_list,RBRACE,SYNTAXEND},datadef_reduce},
+    {{groupdef,GROUP,IDENT,LPAREN,IDENT,RPAREN,LBRACE,groupmember_list,RBRACE,SYNTAXEND},groupdef_reduce},
+	{{datamember_list,EMPTY,SYNTAXEND},dmlist_empty_reduce},
+    {{datamember_list,datamember_list,IDENT,COLON,type,SEMICOLON,SYNTAXEND},dmlist_add_reduce},
+    {{groupmember_list,EMPTY,SYNTAXEND},gmlist_empty_reduce},
+    {{groupmember_list,groupmember_list,FUN,IDENT,LPAREN,type_list,RPAREN,SEMICOLON,SYNTAXEND},gmlist_addvoid_reduce},
+    {{groupmember_list,groupmember_list,FUN,IDENT,LPAREN,type_list,RPAREN,OPERATOR,type,SEMICOLON,SYNTAXEND},gmlist_addnonvoid_reduce}
 };
 
 

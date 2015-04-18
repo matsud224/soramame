@@ -9,3 +9,9 @@ public:
 
 	ClosureObject(int index,Flame* parent):PoolIndex(index),ParentFlame(parent){};
 };
+
+class ContinuationObject{
+public:
+	Flame* ExecFlame;
+	int PC;
+};

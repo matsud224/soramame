@@ -38,6 +38,7 @@ public:
 	//Environment(bool is_internal,vector< pair<string,TypeAST *> > *localvalsptr):is_internalblock(is_internal),LocalVariablesPtr(localvalsptr){};
 };
 
+
 class TypeAST{
 public:
 	virtual ~TypeAST(){}
@@ -394,20 +395,6 @@ public:
     virtual vector<ExprAST*> GetCallExprList();
 };
 
-class ForStatementAST : public StatementAST{
-public:
-	StatementAST *Initialize;
-    ExprAST *Condition;
-    StatementAST *Next;
-	BlockAST *Body;
-
-    ForStatementAST(StatementAST *init,ExprAST *cond,StatementAST *next,BlockAST *body):Initialize(init),Condition(cond),Next(next),Body(body){}
-    virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
-    virtual void CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
-    virtual vector<int> FindChildFunction();
-    virtual bool IsCTFEable(CodegenInfo* cgi,int){return false;}
-    virtual vector<ExprAST*> GetCallExprList();
-};
 
 class ReturnStatementAST : public StatementAST{
 public:
@@ -459,4 +446,24 @@ public:
     vector<int> FindChildFunction();
     bool IsCTFEable(CodegenInfo* cgi,int);
     vector<ExprAST*> GetCallExprList();
+};
+
+
+class DataDefAST{
+public:
+	string Name;
+	vector< pair<string,TypeAST*> > MemberList;
+
+	DataDefAST(){}
+	DataDefAST(vector< pair<string,TypeAST*> > member):MemberList(member){}
+};
+
+class GroupDefAST{
+public:
+	string Name;
+	string TargetName; //括弧の中の名前
+	vector< pair<string,TypeAST*> > MemberList;
+
+	GroupDefAST(){}
+	GroupDefAST(vector< pair<string,TypeAST*> > member):MemberList(member){}
 };

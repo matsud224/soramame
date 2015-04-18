@@ -9,6 +9,8 @@ class Lexer;
 class FunctionAST;
 class VariableDefStatementAST;
 class TypeAST;
+class DataDefAST;
+class GroupDefAST;
 
 enum{Left,Right};
 enum{Unary,Binary};
@@ -52,6 +54,8 @@ public:
     map<string,OperatorInfo *> OperatorList;
     vector<FunctionAST *> TopLevelFunction;
     vector<VariableDefStatementAST *> TopLevelVariableDef;
+    vector<DataDefAST *> TopLevelDataDef;
+    vector<GroupDefAST *> TopLevelGroupDef;
     vector<int> Bootstrap;
     ConstantPool PublicConstantPool;
     int MainFuncPoolIndex; //main関数のコンスタントプール・インデックス

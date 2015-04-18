@@ -59,25 +59,6 @@ vector<int> WhileStatementAST::FindChildFunction()
     return result_list;
 }
 
-vector<int> ForStatementAST::FindChildFunction()
-{
-	vector<int> result_list;
-	vector<int> list_tmp;
-
-	list_tmp=Initialize->FindChildFunction();
-	result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
-
-	list_tmp=Condition->FindChildFunction();
-	result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
-
-	list_tmp=Next->FindChildFunction();
-	result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
-
-	list_tmp=Body->FindChildFunction();
-	result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
-
-    return result_list;
-}
 
 vector<int> ReturnStatementAST::FindChildFunction()
 {
@@ -465,27 +446,6 @@ void WhileStatementAST::Codegen(vector<int>* bytecodes, CodegenInfo* geninfo)
 	bytecodes->insert(bytecodes->end(),bodycode->begin(),bodycode->end());
 }
 
-void ForStatementAST::Codegen(vector<int>* bytecodes, CodegenInfo* geninfo)
-{
-	vector<int> *initcode=new vector<int>();
-	Initialize->Codegen(initcode,geninfo);
-    vector<int> *condcode=new vector<int>();
-	Condition->Codegen(condcode,geninfo);
-	vector<int> *nextcode=new vector<int>();
-	Next->Codegen(nextcode,geninfo);
-	vector<int> *bodycode=new vector<int>();
-	Body->Codegen(bodycode,geninfo);
-
-	condcode->push_back(iffalse_skip);
-	condcode->push_back(bodycode->size()+2+nextcode->size()+2);
-	nextcode->push_back(back);
-	nextcode->push_back(nextcode->size()+bodycode->size()+condcode->size());
-
-	bytecodes->insert(bytecodes->end(),initcode->begin(),initcode->end());
-	bytecodes->insert(bytecodes->end(),condcode->begin(),condcode->end());
-	bytecodes->insert(bytecodes->end(),bodycode->begin(),bodycode->end());
-	bytecodes->insert(bytecodes->end(),nextcode->begin(),nextcode->end());
-}
 
 void VariableDefStatementAST::Codegen(vector<int>* bytecodes, CodegenInfo* geninfo)
 {
@@ -672,9 +632,6 @@ void WhileStatementAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo,
 	return;
 }
 
-void ForStatementAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars){
-	error("forは未実装です");
-}
 
 void ExpressionStatementAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars){
 	if(Expression->IsBuilt()==false){
@@ -986,11 +943,6 @@ vector<ExprAST*> WhileStatementAST::GetCallExprList()
 	return result;
 }
 
-vector<ExprAST*> ForStatementAST::GetCallExprList()
-{
-	vector<ExprAST*> result;
-	return result;
-}
 
 vector<ExprAST*> ReturnStatementAST::GetCallExprList()
 {

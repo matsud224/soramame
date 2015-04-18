@@ -115,12 +115,20 @@ string Parser::Symbol2Str(Symbol s){
 		return "WHILE";
 	case whilestatement:
 		return "whilestatement";
-	case FOR:
-		return "FOR";
-	case forstatement:
-		return "forstatement";
 	case listvalexpr:
 		return "listvalexpr";
+	case DATA:
+		return "DATA";
+	case datadef:
+		return "datadef";
+	case GROUP:
+		return "GROUP";
+	case groupdef:
+		return "groupdef";
+	case datamember_list:
+		return "datamember_list";
+	case groupmember_list:
+		return "groupmember_list";
     default:
         return "<UNKNOWN SYMBOL>";
     }
@@ -181,9 +189,10 @@ void Parser::BuildStateTable(){
 	#endif
     //状態遷移表から構文解析表，GOTO表を作成
     MakeAction_GotoTable();
+	map< pair<int,Symbol>,set<Action> >::iterator iter2;
 
 	#ifdef PARSER_DEBUG
-    map< pair<int,Symbol>,set<Action> >::iterator iter2;
+
     cout<<endl<<"アクション表："<<endl;
     for(iter2=ActionTable.begin();iter2!=ActionTable.end();iter2++){
         set<Action>::iterator iter3;
@@ -210,6 +219,8 @@ void Parser::BuildStateTable(){
         cout<<"状態 "<<(*iter).first.first<<" からのシンボル "<<Symbol2Str((*iter).first.second)<<" の時、状態 "<<(*iter).second<<" へ遷移します。"<<endl;
     }
 
+    #endif
+
     int sr_conflict=0,rr_conflict=0;
     for(iter2=ActionTable.begin();iter2!=ActionTable.end();iter2++){
         if((*iter2).second.size()<2){
@@ -235,6 +246,8 @@ void Parser::BuildStateTable(){
     }
 
     cout<<endl<<"shift/reduce conflict: "<<sr_conflict<<endl<<"reduce/reduce conflict: "<<rr_conflict<<endl<<endl;
+
+	#ifdef PARSER_DEBUG
     if(sr_conflict+rr_conflict>0){
 		cout<<"次の状態でコンフリクトが発生しています： ";
 		for(set<int>::iterator iter=conflict_state.begin();iter!=conflict_state.end();iter++){

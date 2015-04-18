@@ -22,9 +22,21 @@ TokenValue program_addfundef_reduce(CodegenInfo *cgi,vector<TokenValue> values)
 	return Parser::dummy;
 }
 
-TokenValue program_addvardefreduce(CodegenInfo *cgi,vector<TokenValue> values)
+TokenValue program_addvardef_reduce(CodegenInfo *cgi,vector<TokenValue> values)
 {
 	cgi->TopLevelVariableDef.insert(cgi->TopLevelVariableDef.end(),values[2].variabledef_list->begin(),values[2].variabledef_list->end());
+	return Parser::dummy;
+}
+
+TokenValue program_adddatadef_reduce(CodegenInfo *cgi,vector<TokenValue> values)
+{
+	cgi->TopLevelDataDef.push_back(values[1].datadef_ast);
+	return Parser::dummy;
+}
+
+TokenValue program_addgroupdef_reduce(CodegenInfo *cgi,vector<TokenValue> values)
+{
+	cgi->TopLevelGroupDef.push_back(values[1].groupdef_ast);
 	return Parser::dummy;
 }
 
@@ -337,17 +349,80 @@ TokenValue while_reduce(CodegenInfo *cgi,vector<TokenValue> values)
 	return t;
 }
 
-TokenValue for_reduce(CodegenInfo *cgi,vector<TokenValue> values)
-{
-	TokenValue t;
-	t.statement_ast=new ForStatementAST(values[2].statement_ast,new UnBuiltExprAST(values[4].expression_list),values[6].statement_ast,values[9].block_ast);
-	return t;
-}
 
 TokenValue listvalexpr_reduce(CodegenInfo *cgi,vector<TokenValue> values){
 	TokenValue t;
 	list<ExprAST*> *lst=new list<ExprAST*>();
 	lst->assign(values[1].arg_exp_list->begin(),values[1].arg_exp_list->end());
 	t.expression_ast=new ListValExprAST(cgi,lst);
+	return t;
+}
+
+TokenValue type_tupletype_reduce(CodegenInfo* cgi, vector<TokenValue> values)
+{
+
+}
+
+TokenValue tuplevalexpr_reduce(CodegenInfo* cgi, vector<TokenValue> values)
+{
+
+}
+
+TokenValue datadef_reduce(CodegenInfo* cgi, vector<TokenValue> values)
+{
+	TokenValue t;
+	values[3].datadef_ast->Name=values[1].str;
+	t.datadef_ast=values[3].datadef_ast;
+	return t;
+}
+
+TokenValue groupdef_reduce(CodegenInfo* cgi, vector<TokenValue> values)
+{
+	TokenValue t;
+	values[6].groupdef_ast->Name=values[1].str;
+	values[6].groupdef_ast->TargetName=values[3].str;
+	t.groupdef_ast=values[6].groupdef_ast;
+	return t;
+}
+
+TokenValue dmlist_empty_reduce(CodegenInfo* cgi, vector<TokenValue> values)
+{
+	TokenValue t;
+	t.datadef_ast=new DataDefAST();
+	return t;
+}
+
+TokenValue dmlist_add_reduce(CodegenInfo* cgi, vector<TokenValue> values)
+{
+	TokenValue t;
+	values[0].datadef_ast->MemberList.push_back(pair<string,TypeAST*>(values[1].str,values[3].type_ast));
+	t.datadef_ast=values[0].datadef_ast;
+	return t;
+}
+
+TokenValue gmlist_empty_reduce(CodegenInfo* cgi, vector<TokenValue> values)
+{
+	TokenValue t;
+	t.groupdef_ast=new GroupDefAST();
+	return t;
+}
+
+TokenValue gmlist_addvoid_reduce(CodegenInfo* cgi, vector<TokenValue> values)
+{
+	TokenValue t;
+	vector<TypeAST*> args=*(values[4].type_list);
+	args.push_back(new BasicTypeAST("void"));
+	values[0].groupdef_ast->MemberList.push_back(pair<string,TypeAST*>(values[2].str,new FunctionTypeAST(args)));
+	t.groupdef_ast=values[0].groupdef_ast;
+	return t;
+}
+
+TokenValue gmlist_addnonvoid_reduce(CodegenInfo* cgi, vector<TokenValue> values)
+{
+	TokenValue t;
+	vector<TypeAST*> args=*(values[4].type_list);
+	args.push_back(values[7].type_ast);
+	values[0].groupdef_ast->MemberList.push_back(pair<string,TypeAST*>(values[2].str,new FunctionTypeAST(args)));
+	t.groupdef_ast=values[0].groupdef_ast;
 	return t;
 }
