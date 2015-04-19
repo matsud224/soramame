@@ -32,15 +32,13 @@ void Compiler::ASTgen()
 	genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"rand",new vector< pair<string,TypeAST *> >(arglist),new BasicTypeAST("int"),false));
 
     arglist.push_back(pair<string,TypeAST *>("val",new BasicTypeAST("int")));
-    genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"printint",new vector< pair<string,TypeAST *> >(arglist),new BasicTypeAST("void"),false));
+    genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"print",new vector< pair<string,TypeAST *> >(arglist),new BasicTypeAST("void"),false));
 
     arglist[0]=pair<string,TypeAST *>("val",new BasicTypeAST("bool"));
-    genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"printbool",new vector< pair<string,TypeAST *> >(arglist),new BasicTypeAST("void"),false));
+    genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"print",new vector< pair<string,TypeAST *> >(arglist),new BasicTypeAST("void"),false));
 
     arglist[0]=pair<string,TypeAST *>("str",new BasicTypeAST("string"));
     genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"print",new vector< pair<string,TypeAST *> >(arglist),new BasicTypeAST("void"),false));
-
-	genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"debug_print",new vector< pair<string,TypeAST *> >(arglist),new BasicTypeAST("void"),true));
 
     arglist[0]=pair<string,TypeAST *>("val",new BasicTypeAST("int"));
     genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"abs",new vector< pair<string,TypeAST *> >(arglist),new BasicTypeAST("int"),true));
@@ -69,7 +67,7 @@ void Compiler::ASTgen()
 
 	while(!parser->IsAccepted()){
 		pair<Symbol,TokenValue> token=lexer->Get();
-		cout<< CYAN "取得したトークン：" <<Parser::Symbol2Str(token.first)<<RESET<<endl;
+		//cout<< CYAN "取得したトークン：" <<Parser::Symbol2Str(token.first)<<RESET<<endl;
 		parser->Put(lexer,genInfo,token);
 	}
 

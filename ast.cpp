@@ -273,7 +273,7 @@ void FunctionAST::Codegen(vector<int> *bytecodes_given,CodegenInfo *geninfo)
         bytecodes_given->push_back(makeclosure);
         bytecodes_given->push_back(PoolIndex);
     }
-
+	/*
     string bytecode_names[]={
 		"ipush",
 		"iadd",
@@ -298,7 +298,7 @@ void FunctionAST::Codegen(vector<int> *bytecodes_given,CodegenInfo *geninfo)
     for(unsigned int i=0;i<bytecodes.size();i++){
         cout<<bytecodes[i]<<" ("<< ((bytecodes[i]>=0 && bytecodes[i]<= 21)?bytecode_names[bytecodes[i]]:"undefined") <<")"<<endl;
     }
-    cout<<endl;
+    cout<<endl;*/
     return;
 }
 
@@ -494,10 +494,50 @@ TypeAST* VariableExprAST::CheckType(vector<Environment> *env,CodegenInfo *geninf
 	int currentenv;
 	int i;
 	FlameBack=0;
+	int candidate_count=0;
+
+	if(TypeInfo==NULL){
+		//オーバーロードの数を調べる(トップレベルの関数について)
+		vector<FunctionAST*>::iterator iter;
+		for(iter=geninfo->TopLevelFunction.begin();iter!=geninfo->TopLevelFunction.end();iter++){
+			if(Name==(*iter)->Name){
+				//名前が一致
+				candidate_count++;
+			}
+		}
+		if(candidate_count>1){
+			error("オーバーロードされた関数を決定できません");
+		}
+	}
+
 	for(currentenv=(static_cast<int>(env->size())-1);currentenv>=0;currentenv--){
 		for(i=(*env)[currentenv].Items.size()-1;i>=0;i--){
 			if(Name==(*env)[currentenv].Items[i].VariableInfo.first){
 				//名前が一致
+
+				if(TypeInfo!=NULL){
+					//オーバーロード・指定された型との一致を調べる(返り値については調べない)
+					if(typeid(FunctionTypeAST)==typeid(*TypeInfo)){
+						if(typeid(*((*env)[currentenv].Items[i].VariableInfo.second))!=typeid(FunctionTypeAST)){
+							error("定義重複：関数ではありません");
+						}
+						vector<TypeAST*> typelist=dynamic_cast<FunctionTypeAST*>(TypeInfo)->TypeList;
+						vector<TypeAST*> typelist2=dynamic_cast<FunctionTypeAST*>((*env)[currentenv].Items[i].VariableInfo.second)->TypeList;
+						if(typelist.size()!=typelist2.size()){continue;}
+						bool fail=false;
+						for(int i=0;i<typelist.size();i++){
+							if(typelist[i]->GetName()!=typelist2[i]->GetName()){
+								fail=true;
+								break;
+							}
+						}
+						if(fail){
+							continue;
+						}
+					}
+				}
+
+
 				TypeInfo=(*env)[currentenv].Items[i].VariableInfo.second;
 
 				/*if((*env)[currentenv].Items[i].LocalIndex==-1){
@@ -682,9 +722,24 @@ TypeAST* FunctionAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo,ve
 }
 
 TypeAST* CallExprAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars){
+	//引数の型を順に決めていく
+	vector<TypeAST*> argtype;
+	vector<ExprAST *>::iterator iter2;
+	for(iter2=args->begin();iter2!=args->end();iter2++){
+		if((*iter2)->IsBuilt()==false){
+			(*iter2)=(dynamic_cast<UnBuiltExprAST*>(*iter2))->BuildAST(geninfo);
+		}
+		(*iter2)->CheckType(env,geninfo,CurrentLocalVars);
+		argtype.push_back((*iter2)->TypeInfo);
+	}
+
+	argtype.push_back(new BasicTypeAST("void"));
+
+
 	if(callee->IsBuilt()==false){
 		callee=dynamic_cast<UnBuiltExprAST*>(callee)->BuildAST(geninfo);
 	}
+	callee->TypeInfo=new FunctionTypeAST(argtype);
 	callee->CheckType(env,geninfo,CurrentLocalVars);
 
 	if(callee->TypeInfo==NULL){
@@ -695,14 +750,7 @@ TypeAST* CallExprAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo,ve
 		error("calleeが関数ではありません");
 	}
 
-	//引数の型を順に決めていく
-	vector<ExprAST *>::iterator iter2;
-	for(iter2=args->begin();iter2!=args->end();iter2++){
-		if((*iter2)->IsBuilt()==false){
-			(*iter2)=(dynamic_cast<UnBuiltExprAST*>(*iter2))->BuildAST(geninfo);
-		}
-		(*iter2)->CheckType(env,geninfo,CurrentLocalVars);
-	}
+
 
 	vector<TypeAST*> currentarg=dynamic_cast<FunctionTypeAST *>(callee->TypeInfo)->TypeList;
 	if(args->size()+1==currentarg.size()){ //+1するのは、argsには戻り値の型が含まれていないから

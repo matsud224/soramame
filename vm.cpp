@@ -139,15 +139,18 @@ int VM::Run()
                 if(callee->isBuiltin){
 					//ビルトイン関数の場合は、フレームを作らず、直に値をスタックに置く
 					string builtin_name=callee->Name;
-					if(builtin_name=="print" || builtin_name=="debug_print"){
-						string str=*(reinterpret_cast<string *>(CodeInfo->PublicConstantPool.GetReference(Environment.back()->OperandStack.top()))); Environment.back()->OperandStack.pop();
-						cout<<str<<flush;
-					}else if(builtin_name=="printint"){
-						iopr1=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop();
-						cout<<iopr1<<flush;
-					}else if(builtin_name=="printbool"){
-						bopr1=static_cast<bool>(Environment.back()->OperandStack.top()); Environment.back()->OperandStack.pop();
-						cout<<(bopr1?"true":"false")<<flush;
+					string typestr=callee->TypeInfo->GetName();
+					if(builtin_name=="print"){
+						if(typestr=="fun(string)=>void"){
+							string str=*(reinterpret_cast<string *>(CodeInfo->PublicConstantPool.GetReference(Environment.back()->OperandStack.top()))); Environment.back()->OperandStack.pop();
+							cout<<str<<flush;
+						}else if(typestr=="fun(int)=>void"){
+							iopr1=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop();
+							cout<<iopr1<<flush;
+						}else if(typestr=="fun(bool)=>void"){
+							bopr1=static_cast<bool>(Environment.back()->OperandStack.top()); Environment.back()->OperandStack.pop();
+							cout<<(bopr1?"true":"false")<<flush;
+						}
 					}else if(builtin_name=="abs"){
 						iopr1=Environment.back()->OperandStack.top(); Environment.back()->OperandStack.pop();
 						//返り値を直にプッシュ
