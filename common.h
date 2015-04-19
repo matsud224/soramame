@@ -4,7 +4,7 @@
 
 using namespace std;
 
-const int TOKENRULECOUNT=30;
+const int TOKENRULECOUNT=31;
 const int SYNTAXRULECOUNT=72;
 const int SYMBOLCOUNT=54; //SYNTAXEND,INPUTEND,EMPTYをのぞく
 

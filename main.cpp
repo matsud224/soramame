@@ -22,12 +22,17 @@
 
 using namespace std;
 
+int comment_depth=0; //ブロックコメントのネストの深さ
 pair<Symbol,TokenValue> commentstart_lex(char *str,Lexer *lex){
 	lex->curr_state=COMMENT;
+	comment_depth++;
 	return pair<Symbol,TokenValue>(INPUTEND ,Lexer::dummy);
 };
 pair<Symbol,TokenValue> commentend_lex(char *str,Lexer *lex){
-	lex->curr_state=INITIAL;
+	comment_depth--;
+	if(comment_depth==0){
+		lex->curr_state=INITIAL;
+	}
 	return pair<Symbol,TokenValue>(INPUTEND ,Lexer::dummy);
 };
 pair<Symbol,TokenValue> var_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(VAR ,Lexer::dummy);};
@@ -124,6 +129,7 @@ TokenRule TOKENRULE[TOKENRULECOUNT]={
     {"\"(?>[^\\\\\"]|\\\\.)*?\"",INITIAL,true,stringval_lex},
     {"\\s+",INITIAL,false,NULL}, //空白は読み飛ばす（コールバック関数をNULLにしておく）
 
+	{"#\\{",COMMENT,false,commentstart_lex},
     {"}#",COMMENT,false,commentend_lex},
     {"[\\r\\n|\\n|\\r]",COMMENT,false,nextline_lex},
     {".",COMMENT,false,NULL}
