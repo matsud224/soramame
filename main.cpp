@@ -246,8 +246,6 @@ int main()
 		cerr<<BG_RED"パーサで問題が発生しました"RESET<<endl;
     }catch(LexerException){
 		cerr<<BG_RED"レキシカルアナライザで問題が発生しました"RESET<<endl;
-    }catch(...){
-		cerr<<BG_RED"Unknown error"<<RESET<<endl;
 	}
 
     return 0;

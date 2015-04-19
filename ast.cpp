@@ -475,6 +475,16 @@ void VariableDefStatementAST::CheckType(vector<Environment> *env, CodegenInfo* g
 			InitialValue=dynamic_cast<UnBuiltExprAST*>(InitialValue)->BuildAST(geninfo);
 		}
 		InitialValue->CheckType(env,geninfo,CurrentLocalVars);
+		if(InitialValue->TypeInfo==NULL){
+			//オーバーロードの解決ができなかった
+			if(Variable->second==NULL){
+				//型指定がなかった場合にはオーバーロード解決のヒントがないため、エラー
+				error("オーバーロードを解決できません：変数宣言に型を付与することでオーバーロードを指定できます");
+			}
+			//オーバーロードのヒントを与える
+			InitialValue->TypeInfo=Variable->second;
+			InitialValue->CheckType(env,geninfo,CurrentLocalVars);
+		}
 		if(Variable->second==NULL){
 			//型が未指定だったとき
 			Variable->second=InitialValue->TypeInfo;
@@ -506,7 +516,9 @@ TypeAST* VariableExprAST::CheckType(vector<Environment> *env,CodegenInfo *geninf
 			}
 		}
 		if(candidate_count>1){
-			error("オーバーロードされた関数を決定できません");
+			//オーバーロードを解決できなかった...(型情報を与えてもらって、再度呼んでもらう)
+			TypeInfo=NULL;
+			return NULL;
 		}
 	}
 
@@ -525,7 +537,7 @@ TypeAST* VariableExprAST::CheckType(vector<Environment> *env,CodegenInfo *geninf
 						vector<TypeAST*> typelist2=dynamic_cast<FunctionTypeAST*>((*env)[currentenv].Items[i].VariableInfo.second)->TypeList;
 						if(typelist.size()!=typelist2.size()){continue;}
 						bool fail=false;
-						for(int i=0;i<typelist.size();i++){
+						for(int i=0;i<typelist.size()-1;i++){
 							if(typelist[i]->GetName()!=typelist2[i]->GetName()){
 								fail=true;
 								break;
@@ -561,7 +573,7 @@ TypeAST* VariableExprAST::CheckType(vector<Environment> *env,CodegenInfo *geninf
 		}
 	}
 
-	error(Name+"は未定義またはスコープ外です");
+	error(Name+"は未定義またはスコープ外または型の不一致です");
 
 	return TypeInfo;
 }
@@ -589,6 +601,10 @@ TypeAST* UnaryExprAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo,v
 
 TypeAST* BinaryExprAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars){
 	TypeAST *lhst=LHS->CheckType(env,geninfo,CurrentLocalVars);
+	if(Operator=="=" && typeid(*(RHS->TypeInfo))==typeid(FunctionTypeAST)){
+		//関数代入のときはオーバーロードを考慮
+		RHS->TypeInfo=LHS->TypeInfo;
+	}
 	TypeAST *rhst=RHS->CheckType(env,geninfo,CurrentLocalVars);
 	TypeInfo=NULL;
 
