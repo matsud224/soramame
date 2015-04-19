@@ -178,6 +178,7 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{primary,closureexpr,SYNTAXEND},NULL},
     {{primary,variableexpr,SYNTAXEND},NULL},
     {{primary,listvalexpr,SYNTAXEND},NULL},
+    {{primary,tuplevalexpr,SYNTAXEND},NULL},
 	{{primary,operator_n,SYNTAXEND},NULL},
     {{variableexpr,IDENT,SYNTAXEND},variableexpr_reduce},
     {{parenexpr,LPAREN,expression,RPAREN,SYNTAXEND},parenexpr_reduce},

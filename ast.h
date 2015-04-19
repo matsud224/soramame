@@ -205,6 +205,31 @@ public:
     virtual vector<ExprAST*> GetCallExprList();
 };
 
+class TupleValExprAST : public ExprAST{
+public:
+    list<ExprAST*> *Value;
+    int PoolIndex;
+    TupleValExprAST(CodegenInfo *cgi,list<ExprAST*> *val):Value(val){
+        TypeInfo=NULL;
+        PoolIndex=-1;
+    }
+    virtual bool IsConstant(){
+		list<ExprAST*>::iterator iter;
+		for(iter=Value->begin();iter!=Value->end();iter++){
+			if((*iter)->IsConstant()==false){
+				return false;
+			}
+		}
+		return true;
+    }
+    int GetVMValue(CodegenInfo *cgi){return PoolIndex;}
+    virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
+    virtual TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
+    virtual vector<int> FindChildFunction();
+    virtual bool IsCTFEable(CodegenInfo*,int);
+    virtual vector<ExprAST*> GetCallExprList();
+};
+
 //操車場アルゴリズムのために
 class OperatorAST : public ExprAST{
 public:

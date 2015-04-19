@@ -269,7 +269,7 @@ void FunctionAST::Codegen(vector<int> *bytecodes_given,CodegenInfo *geninfo)
 
     bytecodes=codes;
 
-    if(Name=="<closure>"){
+    if(Name=="<anonymous>"){
         bytecodes_given->push_back(makeclosure);
         bytecodes_given->push_back(PoolIndex);
     }
@@ -795,6 +795,28 @@ void ListValExprAST::Codegen(vector<int>* bytecodes, CodegenInfo* geninfo)
 	}
 }
 
+void TupleValExprAST::Codegen(vector<int>* bytecodes, CodegenInfo* geninfo)
+{
+	if(PoolIndex!=-1){
+		bytecodes->push_back(ipush);
+		bytecodes->push_back(PoolIndex);
+		//定数としてリストが生成されたが，例えばクロージャなら内部のコード生成が必要
+		//でも、bytecodesに余計なコードが入るといけないので新たなベクタにコードを吐かせてそれは捨てる
+		vector<int> dummy;
+		list<ExprAST*>::iterator iter;
+		for(iter=Value->begin();iter!=Value->end();iter++){
+			(*iter)->Codegen(&dummy,geninfo);
+		}
+	}else{
+		list<ExprAST*>::reverse_iterator riter;
+		for(riter=Value->rbegin();riter!=Value->rend();riter++){
+			(*riter)->Codegen(bytecodes,geninfo);
+		}
+		bytecodes->push_back(makelist);
+		bytecodes->push_back(Value->size());
+	}
+}
+
 vector<int> ListValExprAST::FindChildFunction()
 {
 	vector<int> result_list;
@@ -840,8 +862,59 @@ TypeAST* ListValExprAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo
     return TypeInfo;
 }
 
+vector<int> TupleValExprAST::FindChildFunction()
+{
+	vector<int> result_list;
+	vector<int> list_tmp;
+
+    list<ExprAST *>::iterator iter;
+    for(iter=Value->begin();iter!=Value->end();iter++){
+		list_tmp=(*iter)->FindChildFunction();
+		result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
+    }
+
+    return result_list;
+}
+
+TypeAST* TupleValExprAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars)
+{
+	list<ExprAST*>::iterator iter;
+	vector<TypeAST*> typelist;
+    for(iter=Value->begin();iter!=Value->end();iter++){
+		if((*iter)->IsBuilt()==false){
+			(*iter)=(dynamic_cast<UnBuiltExprAST*>(*iter))->BuildAST(geninfo);
+		}
+		(*iter)->CheckType(env,geninfo,CurrentLocalVars);
+
+		typelist.push_back((*iter)->TypeInfo);
+    }
+	TypeInfo=new TupleTypeAST(typelist); //要素の型のリスト
+
+	if(IsConstant()){
+		list<int> *const_list=new list<int>();
+		list<ExprAST*>::iterator iter;
+		for(iter=Value->begin();iter!=Value->end();iter++){
+			const_list->push_back((*iter)->GetVMValue(geninfo));
+		}
+		PoolIndex=geninfo->PublicConstantPool.SetReference(const_list);
+		cout<<"#"<<PoolIndex<<" : <tuple>"<<TypeInfo->GetName()<<endl;
+	}
+
+    return TypeInfo;
+}
+
 
 bool ListValExprAST::IsCTFEable(CodegenInfo *cgi,int curr_fun_index){
+	list<ExprAST*>::iterator iter;
+	for(iter=Value->begin();iter!=Value->end();iter++){
+		if((*iter)->IsCTFEable(cgi,curr_fun_index)==false){
+			return false;
+		}
+	}
+	return true;
+}
+
+bool TupleValExprAST::IsCTFEable(CodegenInfo *cgi,int curr_fun_index){
 	list<ExprAST*>::iterator iter;
 	for(iter=Value->begin();iter!=Value->end();iter++){
 		if((*iter)->IsCTFEable(cgi,curr_fun_index)==false){
@@ -856,7 +929,7 @@ bool FunctionAST::IsCTFEable(CodegenInfo *cgi,int curr_fun_index){
 		return is_builtin_CTFEable;
 	}
 
-	if(Name=="<closure>"){
+	if(Name=="<anonymous>"){
 		return false; //クロージャはフレームへのポインタを持つため事前実行は不可
 	}
 
@@ -1017,6 +1090,19 @@ vector<ExprAST*> StringValExprAST::GetCallExprList()
 }
 
 vector<ExprAST*> ListValExprAST::GetCallExprList()
+{
+	vector<ExprAST*> result;
+	vector<ExprAST*> temp;
+
+	list<ExprAST*>::iterator iter;
+	for(iter=Value->begin();iter!=Value->end();iter++){
+		temp=(*iter)->GetCallExprList();
+		result.insert(result.end(),temp.begin(),temp.end());
+	}
+	return result;
+}
+
+vector<ExprAST*> TupleValExprAST::GetCallExprList()
 {
 	vector<ExprAST*> result;
 	vector<ExprAST*> temp;

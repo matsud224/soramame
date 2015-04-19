@@ -286,7 +286,7 @@ TokenValue type_list_addtype_reduce(CodegenInfo *cgi,vector<TokenValue> values)
 TokenValue closureexpr_reduce(CodegenInfo *cgi,vector<TokenValue> values)
 {
 	TokenValue t;
-	t.expression_ast=new FunctionAST(cgi,"<closure>",values[2].parameter_list,values[5].type_ast,values[7].block_ast);
+	t.expression_ast=new FunctionAST(cgi,"<anonymous>",values[2].parameter_list,values[5].type_ast,values[7].block_ast);
 	return t;
 }
 
@@ -294,7 +294,7 @@ TokenValue closureexpr_rettypeinfer_reduce(CodegenInfo *cgi,vector<TokenValue> v
 {
 	TokenValue t;
 	//返り値を推論する時は返り値の型をNULLにすると関数の型リストに埋め込まれて識別できないので型名としてありえない文字列にした
-	t.expression_ast=new FunctionAST(cgi,"<closure>",values[2].parameter_list,new BasicTypeAST("!!undefined!!"),values[5].block_ast);
+	t.expression_ast=new FunctionAST(cgi,"<anonymous>",values[2].parameter_list,new BasicTypeAST("!!undefined!!"),values[5].block_ast);
 	return t;
 }
 
@@ -360,12 +360,18 @@ TokenValue listvalexpr_reduce(CodegenInfo *cgi,vector<TokenValue> values){
 
 TokenValue type_tupletype_reduce(CodegenInfo* cgi, vector<TokenValue> values)
 {
-
+	TokenValue t;
+	t.type_ast=new TupleTypeAST(*values[1].type_list);
+	return t;
 }
 
 TokenValue tuplevalexpr_reduce(CodegenInfo* cgi, vector<TokenValue> values)
 {
-
+	TokenValue t;
+	list<ExprAST*> *lst=new list<ExprAST*>();
+	lst->assign(values[1].arg_exp_list->begin(),values[1].arg_exp_list->end());
+	t.expression_ast=new TupleValExprAST(cgi,lst);
+	return t;
 }
 
 TokenValue datadef_reduce(CodegenInfo* cgi, vector<TokenValue> values)
