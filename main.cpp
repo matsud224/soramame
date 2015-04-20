@@ -97,13 +97,13 @@ pair<Symbol,TokenValue> stringval_lex(char *str,Lexer *lex){
 };
 pair<Symbol,TokenValue> nextline_lex(char *str,Lexer *lex){
 	lex->curr_line++;
-	return pair<Symbol,TokenValue>(SYNTAXEND ,Lexer::dummy);
+	return pair<Symbol,TokenValue>(LINEEND ,Lexer::dummy);
 };
 
 TokenRule TOKENRULE[TOKENRULECOUNT]={
 	{"#\\{",INITIAL,false,commentstart_lex},
 	{"#.*[\\r\\n|\\n|\\r]",INITIAL,false,NULL},
-	{"[\\r\\n|\\n|\\r]",INITIAL,false,nextline_lex},
+	{"[\\r\\n|\\n|\\r]",INITIAL,true,nextline_lex},
 	{"var",INITIAL,true,var_lex},
 	{"fun",INITIAL,true,fun_lex},
     {"if",INITIAL,true,if_lex},
@@ -139,7 +139,11 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{S,program,SYNTAXEND},success},
     {{program,EMPTY,SYNTAXEND},program_empty_reduce},
     {{program,program,function,SYNTAXEND},program_addfundef_reduce},
+
     {{program,program,VAR,variabledef_list,SEMICOLON,SYNTAXEND},program_addvardef_reduce},
+    {{program,program,VAR,variabledef_list,LINEEND,SYNTAXEND},program_addvardef_reduce},
+    {{program,program,VAR,variabledef_list,SYNTAXEND},program_addvardef_reduce},
+
     {{program,program,datadef,SYNTAXEND},program_adddatadef_reduce},
     {{program,program,groupdef,SYNTAXEND},program_addgroupdef_reduce},
     {{intvalexpr,INTVAL,SYNTAXEND},intvalexpr_reduce},
@@ -159,9 +163,19 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{variabledef,IDENT,operator_n,expression,SYNTAXEND},variabledef_infer_reduce},
     {{statement_list,EMPTY,SYNTAXEND},statement_list_empty_reduce},
     {{statement_list,statement_list,statement,SYNTAXEND},statement_list_addstatement},
+
     {{statement_list,statement_list,VAR,variabledef_list,SEMICOLON,SYNTAXEND},statement_list_variabledef_reduce},
+    {{statement_list,statement_list,VAR,variabledef_list,LINEEND,SYNTAXEND},statement_list_variabledef_reduce},
+    {{statement_list,statement_list,VAR,variabledef_list,SYNTAXEND},statement_list_variabledef_reduce},
+
     {{statement,expression,SEMICOLON,SYNTAXEND},statement_expression_reduce},
+    {{statement,expression,LINEEND,SYNTAXEND},statement_expression_reduce},
+    {{statement,expression,SYNTAXEND},statement_expression_reduce},
+
     {{statement,returnstatement,SEMICOLON,SYNTAXEND},NULL},
+    {{statement,returnstatement,LINEEND,SYNTAXEND},NULL},
+    {{statement,returnstatement,SYNTAXEND},NULL},
+
     {{statement,ifstatement,SYNTAXEND},NULL},
     {{statement,whilestatement,SYNTAXEND},NULL},
     {{expression,primary,SYNTAXEND},expression_primary_reduce},
@@ -205,10 +219,24 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{datadef,DATA,IDENT,LBRACE,datamember_list,RBRACE,SYNTAXEND},datadef_reduce},
     {{groupdef,GROUP,IDENT,LPAREN,IDENT,RPAREN,LBRACE,groupmember_list,RBRACE,SYNTAXEND},groupdef_reduce},
 	{{datamember_list,EMPTY,SYNTAXEND},dmlist_empty_reduce},
+
     {{datamember_list,datamember_list,IDENT,COLON,type,SEMICOLON,SYNTAXEND},dmlist_add_reduce},
+    {{datamember_list,datamember_list,IDENT,COLON,type,LINEEND,SYNTAXEND},dmlist_add_reduce},
+    {{datamember_list,datamember_list,IDENT,COLON,type,SYNTAXEND},dmlist_add_reduce},
+
     {{groupmember_list,EMPTY,SYNTAXEND},gmlist_empty_reduce},
+
     {{groupmember_list,groupmember_list,FUN,IDENT,LPAREN,type_list,RPAREN,SEMICOLON,SYNTAXEND},gmlist_addvoid_reduce},
-    {{groupmember_list,groupmember_list,FUN,IDENT,LPAREN,type_list,RPAREN,OPERATOR,type,SEMICOLON,SYNTAXEND},gmlist_addnonvoid_reduce}
+    {{groupmember_list,groupmember_list,FUN,IDENT,LPAREN,type_list,RPAREN,LINEEND,SYNTAXEND},gmlist_addvoid_reduce},
+    {{groupmember_list,groupmember_list,FUN,IDENT,LPAREN,type_list,RPAREN,SYNTAXEND},gmlist_addvoid_reduce},
+
+    {{groupmember_list,groupmember_list,FUN,IDENT,LPAREN,type_list,RPAREN,OPERATOR,type,SEMICOLON,SYNTAXEND},gmlist_addnonvoid_reduce},
+    {{groupmember_list,groupmember_list,FUN,IDENT,LPAREN,type_list,RPAREN,OPERATOR,type,LINEEND,SYNTAXEND},gmlist_addnonvoid_reduce},
+    {{groupmember_list,groupmember_list,FUN,IDENT,LPAREN,type_list,RPAREN,OPERATOR,type,SYNTAXEND},gmlist_addnonvoid_reduce},
+
+    {{dataexpr,IDENT,LBRACE,initassign_list,RBRACE,SYNTAXEND},dataexpr_reduce},
+    {{initassign_list,EMPTY,SYNTAXEND},ialist_empty_reduce},
+	{{initassign_list,initassign_list,IDENT,operator_n,expression,SYNTAXEND},ialist_add_reduce}
 };
 
 

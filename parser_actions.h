@@ -61,3 +61,6 @@ TokenValue dmlist_add_reduce(CodegenInfo *cgi,vector<TokenValue> values);
 TokenValue gmlist_empty_reduce(CodegenInfo *cgi,vector<TokenValue> values);
 TokenValue gmlist_addvoid_reduce(CodegenInfo *cgi,vector<TokenValue> values);
 TokenValue gmlist_addnonvoid_reduce(CodegenInfo *cgi,vector<TokenValue> values);
+TokenValue dataexpr_reduce(CodegenInfo *cgi,vector<TokenValue> values);
+TokenValue ialist_empty_reduce(CodegenInfo *cgi,vector<TokenValue> values);
+TokenValue ialist_add_reduce(CodegenInfo *cgi,vector<TokenValue> values);

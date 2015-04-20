@@ -26,7 +26,8 @@ enum{
     skip,iffalse_skip,
     icmpeq,icmpne,icmplt,icmple,icmpgt,icmpge,
     back,
-    makelist
+    makelist,copylist, //copy* は定数値をコピーし、新たなインスタンスを生成する
+    copydata
 };
 
 

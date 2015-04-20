@@ -129,6 +129,8 @@ string Parser::Symbol2Str(Symbol s){
 		return "datamember_list";
 	case groupmember_list:
 		return "groupmember_list";
+	case LINEEND:
+		return "<<LINEEND>>";
     default:
         return "<UNKNOWN SYMBOL>";
     }
@@ -428,8 +430,16 @@ void Parser::Put(Lexer *lexer,CodegenInfo *cgi,pair<Symbol,TokenValue> input){
 
     pair<Symbol,TokenValue> input_backup; //空規則からの復帰用に入力をとっておくための変数
 
+    #ifdef PARSER_DEBUG
+	cout<< CYAN "取得したトークン：" <<Symbol2Str(input.first)<<RESET<<endl;
+	#endif
+
     re_put:
     if(conflict_state.count(StateStack.back())==0 && isActionExist(StateStack.back(),input.first)==false){
+        if(input.first==LINEEND){
+			return; //次のトークンをもらう（LINEENDを読み飛ばす）
+        }
+
         //対応するアクションが見つからない時は空規則を疑う
         if(input.first!=EMPTY){
             input_backup=input;
@@ -544,6 +554,10 @@ void Parser::Put(Lexer *lexer,CodegenInfo *cgi,pair<Symbol,TokenValue> input){
         }
 
         if(ActionTable.count(pair<int,Symbol>(StateStack.back(),input.first))==0){
+            if(input.first==LINEEND){
+				return; //次のトークンをもらう（LINEENDを読み飛ばす）
+			}
+
             //対応するアクションが見つからない時は空規則を疑う
             if(input.first!=EMPTY){
                 input_backup=input;

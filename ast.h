@@ -230,6 +230,32 @@ public:
     virtual vector<ExprAST*> GetCallExprList();
 };
 
+class DataValExprAST : public ExprAST{
+public:
+    vector< pair<string,ExprAST*> > *InitValue;
+
+    int PoolIndex;
+    DataValExprAST(CodegenInfo *cgi,string TypeName){
+        TypeInfo=new BasicTypeAST(TypeName);
+        PoolIndex=-1;
+    }
+    virtual bool IsConstant(){
+		vector< pair<string,ExprAST*> >::iterator iter;
+		for(iter=InitValue->begin();iter!=InitValue->end();iter++){
+			if((*iter).second->IsConstant()==false){
+				return false;
+			}
+		}
+		return true;
+    }
+    int GetVMValue(CodegenInfo *cgi){return PoolIndex;}
+    virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
+    virtual TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
+    virtual vector<int> FindChildFunction();
+    virtual bool IsCTFEable(CodegenInfo*,int);
+    virtual vector<ExprAST*> GetCallExprList();
+};
+
 //操車場アルゴリズムのために
 class OperatorAST : public ExprAST{
 public:

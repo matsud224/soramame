@@ -432,3 +432,18 @@ TokenValue gmlist_addnonvoid_reduce(CodegenInfo* cgi, vector<TokenValue> values)
 	t.groupdef_ast=values[0].groupdef_ast;
 	return t;
 }
+
+TokenValue dataexpr_reduce(CodegenInfo* cgi, vector<TokenValue> values)
+{
+
+}
+
+TokenValue ialist_empty_reduce(CodegenInfo* cgi, vector<TokenValue> values)
+{
+
+}
+
+TokenValue ialist_add_reduce(CodegenInfo* cgi, vector<TokenValue> values)
+{
+
+}
