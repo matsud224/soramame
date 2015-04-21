@@ -129,6 +129,32 @@ vector<int> CallExprAST::FindChildFunction()
 	return result_list;
 }
 
+vector<int> ListRefExprAST::FindChildFunction()
+{
+	vector<int> result_list;
+	vector<int> list_tmp;
+	vector<ExprAST*>::iterator iter;
+
+	list_tmp=target->FindChildFunction();
+	result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
+
+	list_tmp=IndexExpression->FindChildFunction();
+	result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
+
+	return result_list;
+}
+
+vector<int> DataMemberRefExprAST::FindChildFunction()
+{
+	vector<int> result_list;
+	vector<int> list_tmp;
+	vector<ExprAST*>::iterator iter;
+
+	list_tmp=target->FindChildFunction();
+	result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
+
+	return result_list;
+}
 
 
 void VariableExprAST::Codegen(vector<int>* bytecodes,CodegenInfo *geninfo)
@@ -155,11 +181,31 @@ void BinaryExprAST::Codegen(vector<int>* bytecodes,CodegenInfo *geninfo)
 {
     //代入だけ特殊で、左辺を評価しない
     if(Operator=="="){
-        RHS->Codegen(bytecodes,geninfo);
+		if(typeid(*LHS)==typeid(ListRefExprAST)){
+			RHS->Codegen(bytecodes,geninfo);
+			ListRefExprAST* lhs_cast=dynamic_cast<ListRefExprAST*>(LHS);
+			//一旦スタックにロードして、それに対して代入
+			bytecodes->push_back(iloadlocal);
+			bytecodes->push_back(dynamic_cast<VariableExprAST *>(lhs_cast->target)->FlameBack);
+			bytecodes->push_back(dynamic_cast<VariableExprAST *>(lhs_cast->target)->LocalIndex);
+			lhs_cast->IndexExpression->Codegen(bytecodes,geninfo);
+			bytecodes->push_back(istorebyindex);
+		}else if(typeid(*LHS)==typeid(DataMemberRefExprAST)){
+			RHS->Codegen(bytecodes,geninfo);
+			DataMemberRefExprAST* lhs_cast=dynamic_cast<DataMemberRefExprAST*>(LHS);
+			//一旦スタックにロードして、それに対して代入
+			bytecodes->push_back(iloadlocal);
+			bytecodes->push_back(dynamic_cast<VariableExprAST *>(lhs_cast->target)->FlameBack);
+			bytecodes->push_back(dynamic_cast<VariableExprAST *>(lhs_cast->target)->LocalIndex);
+			bytecodes->push_back(istorefield);
+			bytecodes->push_back((new StringValExprAST(geninfo,lhs_cast->MemberName))->PoolIndex);
+		}else{
+			RHS->Codegen(bytecodes,geninfo);
 
-		bytecodes->push_back(istorelocal);
-		bytecodes->push_back(dynamic_cast<VariableExprAST *>(LHS)->FlameBack);
-		bytecodes->push_back(dynamic_cast<VariableExprAST *>(LHS)->LocalIndex);
+			bytecodes->push_back(istorelocal);
+			bytecodes->push_back(dynamic_cast<VariableExprAST *>(LHS)->FlameBack);
+			bytecodes->push_back(dynamic_cast<VariableExprAST *>(LHS)->LocalIndex);
+		}
 
         return;
     }
@@ -245,6 +291,20 @@ void CallExprAST::Codegen(vector<int>* bytecodes,CodegenInfo *geninfo)
     }
     callee->Codegen(bytecodes,geninfo);
     bytecodes->push_back(invoke);
+}
+
+void ListRefExprAST::Codegen(vector<int>* bytecodes,CodegenInfo *geninfo)
+{
+	target->Codegen(bytecodes,geninfo);
+	IndexExpression->Codegen(bytecodes,geninfo);
+	bytecodes->push_back(iloadbyindex);
+}
+
+void DataMemberRefExprAST::Codegen(vector<int>* bytecodes,CodegenInfo *geninfo)
+{
+	target->Codegen(bytecodes,geninfo);
+	bytecodes->push_back(iloadbyname);
+	bytecodes->push_back((new StringValExprAST(geninfo,MemberName))->PoolIndex);
 }
 
 //自身が関数ならばbodyのコード生成を行う。
@@ -617,34 +677,34 @@ TypeAST* BinaryExprAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo,
 	//組み込み型の型チェック
 	if(Operator=="+" || Operator=="-" || Operator=="*" || Operator=="/"){
 		if(*lhst!=*rhst || (lhst->GetName()!="int" && lhst->GetName()!="float")){
-			error("型に問題があります。二項演算子:"+Operator+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
+			error("型に問題があります。二項演算子 "+Operator+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
 		}
 
 		TypeInfo=lhst; //オペランドの型を元に自らの型を決める
 	}else if(Operator=="%" || Operator=="<<" || Operator==">>"){
 		if(*lhst!=*rhst || (lhst->GetName()!="int")){
-			error("型に問題があります。二項演算子:"+Operator+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
+			error("型に問題があります。二項演算子 "+Operator+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
 		}
 		TypeInfo=lhst;
 	}else if(Operator=="&&" || Operator=="||"){
 		if(*lhst!=*rhst || (lhst->GetName()!="bool")){
-			error("型に問題があります。二項演算子:"+Operator+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
+			error("型に問題があります。二項演算子 "+Operator+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
 		}
 		TypeInfo=lhst;
 	}else if(Operator=="<" || Operator==">" || Operator=="<=" || Operator==">="){
 		if(*lhst!=*rhst || (lhst->GetName()!="int")){
-			error("型に問題があります。二項演算子:"+Operator+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
+			error("型に問題があります。二項演算子 "+Operator+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
 		}
 		TypeInfo=new BasicTypeAST("bool");
 	}else if(Operator=="==" || Operator=="!="){
 		if(*lhst!=*rhst || (lhst->GetName()!="int" && lhst->GetName()!="bool")){
-			error("型に問題があります。二項演算子:"+Operator+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
+			error("型に問題があります。二項演算子 "+Operator+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
 		}
 		TypeInfo=new BasicTypeAST("bool");
 	}else if(Operator=="="){
 		if(*lhst!=*rhst){
-			error("型に問題があります。二項演算子:"+Operator+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
-		}else if(typeid(*LHS)!=typeid(VariableExprAST)){
+			error("型に問題があります。二項演算子 "+Operator+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
+		}else if(typeid(*LHS)!=typeid(VariableExprAST) && typeid(*LHS)!=typeid(ListRefExprAST) && typeid(*LHS)!=typeid(DataMemberRefExprAST)){
 			error("代入式の左辺が変数ではありません。");
 		}
 		TypeInfo=lhst;
@@ -789,6 +849,87 @@ TypeAST* CallExprAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo,ve
 	error("引数リストの型とcalleeの引数の型が一致しません");
 }
 
+TypeAST* ListRefExprAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars){
+	if(IndexExpression->IsBuilt()==false){
+		IndexExpression=dynamic_cast<UnBuiltExprAST*>(IndexExpression)->BuildAST(geninfo);
+	}
+	IndexExpression->CheckType(env,geninfo,CurrentLocalVars);
+	if(IndexExpression->TypeInfo->GetName()!="int"){
+		error("添字は整数で指定してください");
+	}
+
+	if(target->IsBuilt()==false){
+		target=dynamic_cast<UnBuiltExprAST*>(target)->BuildAST(geninfo);
+	}
+	target->CheckType(env,geninfo,CurrentLocalVars);
+
+	if(typeid(ListTypeAST) != typeid(*(target->TypeInfo)) && typeid(TupleTypeAST) != typeid(*(target->TypeInfo))){
+		error("添字を指定できるのはリストまたはタプルです");
+	}
+
+	if(typeid(ListTypeAST) == typeid(*(target->TypeInfo))){
+		TypeInfo=dynamic_cast<ListTypeAST*>(target->TypeInfo)->ContainType;
+	}else if(typeid(TupleTypeAST) == typeid(*(target->TypeInfo))){
+		if(typeid(*IndexExpression) != typeid(IntValExprAST)){
+			error("タプルの添字は整数定数を指定してください");
+		}
+		if(IndexExpression->GetVMValue(geninfo)<0 || IndexExpression->GetVMValue(geninfo)>=dynamic_cast<TupleTypeAST*>(target->TypeInfo)->ContainTypeList.size()){
+			error("タプルの範囲外です");
+		}
+		TypeInfo=dynamic_cast<TupleTypeAST*>(target->TypeInfo)->ContainTypeList[IndexExpression->GetVMValue(geninfo)];
+	}
+
+	return TypeInfo;
+}
+
+TypeAST* DataMemberRefExprAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars){
+	if(target->IsBuilt()==false){
+		target=dynamic_cast<UnBuiltExprAST*>(target)->BuildAST(geninfo);
+	}
+	target->CheckType(env,geninfo,CurrentLocalVars);
+
+	vector< pair<string,TypeAST*> >::iterator miter;
+	vector<DataDefAST*>::iterator diter;
+	for(diter=geninfo->TopLevelDataDef.begin();diter!=geninfo->TopLevelDataDef.end();diter++){
+		if((*diter)->Name==target->TypeInfo->GetName()){
+			break;
+		}
+	}
+	if(diter!=geninfo->TopLevelDataDef.end()){
+		for(miter=(*diter)->MemberList.begin();miter!=(*diter)->MemberList.end();miter++){
+			if(miter->first==MemberName){
+				break;
+			}
+		}
+		if(miter==(*diter)->MemberList.end()){
+			error("メンバ"+MemberName+"はありません");
+		}else{
+			TypeInfo=miter->second;
+			return TypeInfo;
+		}
+	}
+
+	vector<GroupDefAST*>::iterator giter;
+	for(giter=geninfo->TopLevelGroupDef.begin();giter!=geninfo->TopLevelGroupDef.end();giter++){
+		if((*giter)->Name==target->TypeInfo->GetName()){
+			break;
+		}
+	}
+	if(giter!=geninfo->TopLevelGroupDef.end()){
+		for(miter=(*giter)->MemberList.begin();miter!=(*giter)->MemberList.end();miter++){
+			if(miter->first==MemberName){
+				break;
+			}
+		}
+		if(miter==(*giter)->MemberList.end()){
+			error("メンバ"+MemberName+"はありません");
+		}else{
+			TypeInfo=miter->second;
+			return TypeInfo;
+		}
+	}
+}
+
 
 void BlockAST::Codegen(vector<int>* bytecodes, CodegenInfo* geninfo)
 {
@@ -889,7 +1030,15 @@ void TupleValExprAST::Codegen(vector<int>* bytecodes, CodegenInfo* geninfo)
 
 void DataValExprAST::Codegen(vector<int>* bytecodes, CodegenInfo* geninfo)
 {
-
+	vector< pair<string,ExprAST*> >::reverse_iterator riter;
+	for(riter=InitValue->rbegin();riter!=InitValue->rend();riter++){
+		(*riter).second->Codegen(bytecodes,geninfo);
+		bytecodes->push_back(ipush);
+		bytecodes->push_back((new StringValExprAST(geninfo,(*riter).first))->PoolIndex);
+	}
+	bytecodes->push_back(makedata);
+	bytecodes->push_back((new StringValExprAST(geninfo,TypeInfo->GetName()))->PoolIndex);
+	bytecodes->push_back(InitValue->size());
 }
 
 vector<int> ListValExprAST::FindChildFunction()
@@ -932,7 +1081,7 @@ TypeAST* ListValExprAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo
 			const_list->push_back((*iter)->GetVMValue(geninfo));
 		}
 		PoolIndex=geninfo->PublicConstantPool.SetReference(const_list);
-		cout<<"#"<<PoolIndex<<" : <list>"<<TypeInfo->GetName()<<endl;
+		//cout<<"#"<<PoolIndex<<" : <list>"<<TypeInfo->GetName()<<endl;
 	}
 	*/
 
@@ -974,7 +1123,7 @@ TypeAST* TupleValExprAST::CheckType(vector<Environment> *env,CodegenInfo *geninf
 			const_list->push_back((*iter)->GetVMValue(geninfo));
 		}
 		PoolIndex=geninfo->PublicConstantPool.SetReference(const_list);
-		cout<<"#"<<PoolIndex<<" : <tuple>"<<TypeInfo->GetName()<<endl;
+		//cout<<"#"<<PoolIndex<<" : <tuple>"<<TypeInfo->GetName()<<endl;
 	}*/
 
     return TypeInfo;
@@ -1012,8 +1161,10 @@ TypeAST* DataValExprAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo
 	}
 	if(!tfound){error("型"+TypeInfo->GetName()+"は定義されていません");}
 
+	vector<TypeAST*> typelist;
 	for(iter2=templatedatadef->MemberList.begin();iter2!=templatedatadef->MemberList.end();iter2++){
 		data_temp->push_back(pair<string,ExprAST*>((*iter2).first,NULL));
+		typelist.push_back((*iter2).second);
 	}
 
     for(iter=InitValue->begin();iter!=InitValue->end();iter++){
@@ -1024,12 +1175,17 @@ TypeAST* DataValExprAST::CheckType(vector<Environment> *env,CodegenInfo *geninfo
 
 		vector< pair<string,ExprAST*> >::iterator iter4;
 		bool found=false;
+		int index=0;
 		for(iter4=data_temp->begin();iter4!=data_temp->end();iter4++){
 			if((*iter4).first==(*iter).first){
 				found=true;
+				if(typelist[index]->GetName()!=(*iter).second->TypeInfo->GetName()){
+					error("データ初期化の型が定義と一致しません");
+				}
 				(*iter4).second=(*iter).second;
 				break;
 			}
+			index++;
 		}
 		if(!found){error("宣言されていないメンバ"+(*iter).first+"を初期化しようとしました");}
     }
@@ -1097,6 +1253,14 @@ bool CallExprAST::IsCTFEable(CodegenInfo *cgi,int curr_fun_index){
 	}
 
 	return callee->IsCTFEable(cgi,curr_fun_index);
+};
+
+bool ListRefExprAST::IsCTFEable(CodegenInfo *cgi,int curr_fun_index){
+	return target->IsCTFEable(cgi,curr_fun_index) && IndexExpression->IsCTFEable(cgi,curr_fun_index);
+};
+
+bool DataMemberRefExprAST::IsCTFEable(CodegenInfo *cgi,int curr_fun_index){
+	return target->IsCTFEable(cgi,curr_fun_index);
 };
 
 bool IfStatementAST::IsCTFEable(CodegenInfo* cgi,int curr_fun_index){
@@ -1312,6 +1476,33 @@ vector<ExprAST*> CallExprAST::GetCallExprList()
 	if(callee!=NULL){
 		result.push_back(this);
 	}
+
+	return result;
+}
+
+vector<ExprAST*> ListRefExprAST::GetCallExprList()
+{
+	vector<ExprAST*> result;
+	vector<ExprAST*> temp;
+	vector<ExprAST*>::iterator iter;
+
+	temp=target->GetCallExprList();
+	result.insert(result.end(),temp.begin(),temp.end());
+
+	temp=IndexExpression->GetCallExprList();
+	result.insert(result.end(),temp.begin(),temp.end());
+
+	return result;
+}
+
+vector<ExprAST*> DataMemberRefExprAST::GetCallExprList()
+{
+	vector<ExprAST*> result;
+	vector<ExprAST*> temp;
+	vector<ExprAST*>::iterator iter;
+
+	temp=target->GetCallExprList();
+	result.insert(result.end(),temp.begin(),temp.end());
 
 	return result;
 }

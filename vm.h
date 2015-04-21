@@ -20,14 +20,15 @@ enum{
     ilshift,irshift,
     invoke,
     iloadlocal, //localという名前だが、結局はフレームを遡っていくのでグローバル変数に行き着くかもしれない
+    iloadbyindex,iloadbyname,
     ret,iret,
-    istorelocal,
+    istorelocal,istorefield,istorebyindex,
     makeclosure,
     skip,iffalse_skip,
     icmpeq,icmpne,icmplt,icmple,icmpgt,icmpge,
     back,
-    makelist,copylist, //copy* は定数値をコピーし、新たなインスタンスを生成する
-    copydata
+    makelist,
+    makedata
 };
 
 

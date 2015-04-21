@@ -4,17 +4,17 @@
 
 using namespace std;
 
-const int TOKENRULECOUNT=31;
-const int SYNTAXRULECOUNT=90;
-const int SYMBOLCOUNT=57; //SYNTAXEND,INPUTEND,EMPTYをのぞく
+const int TOKENRULECOUNT=32;
+const int SYNTAXRULECOUNT=96;
+const int SYMBOLCOUNT=60; //SYNTAXEND,INPUTEND,EMPTYをのぞく
 
 
 enum Symbol{
 	SYNTAXEND=-3,INPUTEND=-2,EMPTY=-1,LINEEND,S,VAR,FUN,IF,ELSE,RETURN_S,INTVAL,BOOLVAL,STRINGVAL,IDENT,OPERATOR,program,function,parameter_list,parameter,
 	variabledef_list,variabledef,statement_list,statement,operator_n/*operatorはキーワードなので*/,expression,arg_list,intvalexpr,boolvalexpr,stringvalexpr,primary,
 	variableexpr, parenexpr, funcallexpr, closureexpr, returnstatement,type,type_list,ifstatement,
-	SEMICOLON,LPAREN,RPAREN,LBRACE,RBRACE,LBRACKET,RBRACKET,COMMA,COLON,block,WHILE,whilestatement,listvalexpr,tuplevalexpr,
-	DATA,GROUP,datadef,groupdef,datamember_list,groupmember_list,dataexpr,initassign_list
+	SEMICOLON,LPAREN,RPAREN,LBRACE,RBRACE,LBRACKET,RBRACKET,COMMA,COLON,DOT,block,WHILE,whilestatement,listvalexpr,tuplevalexpr,
+	DATA,GROUP,datadef,groupdef,datamember_list,groupmember_list,dataexpr,initassign_list,listrefexpr,datamemberrefexpr
 };
 
 class FunctionAST;
@@ -48,4 +48,5 @@ union TokenValue{
 	BlockAST *block_ast;
 	DataDefAST *datadef_ast;
 	GroupDefAST *groupdef_ast;
+	vector< pair<string,ExprAST*> > *datainitval_list;
 };

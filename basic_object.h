@@ -10,8 +10,10 @@ public:
 	ClosureObject(int index,Flame* parent):PoolIndex(index),ParentFlame(parent){};
 };
 
-class ContinuationObject{
+class DataObject{
 public:
-	Flame* ExecFlame;
-	int PC;
+	string OriginalType;
+	map<string,int>* MemberMap;
+
+	DataObject(string original,map<string,int>* membermap):OriginalType(original),MemberMap(membermap){}
 };

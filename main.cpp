@@ -55,6 +55,7 @@ pair<Symbol,TokenValue> boolval_lex(char *str,Lexer *lex){
 };
 pair<Symbol,TokenValue> semicolon_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(SEMICOLON ,Lexer::dummy);};
 pair<Symbol,TokenValue> colon_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(COLON ,Lexer::dummy);};
+pair<Symbol,TokenValue> dot_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(DOT ,Lexer::dummy);};
 pair<Symbol,TokenValue> comma_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(COMMA ,Lexer::dummy);};
 pair<Symbol,TokenValue> lparen_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(LPAREN ,Lexer::dummy);};
 pair<Symbol,TokenValue> rparen_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(RPAREN ,Lexer::dummy);};
@@ -117,6 +118,7 @@ TokenRule TOKENRULE[TOKENRULECOUNT]={
     {";",INITIAL,true,semicolon_lex},
 	{":",INITIAL,true,colon_lex},
     {",",INITIAL,true,comma_lex},
+    {"\\.",INITIAL,true,dot_lex},
     {"\\(",INITIAL,true,lparen_lex},
     {"\\)",INITIAL,true,rparen_lex},
     {"\\{",INITIAL,true,lbrace_lex},
@@ -193,6 +195,9 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{primary,variableexpr,SYNTAXEND},NULL},
     {{primary,listvalexpr,SYNTAXEND},NULL},
     {{primary,tuplevalexpr,SYNTAXEND},NULL},
+    {{primary,dataexpr,SYNTAXEND},NULL},
+    {{primary,listrefexpr,SYNTAXEND},NULL},
+    {{primary,datamemberrefexpr,SYNTAXEND},NULL},
 	{{primary,operator_n,SYNTAXEND},NULL},
     {{variableexpr,IDENT,SYNTAXEND},variableexpr_reduce},
     {{parenexpr,LPAREN,expression,RPAREN,SYNTAXEND},parenexpr_reduce},
@@ -230,13 +235,17 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{groupmember_list,groupmember_list,FUN,IDENT,LPAREN,type_list,RPAREN,LINEEND,SYNTAXEND},gmlist_addvoid_reduce},
     {{groupmember_list,groupmember_list,FUN,IDENT,LPAREN,type_list,RPAREN,SYNTAXEND},gmlist_addvoid_reduce},
 
-    {{groupmember_list,groupmember_list,FUN,IDENT,LPAREN,type_list,RPAREN,OPERATOR,type,SEMICOLON,SYNTAXEND},gmlist_addnonvoid_reduce},
-    {{groupmember_list,groupmember_list,FUN,IDENT,LPAREN,type_list,RPAREN,OPERATOR,type,LINEEND,SYNTAXEND},gmlist_addnonvoid_reduce},
-    {{groupmember_list,groupmember_list,FUN,IDENT,LPAREN,type_list,RPAREN,OPERATOR,type,SYNTAXEND},gmlist_addnonvoid_reduce},
+    {{groupmember_list,groupmember_list,FUN,IDENT,LPAREN,type_list,RPAREN,operator_n,type,SEMICOLON,SYNTAXEND},gmlist_addnonvoid_reduce},
+    {{groupmember_list,groupmember_list,FUN,IDENT,LPAREN,type_list,RPAREN,operator_n,type,LINEEND,SYNTAXEND},gmlist_addnonvoid_reduce},
+    {{groupmember_list,groupmember_list,FUN,IDENT,LPAREN,type_list,RPAREN,operator_n,type,SYNTAXEND},gmlist_addnonvoid_reduce},
 
     {{dataexpr,IDENT,LBRACE,initassign_list,RBRACE,SYNTAXEND},dataexpr_reduce},
     {{initassign_list,EMPTY,SYNTAXEND},ialist_empty_reduce},
-	{{initassign_list,initassign_list,IDENT,operator_n,expression,SYNTAXEND},ialist_add_reduce}
+	{{initassign_list,initassign_list,IDENT,operator_n,expression,SYNTAXEND},ialist_add_reduce},
+	{{initassign_list,initassign_list,IDENT,operator_n,expression,COMMA,SYNTAXEND},ialist_add_reduce},
+
+	{{listrefexpr,variableexpr,LBRACKET,expression,RBRACKET,SYNTAXEND},listrefexpr_reduce}, //配列・タプルのインデックス参照
+	{{datamemberrefexpr,variableexpr,DOT,IDENT,SYNTAXEND},datamemberrefexpr_reduce} //構造体メンバ参照
 };
 
 

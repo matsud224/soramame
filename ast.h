@@ -169,7 +169,7 @@ public:
         TypeInfo=new BasicTypeAST("string");
         //コンスタントプールへの登録
         PoolIndex=cgi->PublicConstantPool.SetReference(reinterpret_cast<void *>(&Value));
-        cout<<"#"<<PoolIndex<<" : <string>"<<Value<<endl;
+        //cout<<"#"<<PoolIndex<<" : <string>"<<Value<<endl;
     }
     virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
     virtual bool IsConstant(){return true;}
@@ -235,7 +235,7 @@ public:
     vector< pair<string,ExprAST*> > *InitValue;
 
     int PoolIndex;
-    DataValExprAST(CodegenInfo *cgi,string TypeName){
+    DataValExprAST(string TypeName,vector< pair<string,ExprAST*> >* initval):InitValue(initval){
         TypeInfo=new BasicTypeAST(TypeName);
         PoolIndex=-1;
     }
@@ -303,7 +303,7 @@ public:
 		TypeInfo=new FunctionTypeAST(typelist);
         isBuiltin=false;
         PoolIndex=cgi->PublicConstantPool.SetReference(reinterpret_cast<void *>(this));
-        cout<<"#"<<PoolIndex<<" : <closure>"<<Name<<endl;
+        //cout<<"#"<<PoolIndex<<" : <closure>"<<Name<<endl;
     }
 
     //組み込み関数用のコンストラクタ
@@ -317,7 +317,7 @@ public:
 		TypeInfo=new FunctionTypeAST(typelist);
         isBuiltin=true;
         PoolIndex=cgi->PublicConstantPool.SetReference(reinterpret_cast<void *>(this));
-        cout<<"#"<<PoolIndex<<" : <closure>"<<Name<<endl;
+        //cout<<"#"<<PoolIndex<<" : <closure>"<<Name<<endl;
     }
 
     virtual void Codegen(vector<int> *unused_argumnt,CodegenInfo *geninfo);
@@ -371,6 +371,46 @@ public:
     	}else{
 			return -1;
     	}
+	}
+    virtual TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
+    virtual vector<int> FindChildFunction();
+    virtual bool IsCTFEable(CodegenInfo *cgi,int curr_fun_index);
+    virtual vector<ExprAST*> GetCallExprList();
+};
+
+class ListRefExprAST : public ExprAST{
+public:
+    ExprAST* target;
+    ExprAST* IndexExpression;
+
+    ListRefExprAST(ExprAST* t,ExprAST* idx):target(t),IndexExpression(idx){TypeInfo=NULL;}
+
+    virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
+    virtual bool IsConstant(){
+    	return false;
+	}
+    int GetVMValue(CodegenInfo *cgi){
+    	return -1;
+	}
+    virtual TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
+    virtual vector<int> FindChildFunction();
+    virtual bool IsCTFEable(CodegenInfo *cgi,int curr_fun_index);
+    virtual vector<ExprAST*> GetCallExprList();
+};
+
+class DataMemberRefExprAST : public ExprAST{
+public:
+    ExprAST* target;
+    string MemberName;
+
+    DataMemberRefExprAST(ExprAST* t,string memname):target(t),MemberName(memname){TypeInfo=NULL;}
+
+    virtual void Codegen(vector<int> *bytecodes,CodegenInfo *geninfo);
+    virtual bool IsConstant(){
+    	return false;
+	}
+    int GetVMValue(CodegenInfo *cgi){
+    	return -1;
 	}
     virtual TypeAST *CheckType(vector<Environment> *env,CodegenInfo *geninfo,vector< pair<string,TypeAST*> > *CurrentLocalVars);
     virtual vector<int> FindChildFunction();

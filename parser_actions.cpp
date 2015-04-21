@@ -435,15 +435,37 @@ TokenValue gmlist_addnonvoid_reduce(CodegenInfo* cgi, vector<TokenValue> values)
 
 TokenValue dataexpr_reduce(CodegenInfo* cgi, vector<TokenValue> values)
 {
-
+	TokenValue t;
+	t.expression_ast=new DataValExprAST(values[0].str,values[2].datainitval_list);
+	return t;
 }
 
 TokenValue ialist_empty_reduce(CodegenInfo* cgi, vector<TokenValue> values)
 {
-
+	TokenValue t;
+	t.datainitval_list=new vector< pair<string,ExprAST*> >(); //parameterと型が一緒なので使わせてもらう
+	return t;
 }
 
 TokenValue ialist_add_reduce(CodegenInfo* cgi, vector<TokenValue> values)
 {
+	TokenValue t;
+	vector< pair<string,ExprAST*> > *m=new vector< pair<string,ExprAST*> >(*(values[0].datainitval_list)); //parameterと型が一緒なので使わせてもらう
+	m->push_back(pair<string,ExprAST*>(values[1].str,new UnBuiltExprAST(values[3].expression_list)));
+	t.datainitval_list=m;
+	return t;
+}
 
+TokenValue listrefexpr_reduce(CodegenInfo* cgi, vector<TokenValue> values)
+{
+	TokenValue t;
+	t.expression_ast=new ListRefExprAST(values[0].expression_ast,new UnBuiltExprAST(values[2].expression_list)); //parameterと型が一緒なので使わせてもらう
+	return t;
+}
+
+TokenValue datamemberrefexpr_reduce(CodegenInfo* cgi, vector<TokenValue> values)
+{
+	TokenValue t;
+	t.expression_ast=new DataMemberRefExprAST(values[0].expression_ast,values[2].str); //parameterと型が一緒なので使わせてもらう
+	return t;
 }
