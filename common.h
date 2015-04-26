@@ -1,11 +1,12 @@
 #pragma once
 #include <vector>
 #include <string>
+#include <memory>
 
 using namespace std;
 
-const int TOKENRULECOUNT=32;
-const int SYNTAXRULECOUNT=96;
+const int TOKENRULECOUNT=33;
+const int SYNTAXRULECOUNT=99;
 const int SYMBOLCOUNT=60; //SYNTAXEND,INPUTEND,EMPTYをのぞく
 
 
@@ -30,23 +31,23 @@ class GroupDefAST;
 union TokenValue{
 	int intval;
 	bool boolval;
-	char *str;
+	string str;
 
-	FunctionAST *function_ast;
-	vector<TopLevelItem*> *toplevel_list;
-	vector<ExprAST*> *arg_exp_list;
-	vector< pair<string,TypeAST*> > *parameter_list;
-	pair<string,TypeAST*> *parameter_ast;
-	vector<VariableDefStatementAST*> *variabledef_list;
-	VariableDefStatementAST *variabledef_ast;
-	vector<StatementAST*> *statement_list;
-	StatementAST *statement_ast;
-	vector<ExprAST*> *expression_list;
-	ExprAST* expression_ast;
-	TypeAST *type_ast;
-	vector<TypeAST*> *type_list;
-	BlockAST *block_ast;
-	DataDefAST *datadef_ast;
-	GroupDefAST *groupdef_ast;
-	vector< pair<string,ExprAST*> > *datainitval_list;
+	shared_ptr<FunctionAST> function_ast;
+	shared_ptr< vector<shared_ptr<TopLevelItem> > > toplevel_list;
+	shared_ptr< vector<shared_ptr<ExprAST> > > arg_exp_list;
+	shared_ptr< vector< pair<string,shared_ptr<TypeAST> >  > > parameter_list;
+	shared_ptr< pair<string,shared_ptr<TypeAST> > > parameter_ast;
+	shared_ptr< vector<shared_ptr<VariableDefStatementAST> > > variabledef_list;
+	shared_ptr< VariableDefStatementAST > variabledef_ast;
+	shared_ptr<vector<shared_ptr<StatementAST> > > statement_list;
+	shared_ptr<StatementAST> statement_ast;
+	shared_ptr<vector<shared_ptr<ExprAST> > > expression_list;
+	shared_ptr<ExprAST> expression_ast;
+	shared_ptr<TypeAST> type_ast;
+	shared_ptr<vector<shared_ptr<TypeAST> > > type_list;
+	shared_ptr<BlockAST> block_ast;
+	shared_ptr<DataDefAST> datadef_ast;
+	shared_ptr<GroupDefAST> groupdef_ast;
+	shared_ptr<vector< pair<string,shared_ptr<ExprAST> > > > datainitval_list;
 };

@@ -1,6 +1,13 @@
 #include "compiler.h"
 #include "ast.h"
+#include "builtinfunctions.h"
 #include <typeinfo>
+#include <memory>
+
+void Compiler::RegisterBuiltinFunction(string name,void (*funcptr)(shared_ptr<VM>),vector< pair<string,shared_ptr<TypeAST> > >* arg,shared_ptr<TypeAST>  rettype,bool ctfeable){
+	genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,name,arg,rettype,ctfeable));
+	genInfo->BuiltinFunctionList[pair<string,string>(name,genInfo->TopLevelFunction.back()->TypeInfo->GetName())]=funcptr;
+}
 
 void Compiler::ASTgen()
 {
@@ -16,6 +23,8 @@ void Compiler::ASTgen()
     genInfo->OperatorList["||"]=new OperatorInfo(Binary,Left,5);
     genInfo->OperatorList["!"]=new OperatorInfo(Unary,Right,70);
 
+	genInfo->OperatorList["-"]=new OperatorInfo(Unary,Right,70);
+
     genInfo->OperatorList["<"]=new OperatorInfo(Binary,Left,8);
     genInfo->OperatorList[">"]=new OperatorInfo(Binary,Left,8);
     genInfo->OperatorList["<="]=new OperatorInfo(Binary,Left,8);
@@ -27,43 +36,72 @@ void Compiler::ASTgen()
 
 
 
-    vector< pair<string,TypeAST *> > arglist;
+    vector< pair<string,shared_ptr<TypeAST> > > arglist;
 
-	genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"rand",new vector< pair<string,TypeAST *> >(arglist),new BasicTypeAST("int"),false));
+	RegisterBuiltinFunction("rand",rand_int,new vector< pair<string,shared_ptr<TypeAST> > >(arglist),new BasicTypeAST("int"),false);
 
-    arglist.push_back(pair<string,TypeAST *>("val",new BasicTypeAST("int")));
-    genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"print",new vector< pair<string,TypeAST *> >(arglist),new BasicTypeAST("void"),false));
+	RegisterBuiltinFunction("glut_mainloop",glut_mainloop,new vector< pair<string,shared_ptr<TypeAST> > >(arglist),new BasicTypeAST("void"),false);
+	RegisterBuiltinFunction("glut_clear",glut_clear,new vector< pair<string,shared_ptr<TypeAST> > >(arglist),new BasicTypeAST("void"),false);
+	RegisterBuiltinFunction("glut_flush",glut_flush,new vector< pair<string,shared_ptr<TypeAST> > >(arglist),new BasicTypeAST("void"),false);
+	RegisterBuiltinFunction("glut_begin_point",glut_begin_point,new vector< pair<string,shared_ptr<TypeAST> > >(arglist),new BasicTypeAST("void"),false);
+	RegisterBuiltinFunction("glut_begin_line",glut_begin_line,new vector< pair<string,shared_ptr<TypeAST> > >(arglist),new BasicTypeAST("void"),false);
+	RegisterBuiltinFunction("glut_begin_strip",glut_begin_strip,new vector< pair<string,shared_ptr<TypeAST> > >(arglist),new BasicTypeAST("void"),false);
+	RegisterBuiltinFunction("glut_begin_lineloop",glut_begin_lineloop,new vector< pair<string,shared_ptr<TypeAST> > >(arglist),new BasicTypeAST("void"),false);
+	RegisterBuiltinFunction("glut_begin_triangle",glut_begin_triangle,new vector< pair<string,shared_ptr<TypeAST> > >(arglist),new BasicTypeAST("void"),false);
+	RegisterBuiltinFunction("glut_begin_quad",glut_begin_quad,new vector< pair<string,shared_ptr<TypeAST> > >(arglist),new BasicTypeAST("void"),false);
+	RegisterBuiltinFunction("glut_begin_trianglefan",glut_begin_trianglefan,new vector< pair<string,shared_ptr<TypeAST> > >(arglist),new BasicTypeAST("void"),false);
+	RegisterBuiltinFunction("glut_begin_polygon",glut_begin_polygon,new vector< pair<string,shared_ptr<TypeAST> > >(arglist),new BasicTypeAST("void"),false);
+	RegisterBuiltinFunction("glut_end",glut_end,new vector< pair<string,shared_ptr<TypeAST> > >(arglist),new BasicTypeAST("void"),false);
 
-    arglist[0]=pair<string,TypeAST *>("val",new BasicTypeAST("bool"));
-    genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"print",new vector< pair<string,TypeAST *> >(arglist),new BasicTypeAST("void"),false));
+	vector<shared_ptr<TypeAST> > voidarg;voidarg.push_back(new BasicTypeAST("void"));
+	arglist.push_back(pair<string,shared_ptr<TypeAST> >("val",new FunctionTypeAST(voidarg)));
+	RegisterBuiltinFunction("glut_setdisplayfunc",glut_setdispfunc,new vector< pair<string,shared_ptr<TypeAST> > >(arglist),new BasicTypeAST("void"),false);
+	arglist.clear();
 
-    arglist[0]=pair<string,TypeAST *>("str",new BasicTypeAST("string"));
-    genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"print",new vector< pair<string,TypeAST *> >(arglist),new BasicTypeAST("void"),false));
+	vector<shared_ptr<TypeAST> > intarg;
+	intarg.push_back(new BasicTypeAST("int"));
+	intarg.push_back(new BasicTypeAST("int"));
+	intarg.push_back(new BasicTypeAST("int"));
+	intarg.push_back(new BasicTypeAST("void"));
+	arglist.push_back(pair<string,shared_ptr<TypeAST> >("val",new FunctionTypeAST(intarg)));
+	RegisterBuiltinFunction("glut_setkeyboardfunc",glut_setkeyboardfunc,new vector< pair<string,shared_ptr<TypeAST> > >(arglist),new BasicTypeAST("void"),false);
+	arglist.clear();
 
-    arglist[0]=pair<string,TypeAST *>("val",new BasicTypeAST("int"));
-    genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"abs",new vector< pair<string,TypeAST *> >(arglist),new BasicTypeAST("int"),true));
+	intarg.clear();
+	intarg.push_back(new BasicTypeAST("int"));
+	intarg.push_back(new BasicTypeAST("int"));
+	intarg.push_back(new BasicTypeAST("void"));
+	arglist.push_back(pair<string,shared_ptr<TypeAST> >("val",new FunctionTypeAST(intarg)));
+	RegisterBuiltinFunction("glut_setmousefunc",glut_setmousefunc,new vector< pair<string,shared_ptr<TypeAST> > >(arglist),new BasicTypeAST("void"),false);
+	arglist.clear();
 
-    arglist[0]=pair<string,TypeAST *>("str",new BasicTypeAST("string"));
-    genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"strlen",new vector< pair<string,TypeAST *> >(arglist),new BasicTypeAST("int"),true));
+    arglist.push_back(pair<string,shared_ptr<TypeAST> >("val",new BasicTypeAST("int")));
+    RegisterBuiltinFunction("print",print_int,new vector< pair<string,shared_ptr<TypeAST> > >(arglist),new BasicTypeAST("void"),false);
 
-	arglist[0]=pair<string,TypeAST *>("val1",new BasicTypeAST("int"));
-	arglist.push_back(pair<string,TypeAST *>("val2",new BasicTypeAST("int")));
-    genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"pow",new vector< pair<string,TypeAST *> >(arglist),new BasicTypeAST("int"),true));
+    arglist[0]=pair<string,shared_ptr<TypeAST> >("val",new BasicTypeAST("bool"));
+    RegisterBuiltinFunction("print",print_bool,new vector< pair<string,shared_ptr<TypeAST> > >(arglist),new BasicTypeAST("void"),false);
 
-	arglist[0]=pair<string,TypeAST *>("list",new ListTypeAST(new BasicTypeAST("int")));
-	arglist[1]=pair<string,TypeAST *>("index",new BasicTypeAST("int"));
-    genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"get_intlist",new vector< pair<string,TypeAST *> >(arglist),new BasicTypeAST("int"),true));
+    arglist[0]=pair<string,shared_ptr<TypeAST> >("str",new BasicTypeAST("string"));
+    RegisterBuiltinFunction("print",print_str,new vector< pair<string,shared_ptr<TypeAST> > >(arglist),new BasicTypeAST("void"),false);
 
-	arglist[0]=pair<string,TypeAST *>("list",new ListTypeAST(new BasicTypeAST("bool")));
-	arglist[1]=pair<string,TypeAST *>("index",new BasicTypeAST("int"));
-    genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"get_boollist",new vector< pair<string,TypeAST *> >(arglist),new BasicTypeAST("bool"),true));
+    RegisterBuiltinFunction("glut_openwindow",glut_openwindow,new vector< pair<string,shared_ptr<TypeAST> > >(arglist),new BasicTypeAST("void"),false);
 
-	vector<TypeAST*> fargs;
-	fargs.push_back(new BasicTypeAST("void"));
-	arglist[0]=pair<string,TypeAST *>("list",new ListTypeAST(new FunctionTypeAST(fargs)));
-	arglist[1]=pair<string,TypeAST *>("index",new BasicTypeAST("int"));
-    genInfo->TopLevelFunction.push_back(new FunctionAST(genInfo,"get_funlist",new vector< pair<string,TypeAST *> >(arglist),new FunctionTypeAST(fargs),true));
+    arglist[0]=pair<string,shared_ptr<TypeAST> >("val",new BasicTypeAST("int"));
+    RegisterBuiltinFunction("abs",abs_int,new vector< pair<string,shared_ptr<TypeAST> > >(arglist),new BasicTypeAST("int"),true);
 
+    arglist[0]=pair<string,shared_ptr<TypeAST> >("str",new BasicTypeAST("string"));
+    RegisterBuiltinFunction("length",length_str,new vector< pair<string,shared_ptr<TypeAST> > >(arglist),new BasicTypeAST("int"),true);
+
+	arglist[0]=pair<string,shared_ptr<TypeAST> >("val1",new BasicTypeAST("int"));
+	arglist.push_back(pair<string,shared_ptr<TypeAST> >("val2",new BasicTypeAST("int")));
+    RegisterBuiltinFunction("pow",pow_int,new vector< pair<string,shared_ptr<TypeAST> > >(arglist),new BasicTypeAST("int"),true);
+
+	RegisterBuiltinFunction("glut_vertex2i",glut_vertex2i,new vector< pair<string,shared_ptr<TypeAST> > >(arglist),new BasicTypeAST("void"),false);
+
+	arglist.push_back(pair<string,shared_ptr<TypeAST> >("val3",new BasicTypeAST("int")));
+	RegisterBuiltinFunction("glut_color3i",glut_color3i,new vector< pair<string,shared_ptr<TypeAST> > >(arglist),new BasicTypeAST("void"),false);
+
+	RegisterBuiltinFunction("glut_char",glut_char,new vector< pair<string,shared_ptr<TypeAST> > >(arglist),new BasicTypeAST("void"),false);
 
 	while(!parser->IsAccepted()){
 		pair<Symbol,TokenValue> token=lexer->Get();
@@ -76,8 +114,8 @@ void Compiler::TypeCheck()
 {
     vector<Environment> environment; //現在可視状態にある変数（トップレベルの関数も変数とみなす）のスタック（フレームを積み重ねていく）
 
-    vector<FunctionAST *>::iterator fun_iter;
-    vector<VariableDefStatementAST *>::iterator var_iter;
+    vector<shared_ptr<FunctionAST> >::iterator fun_iter;
+    vector<shared_ptr<VariableDefStatementAST> >::iterator var_iter;
 
     Environment rootflame;
 	rootflame.is_internalblock=false;
@@ -86,11 +124,13 @@ void Compiler::TypeCheck()
 
 	int cnt=0;
     for(fun_iter=genInfo->TopLevelFunction.begin();fun_iter!=genInfo->TopLevelFunction.end();fun_iter++){
-		rootflame.Items.push_back({pair<string,TypeAST *>((*fun_iter)->Name,(*fun_iter)->TypeInfo),cnt});
+		EnvItem ei;ei.VariableInfo=pair<string,shared_ptr<TypeAST> >((*fun_iter)->Name,(*fun_iter)->TypeInfo);ei.LocalIndex=cnt;
+		rootflame.Items.push_back(ei);
 		cnt++;
     }
     for(var_iter=genInfo->TopLevelVariableDef.begin();var_iter!=genInfo->TopLevelVariableDef.end();var_iter++){
-        rootflame.Items.push_back({*((*var_iter)->Variable),cnt});
+        EnvItem ei;ei.VariableInfo=*((*var_iter)->Variable);ei.LocalIndex=cnt;
+        rootflame.Items.push_back(ei);
         cnt++;
     }
     environment.push_back(rootflame); //トップレベルのフレーム
@@ -99,7 +139,7 @@ void Compiler::TypeCheck()
 		if((*fun_iter)->isBuiltin==false){
 			(*fun_iter)->CheckType(&environment,genInfo,&(genInfo->LocalVariables));
 		}
-		rootflame.LocalVariablesPtr->push_back(pair<string,TypeAST*>((*fun_iter)->Name,(*fun_iter)->TypeInfo));
+		rootflame.LocalVariablesPtr->push_back(pair<string,shared_ptr<TypeAST> >((*fun_iter)->Name,(*fun_iter)->TypeInfo));
     }
     for(var_iter=genInfo->TopLevelVariableDef.begin();var_iter!=genInfo->TopLevelVariableDef.end();var_iter++){
         (*var_iter)->CheckType(&environment,genInfo,&(genInfo->LocalVariables));
@@ -110,8 +150,8 @@ void Compiler::TypeCheck()
 void Compiler::RegisterChildClosure()
 {
 	//関数の子クロージャの登録を行う
-	vector<FunctionAST*>::iterator fun_iter;
-	vector<VariableDefStatementAST*>::iterator var_iter;
+	vector<shared_ptr<FunctionAST> >::iterator fun_iter;
+	vector<shared_ptr<VariableDefStatementAST> >::iterator var_iter;
 	vector<int> temp;
 
 	for(var_iter=genInfo->TopLevelVariableDef.begin();var_iter!=genInfo->TopLevelVariableDef.end();var_iter++){
@@ -130,8 +170,8 @@ void Compiler::RegisterChildClosure()
 
 void Compiler::Codegen()
 {
-    vector<FunctionAST *>::iterator iterf;
-    vector<VariableDefStatementAST *>::iterator iterv;
+    vector<shared_ptr<FunctionAST> >::iterator iterf;
+    vector<shared_ptr<VariableDefStatementAST> >::iterator iterv;
 
     for(iterf=genInfo->TopLevelFunction.begin();iterf!=genInfo->TopLevelFunction.end();iterf++){
 		//組み込み関数のコード生成は行わない
@@ -167,12 +207,12 @@ void Compiler::Codegen()
 }
 
 void Compiler::CTFE(int loop/*繰り返し回数*/){
-	vector<ExprAST*> call_list;
-	vector<CallExprAST*> exec_list;
-	vector<ExprAST*> temp;
-	vector<FunctionAST*>::iterator iterf;
-	vector<ExprAST*>::iterator citer;
-	vector<CallExprAST*>::iterator iter;
+	vector<shared_ptr<ExprAST> > call_list;
+	vector<Callshared_ptr<ExprAST>> exec_list;
+	vector<shared_ptr<ExprAST> > temp;
+	vector<shared_ptr<FunctionAST> >::iterator iterf;
+	vector<shared_ptr<ExprAST> >::iterator citer;
+	vector<Callshared_ptr<ExprAST>>::iterator iter;
 	int exec_count=0;
 	for(int i=0;i<loop;i++){
 		call_list.clear();
@@ -185,10 +225,10 @@ void Compiler::CTFE(int loop/*繰り返し回数*/){
 		}
 
 		for(citer=call_list.begin();citer!=call_list.end();citer++){
-            CallExprAST* target=dynamic_cast<CallExprAST*>(*citer);
+            Callshared_ptr<ExprAST> target=dynamic_cast<Callshared_ptr<ExprAST>>(*citer);
 			if(typeid(VariableExprAST)==typeid(*(target->callee))){
-				if(dynamic_cast<VariableExprAST*>(target->callee)->is_toplevel_func && genInfo->TopLevelFunction[dynamic_cast<VariableExprAST*>(target->callee)->LocalIndex]->IsCTFEable(genInfo,-1)){
-					vector<ExprAST*>::iterator aiter;
+				if(dynamic_cast<Variableshared_ptr<ExprAST>>(target->callee)->is_toplevel_func && genInfo->TopLevelFunction[dynamic_cast<Variableshared_ptr<ExprAST>>(target->callee)->LocalIndex]->IsCTFEable(genInfo,-1)){
+					vector<shared_ptr<ExprAST> >::iterator aiter;
 					for(aiter=target->args->begin();aiter!=target->args->end();aiter++){
 						if((*aiter)->IsCTFEable(genInfo,-1)==false || (*aiter)->IsConstant()==false){
 							goto next_c;
@@ -218,21 +258,22 @@ void Compiler::CTFE(int loop/*繰り返し回数*/){
 			preexec_code.clear();
 			//トップレベルの関数（組み込み関数も含める）のCodegenInfo.ToplevelFuncList
 			//のインデックスとLocalIndexは一致すると仮定している(closureがはいってる)
-			for(vector<ExprAST*>::reverse_iterator eiter=(*iter)->args->rbegin();eiter!=(*iter)->args->rend();eiter++){
+			for(vector<shared_ptr<ExprAST> >::reverse_iterator eiter=(*iter)->args->rbegin();eiter!=(*iter)->args->rend();eiter++){
 				preexec_code.push_back(ipush);
 				preexec_code.push_back((*eiter)->GetVMValue(genInfo));
 			}
 
 			preexec_code.push_back(iloadlocal);
 			preexec_code.push_back(0); //FlameBack
-			preexec_code.push_back(dynamic_cast<VariableExprAST*>((*iter)->callee)->LocalIndex);
+			preexec_code.push_back(dynamic_cast<Variableshared_ptr<ExprAST>>((*iter)->callee)->LocalIndex);
 			preexec_code.push_back(invoke);
 			preexec_code.push_back(ret);
 
 			genInfo->Bootstrap=preexec_code;
 			VM vm(genInfo);
+			vm.Init();
 			(*iter)->callee=NULL;
-			(*iter)->CalculatedValue=vm.Run();
+			(*iter)->CalculatedValue=vm.Run(false);
 
 		}
 

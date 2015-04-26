@@ -7,6 +7,7 @@
 #include <iostream>
 #include "common.h"
 #include "oniguruma.h"
+#include <memory>
 
 using namespace std;
 
@@ -15,11 +16,12 @@ class Lexer;
 
 enum State{INITIAL,COMMENT};
 
-struct TokenRule{
+class TokenRule{
+public:
     char *rule;
     State state;
     bool hasValue;
-    pair<Symbol,TokenValue> (* callback)(char *str,Lexer *lexer);
+    pair<Symbol,TokenValue> (* callback)(char *str,shared_ptr<Lexer> lexer);
 };
 
 extern TokenRule TOKENRULE[];

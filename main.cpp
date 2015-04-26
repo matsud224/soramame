@@ -18,6 +18,7 @@
 #include <math.h>
 #include "parser_actions.h"
 #include <readline/readline.h>
+#include <memory>
 
 
 using namespace std;
@@ -78,6 +79,16 @@ pair<Symbol,TokenValue> intval_lex(char *str,Lexer *lex){
 	t.intval=atoi(str);
 	return pair<Symbol,TokenValue>(INTVAL ,t);
 };
+pair<Symbol,TokenValue> asciival_lex(char *str,Lexer *lex){
+	TokenValue t;
+	string str_temp(str);
+	//ダブルクオーテーションを削除
+	str_temp.erase(str_temp.begin());
+	str_temp.erase(str_temp.end()-1);
+	char c=str_temp[0];
+	t.intval=c;
+	return pair<Symbol,TokenValue>(INTVAL ,t);
+};
 pair<Symbol,TokenValue> stringval_lex(char *str,Lexer *lex){
 	TokenValue t;
 	string str_temp(str);
@@ -129,6 +140,7 @@ TokenRule TOKENRULE[TOKENRULECOUNT]={
     {"[%=~\\|\\^\\+\\-\\*/<>&!]{1,3}",INITIAL,true,operator_lex},
     {"\\d+",INITIAL,true,intval_lex},
     {"\"(?>[^\\\\\"]|\\\\.)*?\"",INITIAL,true,stringval_lex},
+    {"\'[\x20-\x7E]\'",INITIAL,true,asciival_lex},
     {"\\s+",INITIAL,false,NULL}, //空白は読み飛ばす（コールバック関数をNULLにしておく）
 
 	{"#\\{",COMMENT,false,commentstart_lex},
@@ -239,6 +251,10 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{groupmember_list,groupmember_list,FUN,IDENT,LPAREN,type_list,RPAREN,operator_n,type,LINEEND,SYNTAXEND},gmlist_addnonvoid_reduce},
     {{groupmember_list,groupmember_list,FUN,IDENT,LPAREN,type_list,RPAREN,operator_n,type,SYNTAXEND},gmlist_addnonvoid_reduce},
 
+	{{groupmember_list,groupmember_list,IDENT,COLON,type,SEMICOLON,SYNTAXEND},gmlist_addfield_reduce},
+    {{groupmember_list,groupmember_list,IDENT,COLON,type,LINEEND,SYNTAXEND},gmlist_addfield_reduce},
+    {{groupmember_list,groupmember_list,IDENT,COLON,type,SYNTAXEND},gmlist_addfield_reduce},
+
     {{dataexpr,IDENT,LBRACE,initassign_list,RBRACE,SYNTAXEND},dataexpr_reduce},
     {{initassign_list,EMPTY,SYNTAXEND},ialist_empty_reduce},
 	{{initassign_list,initassign_list,IDENT,operator_n,expression,SYNTAXEND},ialist_add_reduce},
@@ -271,10 +287,10 @@ int main()
         cerr<<BG_RED"Syntax error  line:";
         set<int>::iterator iter;
         parser.error_candidates.insert(lexer->curr_line);
-        for(iter=parser.error_candidates.begin();iter!=parser.error_candidates.end();iter++){
+        for(iter=parser.error_candidates.end(),iter--;iter!=parser.error_candidates.end();iter++){
 			cerr<<(*iter)<<",";
         }
-        cerr<<RESET<<endl;
+        cerr<<"\b"<<RESET<<" \b"<<endl;
     }catch(NoMatchRule){
         cerr<<BG_RED"トークンを生成できません"RESET<<endl;
     }catch(OnigurumaException ex){

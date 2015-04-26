@@ -370,7 +370,7 @@ void Parser::MakeAction_GotoTable(){
         if(is_nonterminal((*iter).first.second)){
             GOTOTable[(*iter).first]=(*iter).second;
         }else{
-            Action a={SHIFT,(*iter).second};
+            Action a(SHIFT,(*iter).second);
             ActionTable[(*iter).first].insert(a);
         }
     }
@@ -378,7 +378,7 @@ void Parser::MakeAction_GotoTable(){
     //入力の終わりを示す 'INPUTEND' の列をアクション表に追加し、アイテム S → E　・　を含むアイテム集合に対応するマスに acc を書き込む
     for(unsigned int i=0;i<itemsets.size();i++){
         if((*itemsets[i]).find(pair<Symbol*,int>(const_cast<Symbol*>(SYNTAXRULE[0].rule),2))!=(*itemsets[i]).end()){
-            Action a={ACCEPT,-1};
+            Action a(ACCEPT,-1);
             ActionTable[pair<int,Symbol>(i,INPUTEND)].insert(a);
         }
     }
@@ -393,7 +393,7 @@ void Parser::MakeAction_GotoTable(){
                         if(j>0){
                             for(int s=-2;s<SYMBOLCOUNT;s++){
                                 if(is_terminal(static_cast<Symbol>(s))){
-                                    Action a={REDUCE,j};
+                                    Action a(REDUCE,j);
                                     ActionTable[pair<int,Symbol>(i,static_cast<Symbol>(s))].insert(a);
                                 }
                             }
@@ -425,7 +425,7 @@ TokenValue Parser::default_action(vector<TokenValue> values){
 }
 
 //パーサへレキシカルアナライザから入力
-void Parser::Put(Lexer *lexer,CodegenInfo *cgi,pair<Symbol,TokenValue> input){
+void Parser::Put(Lexer *lexer,shared_ptr<CodegenInfo> cgi,pair<Symbol,TokenValue> input){
 	set<Action>::iterator iter;
 
     pair<Symbol,TokenValue> input_backup; //空規則からの復帰用に入力をとっておくための変数
@@ -452,13 +452,14 @@ void Parser::Put(Lexer *lexer,CodegenInfo *cgi,pair<Symbol,TokenValue> input){
 		if(BacktrackingPoint_list.size()==0){
 			throw SyntaxError();
 		}else{
+			throw SyntaxError();
 			#ifdef PARSER_DEBUG
 			cout<<BG_MAGENTA"バックトラックします"RESET<<endl;
 			#endif
 
 			error_candidates.insert(lexer->curr_line);
 
-			BacktrackingPoint btp=BacktrackingPoint_list.top();
+			BacktrackingPoint btp=BacktrackingPoint_list.back();
 
 			lexer->curr_index=btp.CodePosition;
 			lexer->curr_state=btp.state;
@@ -473,7 +474,7 @@ void Parser::Put(Lexer *lexer,CodegenInfo *cgi,pair<Symbol,TokenValue> input){
 			if(btp.Conflict_Type==ShiftReduce){
 				if(ActionTable[pair<int,Symbol>(StateStack.back(),input.first)].size()<=btp.selected_count){
 					//これ以上バックトラックできない
-					BacktrackingPoint_list.pop();
+					BacktrackingPoint_list.pop_back();
 					goto retry_backtracking;
 				}
 				//shift/reduce
@@ -490,7 +491,7 @@ void Parser::Put(Lexer *lexer,CodegenInfo *cgi,pair<Symbol,TokenValue> input){
 			}else{
 				if(ActionTable[pair<int,Symbol>(StateStack.back(),input.first)].size()<=btp.selected_count){
 					//これ以上バックトラックできない
-					BacktrackingPoint_list.pop();
+					BacktrackingPoint_list.pop_back();
 					goto retry_backtracking;
 				}
 				//reduce/reduce
@@ -504,8 +505,8 @@ void Parser::Put(Lexer *lexer,CodegenInfo *cgi,pair<Symbol,TokenValue> input){
 				}
 			}
 			btp.selected_count++;
-			BacktrackingPoint_list.pop();
-			BacktrackingPoint_list.push(btp); //カウントを１増やして再プッシュ
+			BacktrackingPoint_list.pop_back();
+			BacktrackingPoint_list.push_back(btp); //カウントを１増やして再プッシュ
 			goto action_do;
 		}
     }
@@ -544,7 +545,7 @@ void Parser::Put(Lexer *lexer,CodegenInfo *cgi,pair<Symbol,TokenValue> input){
             }else{
                 //shiftを要求するアイテム
                 pair<int,Symbol> p=pair<int,Symbol>(StateStack.back(),(*iter8).first[(*iter8).second]);
-                Action a={SHIFT,FindItem(pair<Symbol*,int>((*iter8).first,(*iter8).second+1))};
+                Action a(SHIFT,FindItem(pair<Symbol*,int>((*iter8).first,(*iter8).second+1)));
                 ActionTable[p].insert(a);
                 #ifdef PARSER_DEBUG
 			    cout<<"<shift> 状態 "<<p.first<<" ,シンボル "<<Symbol2Str(p.second)<<" -> 状態"<<a.State<<endl;
@@ -570,12 +571,13 @@ void Parser::Put(Lexer *lexer,CodegenInfo *cgi,pair<Symbol,TokenValue> input){
             if(BacktrackingPoint_list.size()==0){
 				throw SyntaxError();
 			}else{
+				throw SyntaxError();
 				#ifdef PARSER_DEBUG
 				cout<<BG_MAGENTA"バックトラックします"RESET<<endl;
 				#endif
 
 				error_candidates.insert(lexer->curr_line);
-				BacktrackingPoint btp=BacktrackingPoint_list.top();
+				BacktrackingPoint btp=BacktrackingPoint_list.back();
 
 				lexer->curr_index=btp.CodePosition;
 				lexer->curr_state=btp.state;
@@ -590,7 +592,7 @@ void Parser::Put(Lexer *lexer,CodegenInfo *cgi,pair<Symbol,TokenValue> input){
 				if(btp.Conflict_Type==ShiftReduce){
 					if(ActionTable[pair<int,Symbol>(StateStack.back(),input.first)].size()<=btp.selected_count){
 						//これ以上バックトラックできない
-						BacktrackingPoint_list.pop();
+						BacktrackingPoint_list.pop_back();
 						goto retry_backtracking2;
 					}
 					//shift/reduce
@@ -607,7 +609,7 @@ void Parser::Put(Lexer *lexer,CodegenInfo *cgi,pair<Symbol,TokenValue> input){
 				}else{
 					if(ActionTable[pair<int,Symbol>(StateStack.back(),input.first)].size()<=btp.selected_count){
 						//これ以上バックトラックできない
-						BacktrackingPoint_list.pop();
+						BacktrackingPoint_list.pop_back();
 						goto retry_backtracking2;
 					}
 					//reduce/reduce
@@ -621,8 +623,8 @@ void Parser::Put(Lexer *lexer,CodegenInfo *cgi,pair<Symbol,TokenValue> input){
 					}
 				}
 				btp.selected_count++;
-				BacktrackingPoint_list.pop();
-				BacktrackingPoint_list.push(btp); //カウントを１増やして再プッシュ
+				BacktrackingPoint_list.pop_back();
+				BacktrackingPoint_list.push_back(btp); //カウントを１増やして再プッシュ
 				goto action_do;
 			}
 
@@ -661,7 +663,7 @@ void Parser::Put(Lexer *lexer,CodegenInfo *cgi,pair<Symbol,TokenValue> input){
     case SHIFT:
         {
             StateStack.push_back((*iter).State);
-            WorkStack.push(input.second);
+            WorkStack.push_back(input.second);
             #ifdef PARSER_DEBUG
 			cout<<"shiftされました：　状態 "<<(*iter).State<<" へ遷移しました。[";
             for(unsigned int i=0;i<StateStack.size();i++){cout<<StateStack[i]<<",";}
@@ -684,17 +686,17 @@ void Parser::Put(Lexer *lexer,CodegenInfo *cgi,pair<Symbol,TokenValue> input){
             }
             for(int i=0;i<rulelen;i++){
                 StateStack.pop_back();
-                lval->insert(lval->begin(),WorkStack.top()); //自然な順序にするため，先頭に要素を追加していく
-                WorkStack.pop();
+                lval->insert(lval->begin(),WorkStack.back()); //自然な順序にするため，先頭に要素を追加していく
+                WorkStack.pop_back();
             }
             //GOTOひょうをみる
             StateStack.push_back(GOTOTable[pair<int,Symbol>(StateStack.back(),SYNTAXRULE[(*iter).State].rule[0])]);
 
             if(SYNTAXRULE[(*iter).State].callback!=NULL){
-            	WorkStack.push(SYNTAXRULE[(*iter).State].callback(cgi,*lval));
+            	WorkStack.push_back(SYNTAXRULE[(*iter).State].callback(cgi,*lval));
 			}else{
 				//yaccでいう { $$ = $1; } のこと
-				WorkStack.push(default_action(*lval));
+				WorkStack.push_back(default_action(*lval));
 			}
 
 			#ifdef PARSER_DEBUG
@@ -715,7 +717,7 @@ void Parser::Put(Lexer *lexer,CodegenInfo *cgi,pair<Symbol,TokenValue> input){
         	is_accepted=true;
             if(SYNTAXRULE[0].callback!=NULL){
                 vector<TokenValue> v;
-                v.push_back(WorkStack.top());
+                v.push_back(WorkStack.back());
                 SYNTAXRULE[0].callback(cgi,v);
             }
             return;
@@ -725,7 +727,7 @@ void Parser::Put(Lexer *lexer,CodegenInfo *cgi,pair<Symbol,TokenValue> input){
     return;
 }
 
-void Parser::CreateBacktrackingPoint(int code_pos,State state,int curr_line,ConflictType conflict_type,pair<Symbol,TokenValue> input,pair<Symbol,TokenValue> input_backup,CodegenInfo *cgi){
+void Parser::CreateBacktrackingPoint(int code_pos,State state,int curr_line,ConflictType conflict_type,pair<Symbol,TokenValue> input,pair<Symbol,TokenValue> input_backup,shared_ptr<CodegenInfo> cgi){
 	BacktrackingPoint p;
 	p.selected_count=1;
 	p.CodePosition=code_pos;
@@ -739,7 +741,7 @@ void Parser::CreateBacktrackingPoint(int code_pos,State state,int curr_line,Conf
 	p.TopLevelFunction=cgi->TopLevelFunction;
 	p.TopLevelVariableDef=cgi->TopLevelVariableDef;
 	p.PublicConstantPool=cgi->PublicConstantPool;
-	BacktrackingPoint_list.push(p);
+	BacktrackingPoint_list.push_back(p);
 }
 
 //再帰的に呼び出され、reduceの連鎖をたどりながらreduceすべき次のトークンをアクションリストへ追加していく
@@ -786,7 +788,7 @@ void Parser::TraverseReduces(pair<Symbol*,int> selected_item,int origin_apply_ru
     for(iter6=can_put.begin();iter6!=can_put.end();iter6++){
         if(is_terminal(*iter6)){
             pair<int,Symbol> p=pair<int,Symbol>(StateStack.back(),*iter6);
-            Action a={REDUCE,origin_apply_rule};
+            Action a(REDUCE,origin_apply_rule);
             ActionTable[p].insert(a);
             #ifdef PARSER_DEBUG
             cout<<"<reduce> 状態 "<<p.first<<" ,シンボル "<<Symbol2Str(p.second)<<" -> 規則"<<a.State<<endl;
@@ -804,7 +806,7 @@ void Parser::TraverseReduces(pair<Symbol*,int> selected_item,int origin_apply_ru
             if((*iter8).first==SYNTAXRULE[0].rule){
                 //S -> E ・ の時（規則0）の時は特別
                 pair<int,Symbol> p=pair<int,Symbol>(StateStack.back(),INPUTEND);
-                Action a={REDUCE,origin_apply_rule};
+                Action a(REDUCE,origin_apply_rule);
                 ActionTable[p].insert(a);
                 #ifdef PARSER_DEBUG
                 cout<<"<reduce> 状態 "<<p.first<<" ,シンボル "<<Symbol2Str(p.second)<<" -> 規則"<<a.State<<endl;

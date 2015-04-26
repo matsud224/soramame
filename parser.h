@@ -8,6 +8,7 @@
 #include "common.h"
 #include "lexer.h"
 #include "compiler.h"
+#include <memory>
 
 using namespace std;
 
@@ -15,9 +16,10 @@ using namespace std;
 
 const int MAX_SYNTAXRULE_LEN=20;
 
-struct SyntaxRule{
+class SyntaxRule{
+public:
     Symbol rule[MAX_SYNTAXRULE_LEN];
-    TokenValue (* callback)(CodegenInfo*,vector<TokenValue>);
+    TokenValue (* callback)(shared_ptr<CodegenInfo>,vector<TokenValue>);
 };
 
 extern SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT];
@@ -28,7 +30,8 @@ enum ActionType{SHIFT,REDUCE,ACCEPT};
 
 enum ConflictType{ShiftReduce,ReduceReduce};
 
-struct Action{
+class Action{
+public:
 	ActionType Type;
 	int State;
 
@@ -39,9 +42,11 @@ struct Action{
 			return State<obj.State;
 		}
 	}
+
+	Action(ActionType type,int state):Type(type),State(state){}
 };
 
-struct BacktrackingPoint{
+class BacktrackingPoint{
 public:
 	unsigned int selected_count; //選択したアクションの数（バックトラックするごとに１増える）
 	ConflictType Conflict_Type;
@@ -49,13 +54,13 @@ public:
 	State state;
 	int curr_line;
     vector<int> StateStack;
-    stack< TokenValue > WorkStack;
+    vector< TokenValue > WorkStack;
     pair<Symbol,TokenValue> input;
     pair<Symbol,TokenValue> input_backup;
 
 	//codegeninfoの中身
-    vector<FunctionAST *> TopLevelFunction;
-    vector<VariableDefStatementAST *> TopLevelVariableDef;
+    vector<shared_ptr<FunctionAST> > TopLevelFunction;
+    vector<shared_ptr<VariableDefStatementAST> > TopLevelVariableDef;
     ConstantPool PublicConstantPool;
 };
 
@@ -64,7 +69,7 @@ private:
     map< pair<int,Symbol>,int> StateTransitionTable;
     map< pair<int,Symbol>,set<Action> > ActionTable; //conflictのためにActionTypeはvectorにしておく
     map< pair<int,Symbol>,int> GOTOTable;
-    vector< set< pair<Symbol*,int> > *> itemsets;
+    vector< set< pair<Symbol*,int> >* > itemsets;
 	set<int> conflict_state;
     set<int> stt_checked; //状態遷移表の作成をしたアイテム集合の番号（2重にチェックするのを避けるため）
 
@@ -78,12 +83,12 @@ private:
     int FindItem(pair<Symbol*,int>);
     void TraverseReduces(pair<Symbol*,int>,int,set<int>,vector<int>);
     TokenValue default_action(vector<TokenValue> values);
-    void CreateBacktrackingPoint(int,State,int,ConflictType,pair<Symbol,TokenValue>,pair<Symbol,TokenValue>,CodegenInfo*);
+    void CreateBacktrackingPoint(int,State,int,ConflictType,pair<Symbol,TokenValue>,pair<Symbol,TokenValue>,shared_ptr<CodegenInfo>);
 
     vector<int> StateStack;
-    stack< TokenValue > WorkStack; //データを置いていきます
+    vector< TokenValue > WorkStack; //データを置いていきます
 
-    stack<BacktrackingPoint> BacktrackingPoint_list;
+    vector<BacktrackingPoint> BacktrackingPoint_list;
 
     bool is_accepted;
 public:
@@ -97,7 +102,7 @@ public:
         StateStack.push_back(0);
     }
 
-    void Put(Lexer*,CodegenInfo*,pair<Symbol,TokenValue>);
+    void Put(shared_ptr<Lexer>,shared_ptr<CodegenInfo>,pair<Symbol,TokenValue>);
 
     static string Symbol2Str(Symbol);
     bool IsAccepted(){

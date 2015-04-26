@@ -12,11 +12,12 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
+					<Add option="-std=c++11" />
 					<Add option="-Wall" />
 					<Add option="-g" />
 				</Compiler>
 				<Linker>
-					<Add option="-lreadline" />
+					<Add option="-lreadline -lglut -lGLU -lGL" />
 					<Add library="/usr/local/lib/libonig.a" />
 					<Add library="/usr/lib/x86_64-linux-gnu/libreadline.a" />
 				</Linker>
@@ -30,19 +31,22 @@
 					<Add option="-Wextra" />
 				</Compiler>
 				<Linker>
-					<Add option="-lreadline" />
+					<Add option="-lreadline -lglut -lGLU -lGL" />
 					<Add library="/usr/local/lib/libonig.a" />
 					<Add library="/usr/lib/x86_64-linux-gnu/libreadline.a" />
 				</Linker>
 			</Target>
 		</Build>
 		<Compiler>
+			<Add option="-std=c++11" />
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 		</Compiler>
 		<Unit filename="ast.cpp" />
 		<Unit filename="ast.h" />
 		<Unit filename="basic_object.h" />
+		<Unit filename="builtinfunctions.cpp" />
+		<Unit filename="builtinfunctions.h" />
 		<Unit filename="color_text.h" />
 		<Unit filename="common.h" />
 		<Unit filename="compiler.cpp" />
