@@ -34,6 +34,6 @@ public:
 	shared_ptr<vector<int> > bytecodes;
 	shared_ptr<Flame> ParentFlame;
 
-	FunctionObject(string name,shared_ptr<TypeAST> type,bool isbuiltin,shared_ptr<vector<pair<string,shared_ptr<TypeAST> > > > args,shared_ptr<vector<pair<string,shared_ptr<TypeAST> > > > localvars,shared_ptr<vector<int> > bc):Name(name),TypeInfo(type),isBuiltin(isbuiltin),Args(args),LocalVariables(localvars),bytecodes(bc){}
+	FunctionObject(string name,shared_ptr<TypeAST> type,bool isbuiltin,shared_ptr<vector<pair<string,shared_ptr<TypeAST> > > > args,shared_ptr<vector<pair<string,shared_ptr<TypeAST> > > > localvars,shared_ptr<vector<int> > bc,shared_ptr<vector<int> > cpi):Name(name),TypeInfo(type),isBuiltin(isbuiltin),Args(args),LocalVariables(localvars),bytecodes(bc),ChildPoolIndex(cpi){}
 	FunctionObject(string name,shared_ptr<TypeAST> type,bool isbuiltin,shared_ptr<vector<pair<string,shared_ptr<TypeAST> > > > args):Name(name),TypeInfo(type),isBuiltin(isbuiltin),Args(args){}
 };

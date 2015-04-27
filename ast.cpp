@@ -47,7 +47,7 @@ vector<int> FunctionAST::FindChildFunction()
 {
 	vector<int> list_tmp;
 
-    ChildPoolIndex=make_shared<vector<int> >();
+    //ChildPoolIndex=make_shared<vector<int> >();
 
 	list_tmp=Body->FindChildFunction();
 	ChildPoolIndex->insert(ChildPoolIndex->end(),list_tmp.begin(),list_tmp.end());
@@ -341,7 +341,7 @@ void BinaryExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<Codege
 
 void CallExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo)
 {
-	if(callee==NULL){
+	if(callee==nullptr){
 		//計算済み
 		bytecodes->push_back(ldc);
 		bytecodes->push_back(geninfo->PublicConstantPool.SetValue(CalculatedValue));
@@ -373,29 +373,25 @@ void DataMemberRefExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr
 //自身がクロージャならそれに加えてスタックに自身のポインタを置くコードを書く
 void FunctionAST::Codegen(shared_ptr<vector<int> > bytecodes_given,shared_ptr<CodegenInfo> geninfo)
 {
-    shared_ptr<vector<int> > codes=make_shared<vector<int> >();
-
-    Body->Codegen(codes,geninfo);
+    Body->Codegen(bytecodes,geninfo);
 
     //最後にreturnを挿入（return文が省略された時のため）
     //戻り値の型で場合分け
     shared_ptr<TypeAST> rettype=dynamic_pointer_cast<FunctionTypeAST>(TypeInfo)->TypeList.back();
     if(rettype->GetName()=="void"){
-        codes->push_back(ret);
+        bytecodes->push_back(ret);
     }else{
     	//非voidな関数でreturnされないときは-1を返す
-    	codes->push_back(ipush);
-    	codes->push_back(-1);
-        codes->push_back(ret_withvalue);
+    	bytecodes->push_back(ipush);
+    	bytecodes->push_back(-1);
+        bytecodes->push_back(ret_withvalue);
     }
-
-    bytecodes=codes;
 
     if(Name=="<anonymous>"){
         bytecodes_given->push_back(makeclosure);
         bytecodes_given->push_back(PoolIndex);
     }
-	/*
+/*
     string bytecode_names[]={
 		"ipush",
 		"iadd",
@@ -450,7 +446,7 @@ void StringValExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<Cod
 
 void ReturnStatementAST::Codegen(shared_ptr<vector<int> > bytecodes, shared_ptr<CodegenInfo> geninfo)
 {
-	if(Expression!=NULL){
+	if(Expression!=nullptr){
 		Expression->Codegen(bytecodes,geninfo);
 		bytecodes->push_back(ret_withvalue);
 	}else{
@@ -596,7 +592,7 @@ void WhileStatementAST::Codegen(shared_ptr<vector<int> > bytecodes, shared_ptr<C
 
 void VariableDefStatementAST::Codegen(shared_ptr<vector<int> > bytecodes, shared_ptr<CodegenInfo> geninfo)
 {
-	if(InitialValue!=NULL){
+	if(InitialValue!=nullptr){
 		InitialValue->Codegen(bytecodes,geninfo);
 		bytecodes->push_back(storelocal);
 		bytecodes->push_back(FlameBack);
@@ -626,9 +622,9 @@ void VariableDefStatementAST::CheckType(shared_ptr<vector<Environment> > env, sh
 		InitialValue=dynamic_pointer_cast<UnBuiltExprAST>(InitialValue)->BuildAST(geninfo);
 	}
 	InitialValue->CheckType(env,geninfo,CurrentLocalVars);
-	if(InitialValue->TypeInfo==NULL){
+	if(InitialValue->TypeInfo==nullptr){
 		//オーバーロードの解決ができなかった
-		if(Variable->second==NULL){
+		if(Variable->second==nullptr){
 			//型指定がなかった場合にはオーバーロード解決のヒントがないため、エラー
 			error("オーバーロードを解決できません：変数宣言に型を付与することでオーバーロードを指定できます");
 		}
@@ -636,7 +632,7 @@ void VariableDefStatementAST::CheckType(shared_ptr<vector<Environment> > env, sh
 		InitialValue->TypeInfo=Variable->second;
 		InitialValue->CheckType(env,geninfo,CurrentLocalVars);
 	}
-	if(Variable->second==NULL){
+	if(Variable->second==nullptr){
 		//型が未指定だったとき
 		Variable->second=InitialValue->TypeInfo;
 		CurrentLocalVars->back()=*Variable;
@@ -658,7 +654,7 @@ shared_ptr<TypeAST>  VariableExprAST::CheckType(shared_ptr<vector<Environment> >
 	FlameBack=0;
 	int candidate_count=0;
 
-	if(TypeInfo==NULL){
+	if(TypeInfo==nullptr){
 		//オーバーロードの数を調べる(トップレベルの関数について)
 		vector<shared_ptr<FunctionAST> >::iterator iter;
 		for(iter=geninfo->TopLevelFunction.begin();iter!=geninfo->TopLevelFunction.end();iter++){
@@ -669,8 +665,8 @@ shared_ptr<TypeAST>  VariableExprAST::CheckType(shared_ptr<vector<Environment> >
 		}
 		if(candidate_count>1){
 			//オーバーロードを解決できなかった...(型情報を与えてもらって、再度呼んでもらう)
-			TypeInfo=NULL;
-			return NULL;
+			TypeInfo=nullptr;
+			return nullptr;
 		}
 	}
 
@@ -679,7 +675,7 @@ shared_ptr<TypeAST>  VariableExprAST::CheckType(shared_ptr<vector<Environment> >
 			if(Name==(*env)[currentenv].Items[i].VariableInfo.first){
 				//名前が一致
 
-				if(TypeInfo!=NULL){
+				if(TypeInfo!=nullptr){
 					//オーバーロード・指定された型との一致を調べる(返り値については調べない)
 					if(typeid(FunctionTypeAST)==typeid(*TypeInfo)){
 						if(typeid(*((*env)[currentenv].Items[i].VariableInfo.second))!=typeid(FunctionTypeAST)){
@@ -732,7 +728,7 @@ shared_ptr<TypeAST>  VariableExprAST::CheckType(shared_ptr<vector<Environment> >
 
 shared_ptr<TypeAST>  UnaryExprAST::CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars){
 	//循環防止の為
-	if(TypeInfo!=NULL){
+	if(TypeInfo!=nullptr){
 		return TypeInfo;
 	}
 
@@ -744,7 +740,7 @@ shared_ptr<TypeAST>  UnaryExprAST::CheckType(shared_ptr<vector<Environment> > en
 		TypeInfo=oprandt;
 	}
 
-	if(TypeInfo==NULL){
+	if(TypeInfo==nullptr){
 		error("未知の単項演算子です:"+Operator);
 	}
 
@@ -754,7 +750,7 @@ shared_ptr<TypeAST>  UnaryExprAST::CheckType(shared_ptr<vector<Environment> > en
 shared_ptr<TypeAST>  BinaryExprAST::CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars){
 	shared_ptr<TypeAST> lhst=LHS->CheckType(env,geninfo,CurrentLocalVars);
 	shared_ptr<TypeAST> rhst=RHS->CheckType(env,geninfo,CurrentLocalVars);
-	if(rhst==NULL){
+	if(rhst==nullptr){
 		if(Operator=="="){
 			//オーバーロードの解決に失敗
 			RHS->TypeInfo=LHS->TypeInfo;
@@ -764,7 +760,7 @@ shared_ptr<TypeAST>  BinaryExprAST::CheckType(shared_ptr<vector<Environment> > e
 		}
 	}
 
-	TypeInfo=NULL;
+	TypeInfo=nullptr;
 
 	//組み込み型の型チェック
 	if(Operator=="+" || Operator=="-" || Operator=="*" || Operator=="/"){
@@ -802,7 +798,7 @@ shared_ptr<TypeAST>  BinaryExprAST::CheckType(shared_ptr<vector<Environment> > e
 		TypeInfo=lhst;
 	}
 
-	if(TypeInfo==NULL){
+	if(TypeInfo==nullptr){
 		error("未知の二項演算子です:"+Operator);
 	}
 
@@ -810,7 +806,7 @@ shared_ptr<TypeAST>  BinaryExprAST::CheckType(shared_ptr<vector<Environment> > e
 }
 
 void ReturnStatementAST::CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars){
-	if(Expression==NULL){return;}
+	if(Expression==nullptr){return;}
 	if(Expression->IsBuilt()==false){
 		Expression=dynamic_pointer_cast<UnBuiltExprAST >(Expression)->BuildAST(geninfo);
 	}
@@ -855,7 +851,7 @@ void ExpressionStatementAST::CheckType(shared_ptr<vector<Environment> > env,shar
 }
 
 shared_ptr<TypeAST>  FunctionAST::CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars){
-	LocalVariables=make_shared<vector< pair<string,shared_ptr<TypeAST> > > >();
+	//LocalVariables=make_shared<vector< pair<string,shared_ptr<TypeAST> > > >();
 
 	vector< pair<string,shared_ptr<TypeAST> > >::iterator argiter;
 	for(argiter=Args->begin();argiter!=Args->end();argiter++){
@@ -869,7 +865,7 @@ shared_ptr<TypeAST>  FunctionAST::CheckType(shared_ptr<vector<Environment> > env
 	for(iter2=Body->Body->begin();iter2!=Body->Body->end();iter2++){
 		if(typeid(*(*iter2))==typeid(ReturnStatementAST)){
 			//return文の場合特別扱い。返す値の型とこの関数の返り値の型が不一致ならばエラー
-			if(dynamic_pointer_cast<ReturnStatementAST>(*iter2)->Expression==NULL){
+			if(dynamic_pointer_cast<ReturnStatementAST>(*iter2)->Expression==nullptr){
 				if(dynamic_pointer_cast<FunctionTypeAST>(TypeInfo)->TypeList.back()->GetName()=="!!undefined!!"){
 					//推論が必要
 					dynamic_pointer_cast<FunctionTypeAST>(TypeInfo)->TypeList.pop_back();
@@ -916,7 +912,7 @@ shared_ptr<TypeAST>  CallExprAST::CheckType(shared_ptr<vector<Environment> > env
 	callee->TypeInfo=make_shared<FunctionTypeAST>(argtype);
 	callee->CheckType(env,geninfo,CurrentLocalVars);
 
-	if(callee->TypeInfo==NULL){
+	if(callee->TypeInfo==nullptr){
 		error("再帰呼び出しをするには型情報を記述してください");
 	}
 
@@ -1156,7 +1152,7 @@ shared_ptr<TypeAST>  ListValExprAST::CheckType(shared_ptr<vector<Environment> > 
 			(*iter)=(dynamic_pointer_cast<UnBuiltExprAST >(*iter))->BuildAST(geninfo);
 		}
 		(*iter)->CheckType(env,geninfo,CurrentLocalVars);
-		if(TypeInfo==NULL){
+		if(TypeInfo==nullptr){
 			TypeInfo=(*iter)->TypeInfo;
 		}else{
 			if(TypeInfo->GetName()!=(*iter)->TypeInfo->GetName()){
@@ -1283,7 +1279,7 @@ shared_ptr<TypeAST>  DataValExprAST::CheckType(shared_ptr<vector<Environment> > 
 		if(!found){error("宣言されていないメンバ"+(*iter).first+"を初期化しようとしました");}
     }
 
-    //全要素をもち、初期化されていないものはNULLになっている
+    //全要素をもち、初期化されていないものはnullptrになっている
     InitValue=data_temp;
 
     return TypeInfo;
@@ -1329,13 +1325,13 @@ bool FunctionAST::IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){
 	}
 
 	//curr_fun_indexにはPoolIndexでなく、CodegenInfo.TopLevelFunctionListでのインデックスを指定すべき
-	vector<shared_ptr<FunctionAST> >::iterator found=find(cgi->TopLevelFunction.begin(),cgi->TopLevelFunction.end(),make_shared<FunctionAST>(*this));
+	vector<shared_ptr<FunctionAST> >::iterator found=find(cgi->TopLevelFunction.begin(),cgi->TopLevelFunction.end(),shared_from_this());
 	size_t index=distance(cgi->TopLevelFunction.begin(),found);
 	return Body->IsCTFEable(cgi,index);
 }
 
 bool CallExprAST::IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){
-	if(callee==NULL){
+	if(callee==nullptr){
 		return true;
 	}
 	vector<shared_ptr<ExprAST> >::iterator iter;
@@ -1357,7 +1353,7 @@ bool DataMemberRefExprAST::IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_i
 };
 
 bool IfStatementAST::IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){
-	return Condition->IsCTFEable(cgi,curr_fun_index)&&ThenBody->IsCTFEable(cgi,curr_fun_index)&&(ElseBody==NULL?true:ElseBody->IsCTFEable(cgi,curr_fun_index));
+	return Condition->IsCTFEable(cgi,curr_fun_index)&&ThenBody->IsCTFEable(cgi,curr_fun_index)&&(ElseBody==nullptr?true:ElseBody->IsCTFEable(cgi,curr_fun_index));
 }
 
 bool WhileStatementAST::IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){
@@ -1365,11 +1361,11 @@ bool WhileStatementAST::IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_inde
 }
 
 bool ReturnStatementAST::IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){
-	return (Expression==NULL?true:Expression->IsCTFEable(cgi,curr_fun_index));
+	return (Expression==nullptr?true:Expression->IsCTFEable(cgi,curr_fun_index));
 }
 
 bool VariableDefStatementAST::IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){
-	return InitialValue==NULL?true:InitialValue->IsCTFEable(cgi,curr_fun_index);
+	return InitialValue==nullptr?true:InitialValue->IsCTFEable(cgi,curr_fun_index);
 }
 
 bool ExpressionStatementAST::IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){
@@ -1397,7 +1393,7 @@ vector<shared_ptr<ExprAST> > IfStatementAST::GetCallExprList()
 
 	temp=ThenBody->GetCallExprList();
 	result.insert(result.end(),temp.begin(),temp.end());
-	if(ElseBody!=NULL){
+	if(ElseBody!=nullptr){
 		temp=ElseBody->GetCallExprList();
 		result.insert(result.end(),temp.begin(),temp.end());
 	}
@@ -1425,7 +1421,7 @@ vector<shared_ptr<ExprAST> > ReturnStatementAST::GetCallExprList()
 	vector<shared_ptr<ExprAST> > result;
 	vector<shared_ptr<ExprAST> > temp;
 
-	if(Expression!=NULL){
+	if(Expression!=nullptr){
 		temp=Expression->GetCallExprList();
 		result.insert(result.end(),temp.begin(),temp.end());
 	}
@@ -1437,7 +1433,7 @@ vector<shared_ptr<ExprAST> > VariableDefStatementAST::GetCallExprList()
 	vector<shared_ptr<ExprAST> > result;
 	vector<shared_ptr<ExprAST> > temp;
 
-	if(InitialValue!=NULL){
+	if(InitialValue!=nullptr){
 		temp=InitialValue->GetCallExprList();
 		result.insert(result.end(),temp.begin(),temp.end());
 	}
@@ -1561,13 +1557,13 @@ vector<shared_ptr<ExprAST> > CallExprAST::GetCallExprList()
 		result.insert(result.end(),temp.begin(),temp.end());
 	}
 
-	if(callee!=NULL){
+	if(callee!=nullptr){
 		temp=callee->GetCallExprList();
 		result.insert(result.end(),temp.begin(),temp.end());
 	}
 	//自身を追加
-	if(callee!=NULL){
-		result.push_back(make_shared<CallExprAST>(*this));
+	if(callee!=nullptr){
+		result.push_back(shared_from_this());
 	}
 
 	return result;

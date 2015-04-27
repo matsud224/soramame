@@ -1,9 +1,10 @@
 #pragma once
 #include "color_text.h"
-#include "vm.h"
+#include "common.h"
 #include <iostream>
 #include <memory>
 #include <vector>
+#include <map>
 
 class Parser;
 class Lexer;
@@ -12,6 +13,8 @@ class VariableDefStatementAST;
 class TypeAST;
 class DataDefAST;
 class GroupDefAST;
+class VM;
+
 
 enum{Left,Right};
 enum{Unary,Binary};
@@ -68,7 +71,12 @@ public:
 
 class Executable{
 public:
-
+	map<pair<string,string>, void (*)(shared_ptr<VM>) > BuiltinFunctionList; //関数名と型名から関数を引っ張ってくる
+	shared_ptr<vector<int> > Bootstrap;
+	ConstantPool PublicConstantPool;
+	int MainFuncPoolIndex; //main関数のコンスタントプール・インデックス
+	vector<int> ChildPoolIndex;
+	shared_ptr<vector< pair<string,shared_ptr<TypeAST> > > > LocalVariables;
 };
 
 class Compiler{
@@ -88,7 +96,7 @@ public:
 		genInfo=make_shared<CodegenInfo>();
     }
 
-    void Compile(){
+    shared_ptr<Executable> Compile(){
     	cout<<endl<<BG_GREEN<<"構文解析を行っています..."<<RESET<<endl;
 		ASTgen();
 		RegisterChildClosure();
@@ -99,10 +107,14 @@ public:
 		cout<<BG_GREEN<<"コンパイル時関数実行を行っています..."<<RESET<<endl;
 		CTFE(3);
 
-		VM vm(genInfo);
-		cout<<BG_BLUE<<"VMを起動します..."<<RESET<<endl;
-		vm.Init();
-		vm.Run(false);
-		cout<<endl;
+		shared_ptr<Executable> ret_executable=make_shared<Executable>();
+		ret_executable->BuiltinFunctionList=genInfo->BuiltinFunctionList;
+		ret_executable->Bootstrap=move(genInfo->Bootstrap);
+		ret_executable->PublicConstantPool=genInfo->PublicConstantPool;
+		ret_executable->MainFuncPoolIndex=genInfo->MainFuncPoolIndex;
+		ret_executable->ChildPoolIndex=genInfo->ChildPoolIndex;
+		ret_executable->LocalVariables=move(genInfo->LocalVariables);
+
+		return ret_executable;
     }
 };

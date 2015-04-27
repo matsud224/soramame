@@ -11,7 +11,7 @@
 #define STACK_PUSH(x) Environment.back()->OperandStack.push((x))
 #define STACK_GET Environment.back()->OperandStack.top()
 #define OPERAND_GET (*(Environment.back()->CodePtr))[Environment.back()->PC++]
-#define GET_CONSTANT(x) CodeInfo->PublicConstantPool.GetValue((x))
+#define GET_CONSTANT(x) ExecutableData->PublicConstantPool.GetValue((x))
 
 using namespace std;
 
@@ -20,10 +20,9 @@ void VM::Init()
 {
     //トップレベルのフレームを作成
     shared_ptr< vector< pair<string,VMValue> > > toplevel_vars=make_shared<vector< pair<string,VMValue> > >();
+	shared_ptr<Flame> tl_flame=make_shared<Flame>(toplevel_vars,ExecutableData->Bootstrap,nullptr);
 
-    shared_ptr<Flame> tl_flame=make_shared<Flame>(toplevel_vars,CodeInfo->Bootstrap,shared_ptr<Flame>());
-
-    for(unsigned int i=0;i<CodeInfo->TopLevelFunction.size();i++){
+    /*for(unsigned int i=0;i<CodeInfo->TopLevelFunction.size();i++){
 		shared_ptr<ClosureObject> cobj=make_shared<ClosureObject>(static_pointer_cast<FunctionObject>(CodeInfo->PublicConstantPool.GetValue(CodeInfo->TopLevelFunction[i]->PoolIndex).ref_value), tl_flame);
 		VMValue v;v.ref_value=cobj;
         (*toplevel_vars).push_back(pair<string,VMValue>(CodeInfo->TopLevelFunction[i]->Name,v));
@@ -31,11 +30,16 @@ void VM::Init()
 	for(unsigned int i=0;i<CodeInfo->TopLevelVariableDef.size();i++){
 		VMValue v;//初期化はのちに行われるのでゴミをつめておく
         (*toplevel_vars).push_back(pair<string,VMValue>(CodeInfo->TopLevelVariableDef[i]->Variable->first,v)); //値はとりあえず0にしておく
-    }
+    }*/
 
-    for(unsigned int i=0;i<CodeInfo->ChildPoolIndex.size();i++){
-		//コンスタントプール内のクロージャに生成元のフレームを覚えさせる
-		static_pointer_cast<FunctionObject>(CodeInfo->PublicConstantPool.GetValue(CodeInfo->ChildPoolIndex[i]).ref_value)->ParentFlame=tl_flame;
+    //ローカル変数の準備
+	for(int i=ExecutableData->LocalVariables->size()-1;i>=0;i--){
+		VMValue v;v.int_value=0;
+		(*toplevel_vars).push_back(pair<string,VMValue>(ExecutableData->LocalVariables->at(i).first,v)); //ローカル変数はすべて0に初期化される
+	}
+
+    for(unsigned int i=0;i<ExecutableData->ChildPoolIndex.size();i++){
+		static_pointer_cast<FunctionObject>(ExecutableData->PublicConstantPool.GetValue(ExecutableData->ChildPoolIndex[i]).ref_value)->ParentFlame=tl_flame;
 	}
     Environment.push_back(tl_flame);
 }
@@ -254,16 +258,17 @@ VMValue VM::Run(bool currflame_only){
 			break;
         case invoke:
             {
-            	shared_ptr<ClosureObject> cobj=static_pointer_cast<ClosureObject>(STACK_GET.ref_value);
+            	shared_ptr<ClosureObject> cobj=static_pointer_cast<ClosureObject>(STACK_GET.ref_value);STACK_POP;
                 shared_ptr<FunctionObject> callee=cobj->FunctionRef;
-                STACK_POP;
+				//cout<<callee->Name<<endl;
+				//cout<<callee->isBuiltin<<endl;
 
                 if(callee->isBuiltin){
 					//ビルトイン関数の場合は、フレームを作らず、直に値をスタックに置く
 					string builtin_name=callee->Name;
 					string typestr=callee->TypeInfo->GetName();
 
-					CodeInfo->BuiltinFunctionList[pair<string,string>(builtin_name,typestr)](make_shared<VM>(*this));
+					ExecutableData->BuiltinFunctionList[pair<string,string>(builtin_name,typestr)](shared_from_this());
 
                 }else{
 					//フレームを作成
@@ -281,7 +286,7 @@ VMValue VM::Run(bool currflame_only){
 					shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,cobj->ParentFlame);
 					for(unsigned int i=0;i<callee->ChildPoolIndex->size();i++){
 						//コンスタントプール内のクロージャに生成元のフレームを覚えさせる
-						static_pointer_cast<FunctionObject>(CodeInfo->PublicConstantPool.GetValue(callee->ChildPoolIndex->at(i)).ref_value)->ParentFlame=inv_flame;
+						static_pointer_cast<FunctionObject>(ExecutableData->PublicConstantPool.GetValue(callee->ChildPoolIndex->at(i)).ref_value)->ParentFlame=inv_flame;
 					}
 					if(callee->ChildPoolIndex->size()==0){
 						inv_flame->NoChildren=true;
@@ -301,9 +306,9 @@ VMValue VM::Run(bool currflame_only){
 			STACK_PUSH((*(currentflame->Variables))[localindex].second);
             break;
         case ret:
-        	if(Environment.back()->NoChildren){
+        	/*if(Environment.back()->NoChildren){
 				Environment.back().reset();
-        	}
+        	}*/
             Environment.pop_back();
             break;
         case ret_withvalue:
@@ -312,9 +317,9 @@ VMValue VM::Run(bool currflame_only){
 				//ブートストラップコードへのreturn...
 				return v;
             }
-            if(Environment.back()->NoChildren){
+            /*if(Environment.back()->NoChildren){
 				Environment.back().reset();
-        	}
+        	}*/
             Environment.pop_back();
             if(!Environment.empty()){
                 STACK_PUSH(v);
@@ -335,7 +340,7 @@ VMValue VM::Run(bool currflame_only){
 			{
 			//オペランドにpoolindexをとり、クロージャオブジェクトを生成
 			iopr1=OPERAND_GET; //poolindex
-			shared_ptr<ClosureObject> cobj=make_shared<ClosureObject>(static_pointer_cast<FunctionObject>(CodeInfo->PublicConstantPool.GetValue(iopr1).ref_value),static_pointer_cast<FunctionObject>(CodeInfo->PublicConstantPool.GetValue(iopr1).ref_value)->ParentFlame);
+			shared_ptr<ClosureObject> cobj=make_shared<ClosureObject>(static_pointer_cast<FunctionObject>(ExecutableData->PublicConstantPool.GetValue(iopr1).ref_value),static_pointer_cast<FunctionObject>(ExecutableData->PublicConstantPool.GetValue(iopr1).ref_value)->ParentFlame);
 			v.ref_value=cobj;
 			STACK_PUSH(v);
 			}
@@ -360,8 +365,9 @@ VMValue VM::Run(bool currflame_only){
 				shared_ptr<list<VMValue> > newlist=make_shared< list<VMValue> >();
 				iopr1=OPERAND_GET; //リストサイズ
 				for(int i=0;i<iopr1;i++){
-					v=STACK_GET; STACK_POP; //リストの要素
-					newlist->push_back(v);
+					VMValue lv;
+					lv=STACK_GET; STACK_POP; //リストの要素
+					newlist->push_back(lv);
 				}
 				VMValue v2;v2.ref_value=newlist;
 				STACK_PUSH(v2);
@@ -369,11 +375,11 @@ VMValue VM::Run(bool currflame_only){
 			break;
 		case makedata:
 			{
-				shared_ptr<map<string,VMValue> > newmap=shared_ptr< map<string,VMValue> >();
+				shared_ptr<map<string,VMValue> > newmap=make_shared< map<string,VMValue> >();
 				string originalname=*(static_pointer_cast<string>(GET_CONSTANT(OPERAND_GET).ref_value));
 				iopr1=OPERAND_GET; //メンバ数
 				for(int i=0;i<iopr1;i++){
-					string membername=*(static_pointer_cast<string>(STACK_GET.ref_value)); STACK_POP;
+					string membername=*(static_pointer_cast<string>(GET_CONSTANT(STACK_GET.int_value).ref_value)); STACK_POP;
 					VMValue vtemp=STACK_GET; STACK_POP; //リストの要素
 					(*newmap)[membername]=vtemp;
 				}
@@ -385,7 +391,7 @@ VMValue VM::Run(bool currflame_only){
 		case loadbyindex:
 			{
 				iopr1=STACK_GET.int_value; STACK_POP;
-				shared_ptr<list<VMValue> > lst=static_pointer_cast<list<VMValue> >(CodeInfo->PublicConstantPool.GetValue(STACK_GET.int_value).ref_value); STACK_POP;
+				shared_ptr<list<VMValue> > lst=static_pointer_cast<list<VMValue> >(STACK_GET.ref_value); STACK_POP;
 				list<VMValue>::iterator iter=lst->begin();
 				for(int i=0;i<iopr1;i++){
 					iter++;
@@ -395,8 +401,8 @@ VMValue VM::Run(bool currflame_only){
 			break;
 		case loadfield:
 			{
-				string name=*(static_pointer_cast<string>(CodeInfo->PublicConstantPool.GetValue(OPERAND_GET).ref_value));
-				shared_ptr<DataObject> obj=(static_pointer_cast<DataObject>(CodeInfo->PublicConstantPool.GetValue(STACK_GET.int_value).ref_value)); STACK_POP;
+				string name=*(static_pointer_cast<string>(ExecutableData->PublicConstantPool.GetValue(OPERAND_GET).ref_value));
+				shared_ptr<DataObject> obj=(static_pointer_cast<DataObject>(STACK_GET.ref_value)); STACK_POP;
 				map<string,VMValue>::iterator iter;
 				for(iter=obj->MemberMap->begin();iter!=obj->MemberMap->end();iter++){
 					if(iter->first==name){
@@ -409,7 +415,7 @@ VMValue VM::Run(bool currflame_only){
 		case storebyindex:
 			{
 				iopr1=STACK_GET.int_value; STACK_POP;
-				shared_ptr<list<VMValue> > lst=(static_pointer_cast<list<VMValue> >(CodeInfo->PublicConstantPool.GetValue(STACK_GET.int_value).ref_value)); STACK_POP;
+				shared_ptr<list<VMValue> > lst=(static_pointer_cast<list<VMValue> >(STACK_GET.ref_value)); STACK_POP;
 				list<VMValue>::iterator iter=lst->begin();
 				for(int i=0;i<iopr1;i++){
 					iter++;
@@ -419,8 +425,8 @@ VMValue VM::Run(bool currflame_only){
 			break;
 		case storefield:
 			{
-				string name=*(static_pointer_cast<string>(CodeInfo->PublicConstantPool.GetValue(OPERAND_GET).ref_value));
-				shared_ptr<DataObject> obj=(static_pointer_cast<DataObject>(CodeInfo->PublicConstantPool.GetValue(STACK_GET.int_value).ref_value)); STACK_POP;
+				string name=*(static_pointer_cast<string>(ExecutableData->PublicConstantPool.GetValue(OPERAND_GET).ref_value));
+				shared_ptr<DataObject> obj=(static_pointer_cast<DataObject>(STACK_GET.ref_value)); STACK_POP;
 				map<string,VMValue>::iterator iter;
 				for(iter=obj->MemberMap->begin();iter!=obj->MemberMap->end();iter++){
 					if(iter->first==name){

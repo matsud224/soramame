@@ -6,7 +6,7 @@
 
 TokenValue success(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values){
     #ifdef PARSER_DEBUG
-		cout<<BG_CYAN"acceptされました"RESET<<endl
+		cout<<BG_CYAN"acceptされました"<<RESET<<endl
     #endif
     return values[0];
 }
@@ -132,7 +132,7 @@ TokenValue variabledef_list_addvariabledef_reduce(shared_ptr<CodegenInfo> cgi,ve
 TokenValue variabledef_nonassignment_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values)
 {
 	TokenValue t;
-	t.variabledef_ast=make_shared<VariableDefStatementAST>(make_shared<pair<string,shared_ptr<TypeAST> > >(values[0].str,values[2].type_ast),shared_ptr<ExprAST>());
+	t.variabledef_ast=make_shared<VariableDefStatementAST>(make_shared<pair<string,shared_ptr<TypeAST> > >(values[0].str,values[2].type_ast),nullptr);
 	return t;
 }
 
@@ -145,7 +145,7 @@ TokenValue variabledef_withassignment_reduce(shared_ptr<CodegenInfo> cgi,vector<
 
 TokenValue variabledef_infer_reduce(shared_ptr<CodegenInfo>,vector<TokenValue> values){
 	TokenValue t;
-	t.variabledef_ast=make_shared<VariableDefStatementAST>(make_shared<pair<string,shared_ptr<TypeAST> > >(values[0].str,shared_ptr<TypeAST>()),make_shared<UnBuiltExprAST>(values[2].expression_list));
+	t.variabledef_ast=make_shared<VariableDefStatementAST>(make_shared<pair<string,shared_ptr<TypeAST> > >(values[0].str,nullptr),make_shared<UnBuiltExprAST>(values[2].expression_list));
 	return t;
 }
 
@@ -234,7 +234,7 @@ TokenValue returnstatement_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue>
 TokenValue returnstatement_noexp_reduce(shared_ptr<CodegenInfo>, vector<TokenValue>)
 {
 	TokenValue t;
-	t.statement_ast=make_shared<ReturnStatementAST>(shared_ptr<ExprAST>());
+	t.statement_ast=make_shared<ReturnStatementAST>(nullptr);
 	return t;
 }
 
@@ -294,7 +294,7 @@ TokenValue closureexpr_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> val
 TokenValue closureexpr_rettypeinfer_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values)
 {
 	TokenValue t;
-	//返り値を推論する時は返り値の型をNULLにすると関数の型リストに埋め込まれて識別できないので型名としてありえない文字列にした
+	//返り値を推論する時は返り値の型をnullptrにすると関数の型リストに埋め込まれて識別できないので型名としてありえない文字列にした
 	t.expression_ast=make_shared<FunctionAST>(cgi,"<anonymous>",values[2].parameter_list,make_shared<BasicTypeAST>("!!undefined!!"),values[5].block_ast);
 	return t;
 }
@@ -317,7 +317,7 @@ TokenValue arg_list_expression_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenVa
 TokenValue arg_list_addexpression_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values)
 {
 	TokenValue t;
-	t.arg_exp_list=make_shared<vector<shared_ptr<ExprAST> > >(*values[0].expression_list);
+	t.arg_exp_list=make_shared<vector<shared_ptr<ExprAST> > >(*values[0].arg_exp_list);
 	t.arg_exp_list->push_back(make_shared<UnBuiltExprAST>(values[2].expression_list));
 	return t;
 }

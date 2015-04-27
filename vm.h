@@ -4,11 +4,12 @@
 #include <map>
 #include <string>
 #include <memory>
-
+#include "compiler.h"
 
 using namespace std;
 
 class CodegenInfo;
+class Executable;
 
 enum{
     ipush,bpush,
@@ -35,14 +36,6 @@ enum{
     makedata
 };
 
-class VMValue{
-public:
-	int int_value;
-	bool bool_value;
-	double double_value;
-	shared_ptr<void> ref_value;
-};
-
 class Flame{
 public:
     shared_ptr< vector< pair<string,VMValue> > > Variables; //型検査には通ってるので型情報は保管しない（変数名と値のペア）
@@ -51,14 +44,17 @@ public:
     shared_ptr<Flame> StaticLink;
     int PC;
     bool NoChildren;
-    Flame(shared_ptr< vector< pair<string,VMValue> > > vars,shared_ptr< vector<int> > codeptr,shared_ptr<Flame> staticlink):Variables(vars),CodePtr(codeptr),StaticLink(staticlink){PC=0;NoChildren=false;}
+    Flame(shared_ptr< vector< pair<string,VMValue> > > vars,shared_ptr< vector<int> > codeptr,shared_ptr<Flame> staticlink):Variables(vars),CodePtr(codeptr),StaticLink(staticlink){
+    	PC=0;
+    	NoChildren=false;
+	}
 };
 
-class VM{
+class VM : public enable_shared_from_this<VM>{
 public:
-	shared_ptr<CodegenInfo> CodeInfo;
+	shared_ptr<Executable> ExecutableData;
 	vector<shared_ptr<Flame> > Environment;
-    VM( shared_ptr<CodegenInfo> cinfo):CodeInfo(cinfo){}
+    VM( shared_ptr<Executable> exec):ExecutableData(exec){}
     void Init();
     VMValue Run(bool currflame_only); //trueで、呼び出し時点のフレームがポップされたら関数を抜ける
 };

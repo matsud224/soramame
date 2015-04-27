@@ -11,13 +11,11 @@
 #include <stdio.h>
 #include "common.h"
 #include "parser.h"
-#include "lexer.h"
 #include "color_text.h"
 #include "common.h"
 #include <time.h>
 #include <math.h>
 #include "parser_actions.h"
-#include <readline/readline.h>
 #include <memory>
 
 
@@ -282,8 +280,16 @@ int main()
 		lexer=make_shared<Lexer>(str.c_str());
 		parser=make_shared<Parser>();
 
-		Compiler compiler(lexer,parser);
-		compiler.Compile();
+		shared_ptr<Compiler> compiler=make_shared<Compiler>(lexer,parser);
+		shared_ptr<Executable> executable=compiler->Compile();
+		lexer.reset();
+		parser.reset();
+		compiler.reset();
+		shared_ptr<VM> vm=make_shared<VM>(executable);
+		cout<<BG_BLUE<<"VMを起動します..."<<RESET<<endl;
+		vm->Init();
+		vm->Run(false);
+		cout<<endl;
     }catch(SyntaxError){
         cerr<<BG_RED"Syntax error  line:";
         set<int>::iterator iter;

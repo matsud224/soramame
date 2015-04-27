@@ -10,7 +10,7 @@
 #include "common.h"
 #include "color_text.h"
 
-//#define PARSER_DEBUG
+#define PARSER_DEBUG
 
 using namespace std;
 
@@ -102,9 +102,9 @@ string Parser::Symbol2Str(Symbol s){
     case RBRACE:
     	return "}";
 	case RBRACKET:
-		return "[";
-	case LBRACKET:
 		return "]";
+	case LBRACKET:
+		return "[";
     case COMMA:
     	return ",";
     case COLON:
@@ -454,7 +454,7 @@ void Parser::Put(shared_ptr<Lexer> lexer,shared_ptr<CodegenInfo> cgi,pair<Symbol
 		}else{
 			throw SyntaxError();
 			#ifdef PARSER_DEBUG
-			cout<<BG_MAGENTA"バックトラックします"RESET<<endl;
+			cout<<BG_MAGENTA"バックトラックします"<<RESET<<endl;
 			#endif
 
 			error_candidates.insert(lexer->curr_line);
@@ -514,7 +514,7 @@ void Parser::Put(shared_ptr<Lexer> lexer,shared_ptr<CodegenInfo> cgi,pair<Symbol
 
     if(conflict_state.count(StateStack.back())==1){ //現在の状態がコンフリクトを起こしているものなら、動的にアクションリストを構築
 		#ifdef PARSER_DEBUG
-		cout<<BG_MAGENTA"パース時のコンフリクト解決を試みています....."RESET<<endl;
+		cout<<BG_MAGENTA"パース時のコンフリクト解決を試みています....."<<RESET<<endl;
 		#endif
 
         for(int i=-2;i<SYMBOLCOUNT;i++){
@@ -573,7 +573,7 @@ void Parser::Put(shared_ptr<Lexer> lexer,shared_ptr<CodegenInfo> cgi,pair<Symbol
 			}else{
 				throw SyntaxError();
 				#ifdef PARSER_DEBUG
-				cout<<BG_MAGENTA"バックトラックします"RESET<<endl;
+				cout<<BG_MAGENTA"バックトラックします"<<RESET<<endl;
 				#endif
 
 				error_candidates.insert(lexer->curr_line);
@@ -648,7 +648,7 @@ void Parser::Put(shared_ptr<Lexer> lexer,shared_ptr<CodegenInfo> cgi,pair<Symbol
 			iter = ActionTable[pair<int,Symbol>(StateStack.back(),input.first)].begin();
 		}
 		#ifdef PARSER_DEBUG
-			cout<<BG_MAGENTA"コンフリクトを解決できないので１つ目のアクションを試します"RESET<<endl;
+			cout<<BG_MAGENTA"コンフリクトを解決できないので１つ目のアクションを試します"<<RESET<<endl;
 		#endif
 
 		CreateBacktrackingPoint(lexer->curr_index,lexer->curr_state,lexer->curr_line,shift_existence?ShiftReduce:ReduceReduce,input,input_backup,cgi);

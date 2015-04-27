@@ -18,6 +18,14 @@ enum Symbol{
 	DATA,GROUP,datadef,groupdef,datamember_list,groupmember_list,dataexpr,initassign_list,listrefexpr,datamemberrefexpr
 };
 
+class VMValue{
+public:
+	int int_value;
+	bool bool_value;
+	double double_value;
+	shared_ptr<void> ref_value;
+};
+
 class FunctionAST;
 class TopLevelItem;
 class ExprAST;

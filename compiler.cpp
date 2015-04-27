@@ -176,7 +176,7 @@ void Compiler::Codegen()
     for(iterf=genInfo->TopLevelFunction.begin();iterf!=genInfo->TopLevelFunction.end();iterf++){
 		//組み込み関数のコード生成は行わない
         if((*iterf)->isBuiltin==false){
-            (*iterf)->Codegen(NULL,genInfo);
+            (*iterf)->Codegen(nullptr,genInfo);
         }
     }
 
@@ -194,6 +194,17 @@ void Compiler::Codegen()
 
 	genInfo->Bootstrap->clear();
 	//ブートストラップローダをつくる
+
+	//トップレベルの関数の初期化
+	int counter=0;
+    for(iterf=genInfo->TopLevelFunction.begin();iterf!=genInfo->TopLevelFunction.end();iterf++){
+		//トップレベル関数はもうコード生成が済んでいるのでCodegenはダメ
+		genInfo->Bootstrap->push_back(makeclosure);
+        genInfo->Bootstrap->push_back((*iterf)->PoolIndex);
+        genInfo->Bootstrap->push_back(storelocal);
+		genInfo->Bootstrap->push_back(0);
+		genInfo->Bootstrap->push_back(counter++);
+    }
 	//グローバル変数の初期化
     for(iterv=genInfo->TopLevelVariableDef.begin();iterv!=genInfo->TopLevelVariableDef.end();iterv++){
 		(*iterv)->Codegen(genInfo->Bootstrap,genInfo);
@@ -273,7 +284,7 @@ void Compiler::CTFE(int loop/*繰り返し回数*/){
 			genInfo->Bootstrap=preexec_code;
 			VM vm(genInfo);
 			vm.Init();
-			(*iter)->callee=NULL;
+			(*iter)->callee=nullptr;
 			(*iter)->CalculatedValue=vm.Run(false);
 
 		}
