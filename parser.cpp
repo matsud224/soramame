@@ -47,8 +47,8 @@ string Parser::Symbol2Str(Symbol s){
 		return "OPERATOR";
 	case program:
 		return "program";
-	case function:
-		return "function";
+	case functiondef:
+		return "functiondef";
 	case parameter_list:
 		return "parameter_list";
 	case parameter:
@@ -176,7 +176,7 @@ void Parser::BuildStateTable(){
     //ならば pair<Symbol*,1> とアイテムを表現
 
     //アイテム集合を作成
-    set< pair<Symbol*,int> > *set0=new set< pair<Symbol*,int> >(); //アイテム集合0
+    shared_ptr< set< pair<Symbol*,int> > > set0=make_shared<set< pair<Symbol*,int> > >(); //アイテム集合0
     set0->insert(pair<Symbol*,int>(const_cast<Symbol*>(SYNTAXRULE[0].rule),1));
     ProcessItemSet(set0,-1,SYNTAXEND);//（第3引数は適当）
 
@@ -264,7 +264,7 @@ void Parser::BuildStateTable(){
 
 
 //再帰的に呼び出され、itemsetへアイテム集合を追加していく。
-void Parser::ProcessItemSet(set< pair<Symbol*,int> > *current_set,int caller_id/*呼び出し元の集合の番号*/,Symbol used_symbol/*状態遷移に際して消費されたシンボル*/){
+void Parser::ProcessItemSet(shared_ptr<set< pair<Symbol*,int> > > current_set,int caller_id/*呼び出し元の集合の番号*/,Symbol used_symbol/*状態遷移に際して消費されたシンボル*/){
     set< pair<Symbol*,int> >::iterator iter;
 
     int before_size;
@@ -331,7 +331,7 @@ void Parser::ProcessItemSet(set< pair<Symbol*,int> > *current_set,int caller_id/
     }
 
     for(int i=-1;i<SYMBOLCOUNT;i++){
-        set< pair<Symbol*,int> > *newset=new set< pair<Symbol*,int> >();
+        shared_ptr<set< pair<Symbol*,int> > > newset=make_shared<set< pair<Symbol*,int> > >();
         for(iter=current_set->begin();iter!=current_set->end();iter++){
             if((*iter).first[(*iter).second]==i){
                 //currnt_setの中で、次のシンボルが、i番目のシンボルと一致する場合
@@ -343,7 +343,7 @@ void Parser::ProcessItemSet(set< pair<Symbol*,int> > *current_set,int caller_id/
             ProcessItemSet(newset,parent_setid,static_cast<Symbol>(i));
 
         }else{
-            delete newset;
+            newset.reset();
         }
     }
 
@@ -425,7 +425,7 @@ TokenValue Parser::default_action(vector<TokenValue> values){
 }
 
 //パーサへレキシカルアナライザから入力
-void Parser::Put(Lexer *lexer,shared_ptr<CodegenInfo> cgi,pair<Symbol,TokenValue> input){
+void Parser::Put(shared_ptr<Lexer> lexer,shared_ptr<CodegenInfo> cgi,pair<Symbol,TokenValue> input){
 	set<Action>::iterator iter;
 
     pair<Symbol,TokenValue> input_backup; //空規則からの復帰用に入力をとっておくための変数
@@ -679,7 +679,7 @@ void Parser::Put(Lexer *lexer,shared_ptr<CodegenInfo> cgi,pair<Symbol,TokenValue
     case REDUCE:
         {
             int rulelen=0;
-            vector<TokenValue> *lval=new vector<TokenValue>();
+            shared_ptr<vector<TokenValue> > lval=make_shared<vector<TokenValue> >();
             Symbol *ptr=const_cast<Symbol*>(SYNTAXRULE[(*iter).State].rule)+1; //state番目の規則へのポインタ(右辺を指すため+1する)
             while(*ptr!=SYNTAXEND){
                 rulelen++; ptr++;

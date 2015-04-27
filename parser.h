@@ -69,7 +69,7 @@ private:
     map< pair<int,Symbol>,int> StateTransitionTable;
     map< pair<int,Symbol>,set<Action> > ActionTable; //conflictのためにActionTypeはvectorにしておく
     map< pair<int,Symbol>,int> GOTOTable;
-    vector< set< pair<Symbol*,int> >* > itemsets;
+    vector< shared_ptr<set< pair<Symbol*,int> > > > itemsets;
 	set<int> conflict_state;
     set<int> stt_checked; //状態遷移表の作成をしたアイテム集合の番号（2重にチェックするのを避けるため）
 
@@ -77,7 +77,7 @@ private:
     bool is_nonterminal(Symbol s);
     bool is_terminal(Symbol s);
     void BuildStateTable();
-    void ProcessItemSet(set< pair<Symbol*,int> > *current_set,int caller_id,Symbol used_symbol);
+    void ProcessItemSet(shared_ptr<set< pair<Symbol*,int> > > current_set,int caller_id,Symbol used_symbol);
     void MakeAction_GotoTable();
     bool isActionExist(int currentstate,Symbol sym);
     int FindItem(pair<Symbol*,int>);

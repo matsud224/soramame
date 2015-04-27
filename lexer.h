@@ -21,7 +21,7 @@ public:
     char *rule;
     State state;
     bool hasValue;
-    pair<Symbol,TokenValue> (* callback)(char *str,shared_ptr<Lexer> lexer);
+    pair<Symbol,TokenValue> (* callback)(char *str,Lexer* lexer);
 };
 
 extern TokenRule TOKENRULE[];

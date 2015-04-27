@@ -152,7 +152,7 @@ TokenRule TOKENRULE[TOKENRULECOUNT]={
 SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{S,program,SYNTAXEND},success},
     {{program,EMPTY,SYNTAXEND},program_empty_reduce},
-    {{program,program,function,SYNTAXEND},program_addfundef_reduce},
+    {{program,program,functiondef,SYNTAXEND},program_addfundef_reduce},
 
     {{program,program,VAR,variabledef_list,SEMICOLON,SYNTAXEND},program_addvardef_reduce},
     {{program,program,VAR,variabledef_list,LINEEND,SYNTAXEND},program_addvardef_reduce},
@@ -164,8 +164,8 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{boolvalexpr,BOOLVAL,SYNTAXEND},boovalexpr_reduce},
     {{stringvalexpr,STRINGVAL,SYNTAXEND},stringvalexpr_reduce},
     {{operator_n,OPERATOR,SYNTAXEND},operator_n_reduce},
-    {{function,FUN,IDENT,LPAREN,parameter_list,RPAREN,LBRACE,block,RBRACE,SYNTAXEND},function_norettype_reduce},
-    {{function,FUN,IDENT,LPAREN,parameter_list,RPAREN,operator_n,type,LBRACE,block,RBRACE,SYNTAXEND},function_withrettype_reduce},
+    {{functiondef,FUN,IDENT,LPAREN,parameter_list,RPAREN,LBRACE,block,RBRACE,SYNTAXEND},function_norettype_reduce},
+    {{functiondef,FUN,IDENT,LPAREN,parameter_list,RPAREN,operator_n,type,LBRACE,block,RBRACE,SYNTAXEND},function_withrettype_reduce},
     {{parameter_list,EMPTY,SYNTAXEND},parameter_list_empty_reduce},
     {{parameter_list,parameter,SYNTAXEND},parameter_list_parameter_reduce},
     {{parameter_list,parameter_list,COMMA,parameter,SYNTAXEND},parameter_list_addparameter_reduce},
@@ -271,34 +271,35 @@ int main()
 {
 	srand((unsigned int)time(NULL));
 
-	Lexer *lexer;
-	Parser parser;
+	shared_ptr<Lexer> lexer;
+	shared_ptr<Parser> parser;
 	try{
 		string str="";
 		char c;
 		while((c=getchar())!=-1){
 			str+=c;
 		}
-		lexer=new Lexer(str.c_str());
+		lexer=make_shared<Lexer>(str.c_str());
+		parser=make_shared<Parser>();
 
-		Compiler compiler(lexer,&parser);
+		Compiler compiler(lexer,parser);
 		compiler.Compile();
     }catch(SyntaxError){
         cerr<<BG_RED"Syntax error  line:";
         set<int>::iterator iter;
-        parser.error_candidates.insert(lexer->curr_line);
-        for(iter=parser.error_candidates.end(),iter--;iter!=parser.error_candidates.end();iter++){
+        parser->error_candidates.insert(lexer->curr_line);
+        for(iter=parser->error_candidates.end(),iter--;iter!=parser->error_candidates.end();iter++){
 			cerr<<(*iter)<<",";
         }
         cerr<<"\b"<<RESET<<" \b"<<endl;
     }catch(NoMatchRule){
-        cerr<<BG_RED"トークンを生成できません"RESET<<endl;
+        cerr<<BG_RED<<"トークンを生成できません"<<RESET<<endl;
     }catch(OnigurumaException ex){
     	cerr<<BG_RED"正規表現エンジン 鬼車で問題が発生しました："<<ex.Message<<RESET;
     }catch(ParserException){
-		cerr<<BG_RED"パーサで問題が発生しました"RESET<<endl;
+		cerr<<BG_RED"パーサで問題が発生しました"<<RESET<<endl;
     }catch(LexerException){
-		cerr<<BG_RED"レキシカルアナライザで問題が発生しました"RESET<<endl;
+		cerr<<BG_RED"レキシカルアナライザで問題が発生しました"<<RESET<<endl;
 	}
 
     return 0;

@@ -4,7 +4,7 @@
 #include <map>
 #include <string>
 #include <memory>
-#include "basic_object.h"
+
 
 using namespace std;
 
@@ -46,7 +46,7 @@ public:
 class Flame{
 public:
     shared_ptr< vector< pair<string,VMValue> > > Variables; //型検査には通ってるので型情報は保管しない（変数名と値のペア）
-    stack<shared_ptr<VMValue> > OperandStack; //ここで計算を行う
+    stack< VMValue > OperandStack; //ここで計算を行う
     shared_ptr<vector<int> > CodePtr; //バイトコードへのポインタ
     shared_ptr<Flame> StaticLink;
     int PC;
@@ -60,7 +60,7 @@ public:
 	vector<shared_ptr<Flame> > Environment;
     VM( shared_ptr<CodegenInfo> cinfo):CodeInfo(cinfo){}
     void Init();
-    int Run(bool currflame_only); //trueで、呼び出し時点のフレームがポップされたら関数を抜ける
+    VMValue Run(bool currflame_only); //trueで、呼び出し時点のフレームがポップされたら関数を抜ける
 };
 
 
