@@ -201,9 +201,8 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{expression,parenexpr,SYNTAXEND},NULL},
     {{expression,expression,primary,SYNTAXEND},expression_add_reduce},
     {{expression,expression,parenexpr,SYNTAXEND},expression_addparen_reduce},
-    {{funcallexpr,funcallexpr,LPAREN,arg_list,RPAREN,SYNTAXEND},funcallexpr_reduce},
-    {{funcallexpr,closureexpr,LPAREN,arg_list,RPAREN,SYNTAXEND},funcallexpr_reduce},
-    {{funcallexpr,variableexpr,LPAREN,arg_list,RPAREN,SYNTAXEND},funcallexpr_reduce},
+    {{funcallexpr,primary,LPAREN,arg_list,RPAREN,SYNTAXEND},funcallexpr_reduce},
+    {{funcallexpr,parenexpr,LPAREN,arg_list,RPAREN,SYNTAXEND},funcallexpr_reduce},
     {{primary,intvalexpr,SYNTAXEND},NULL},
     {{primary,doublevalexpr,SYNTAXEND},NULL},
     {{primary,boolvalexpr,SYNTAXEND},NULL},
@@ -266,8 +265,11 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
 	{{initassign_list,initassign_list,IDENT,operator_n,expression,SYNTAXEND},ialist_add_reduce},
 	{{initassign_list,initassign_list,IDENT,operator_n,expression,COMMA,SYNTAXEND},ialist_add_reduce},
 
-	{{listrefexpr,variableexpr,LBRACKET,expression,RBRACKET,SYNTAXEND},listrefexpr_reduce}, //配列・タプルのインデックス参照
-	{{datamemberrefexpr,variableexpr,DOT,IDENT,SYNTAXEND},datamemberrefexpr_reduce} //構造体メンバ参照
+	{{listrefexpr,primary,LBRACKET,expression,RBRACKET,SYNTAXEND},listrefexpr_reduce}, //配列・タプルのインデックス参照
+	{{listrefexpr,parenexpr,LBRACKET,expression,RBRACKET,SYNTAXEND},listrefexpr_reduce},
+
+	{{datamemberrefexpr,primary,DOT,IDENT,SYNTAXEND},datamemberrefexpr_reduce}, //構造体メンバ参照
+	{{datamemberrefexpr,parenexpr,DOT,IDENT,SYNTAXEND},datamemberrefexpr_reduce}
 };
 
 

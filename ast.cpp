@@ -909,17 +909,21 @@ shared_ptr<TypeAST>  CallExprAST::CheckType(shared_ptr<vector<Environment> > env
 	if(callee->IsBuilt()==false){
 		callee=dynamic_pointer_cast<UnBuiltExprAST >(callee)->BuildAST(geninfo);
 	}
-	callee->TypeInfo=make_shared<FunctionTypeAST>(argtype);
+
 	callee->CheckType(env,geninfo,CurrentLocalVars);
 
-	if(callee->TypeInfo==nullptr){
-		error("再帰呼び出しをするには型情報を記述してください");
-	}
-
-	if(typeid(FunctionTypeAST) != typeid(*(callee->TypeInfo))){
+	if(callee->TypeInfo!=nullptr && typeid(FunctionTypeAST) != typeid(*(callee->TypeInfo))){
 		error("calleeが関数ではありません");
 	}
 
+	if(callee->TypeInfo==nullptr){
+		//オーバーロードの解決ができない
+		callee->TypeInfo=make_shared<FunctionTypeAST>(argtype);
+		callee->CheckType(env,geninfo,CurrentLocalVars);
+		if(callee->TypeInfo==nullptr){
+			error("再帰呼び出しをするには型情報を記述してください");
+		}
+	}
 
 
 	vector<shared_ptr<TypeAST> > currentarg=dynamic_pointer_cast<FunctionTypeAST>(callee->TypeInfo)->TypeList;
@@ -975,13 +979,21 @@ shared_ptr<TypeAST>  DataMemberRefExprAST::CheckType(shared_ptr<vector<Environme
 		target=dynamic_pointer_cast<UnBuiltExprAST >(target)->BuildAST(geninfo);
 	}
 	target->CheckType(env,geninfo,CurrentLocalVars);
+	if(typeid(BasicTypeAST) != typeid(*(target->TypeInfo))){
+		error("メンバ参照の左辺の型が不正です");
+	}
 
 	vector< pair<string,shared_ptr<TypeAST> >  >::iterator miter;
 	vector<shared_ptr<DataDefAST> >::iterator diter;
+	bool found=false;
 	for(diter=geninfo->TopLevelDataDef.begin();diter!=geninfo->TopLevelDataDef.end();diter++){
 		if((*diter)->Name==target->TypeInfo->GetName()){
+			found=true;
 			break;
 		}
+	}
+	if(!found){
+		error("型"+target->TypeInfo->GetName()+"は構造体型ではありません：メンバ参照の左辺を確認してください");
 	}
 	if(diter!=geninfo->TopLevelDataDef.end()){
 		for(miter=(*diter)->MemberList.begin();miter!=(*diter)->MemberList.end();miter++){
