@@ -48,6 +48,13 @@ TokenValue intvalexpr_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> valu
 	return t;
 }
 
+TokenValue doublevalexpr_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values)
+{
+	TokenValue t;
+	t.expression_ast=make_shared<DoubleValExprAST>(cgi,values[0].doubleval);
+	return t;
+}
+
 TokenValue boovalexpr_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values)
 {
 	TokenValue t;

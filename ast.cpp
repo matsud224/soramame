@@ -799,7 +799,7 @@ shared_ptr<TypeAST>  BinaryExprAST::CheckType(shared_ptr<vector<Environment> > e
 	}
 
 	if(TypeInfo==nullptr){
-		error("未知の二項演算子です:"+Operator);
+		error("未知の二項演算子です: "+Operator);
 	}
 
 	return TypeInfo;
@@ -1616,3 +1616,15 @@ vector<shared_ptr<ExprAST> > BinaryExprAST::GetCallExprList()
 	return result;
 }
 
+void DoubleValExprAST::Codegen(shared_ptr<vector<int> > bytecodes, shared_ptr<CodegenInfo> geninfo)
+{
+	bytecodes->push_back(ldc);
+    bytecodes->push_back(PoolIndex);
+    return;
+}
+
+vector<shared_ptr<ExprAST> > DoubleValExprAST::GetCallExprList()
+{
+	vector<shared_ptr<ExprAST> > result;
+	return result;
+}

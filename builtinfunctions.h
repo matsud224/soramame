@@ -8,6 +8,7 @@ class VM;
 
 void print_str(shared_ptr<VM> vmptr);
 void print_int(shared_ptr<VM> vmptr);
+void print_double(shared_ptr<VM> vmptr);
 void print_bool(shared_ptr<VM> vmptr);
 void abs_int(shared_ptr<VM> vmptr);
 void rand_int(shared_ptr<VM> vmptr);

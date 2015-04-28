@@ -78,6 +78,9 @@ void Compiler::ASTgen()
     arglist.push_back(pair<string,shared_ptr<TypeAST> >("val",make_shared<BasicTypeAST>("int")));
     RegisterBuiltinFunction("print",print_int,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
 
+    arglist[0]=pair<string,shared_ptr<TypeAST> >("val",make_shared<BasicTypeAST>("double"));
+    RegisterBuiltinFunction("print",print_double,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
+
     arglist[0]=pair<string,shared_ptr<TypeAST> >("val",make_shared<BasicTypeAST>("bool"));
     RegisterBuiltinFunction("print",print_bool,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
 

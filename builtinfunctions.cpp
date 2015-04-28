@@ -154,6 +154,11 @@ void print_int(shared_ptr<VM> vmptr){
 	cout<<iopr1<<flush;
 }
 
+void print_double(shared_ptr<VM> vmptr){
+	double dopr1=VM_STACK_GET.double_value; VM_STACK_POP;
+	cout<<dopr1<<flush;
+}
+
 void print_bool(shared_ptr<VM> vmptr){
 	bool bopr1=static_cast<bool>(VM_STACK_GET.int_value); VM_STACK_POP;
 	cout<<(bopr1?"true":"false")<<flush;

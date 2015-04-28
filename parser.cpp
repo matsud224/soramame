@@ -10,7 +10,6 @@
 #include "common.h"
 #include "color_text.h"
 
-#define PARSER_DEBUG
 
 using namespace std;
 
@@ -131,6 +130,8 @@ string Parser::Symbol2Str(Symbol s){
 		return "groupmember_list";
 	case LINEEND:
 		return "<<LINEEND>>";
+	case DOUBLEVAL:
+		return "DOUBLEVAL";
     default:
         return "<UNKNOWN SYMBOL>";
     }

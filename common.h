@@ -5,17 +5,17 @@
 
 using namespace std;
 
-const int TOKENRULECOUNT=33;
-const int SYNTAXRULECOUNT=99;
-const int SYMBOLCOUNT=60; //SYNTAXEND,INPUTEND,EMPTYをのぞく
+const int TOKENRULECOUNT=34;
+const int SYNTAXRULECOUNT=101;
+const int SYMBOLCOUNT=62; //SYNTAXEND,INPUTEND,EMPTYをのぞく
 
 
 enum Symbol{
-	SYNTAXEND=-3,INPUTEND=-2,EMPTY=-1,LINEEND,S,VAR,FUN,IF,ELSE,RETURN_S,INTVAL,BOOLVAL,STRINGVAL,IDENT,OPERATOR,program,functiondef,parameter_list,parameter,
+	SYNTAXEND=-3,INPUTEND=-2,EMPTY=-1,LINEEND,S,VAR,FUN,IF,ELSE,RETURN_S,INTVAL,DOUBLEVAL,BOOLVAL,STRINGVAL,IDENT,OPERATOR,program,functiondef,parameter_list,parameter,
 	variabledef_list,variabledef,statement_list,statement,operator_n/*operatorはキーワードなので*/,expression,arg_list,intvalexpr,boolvalexpr,stringvalexpr,primary,
 	variableexpr, parenexpr, funcallexpr, closureexpr, returnstatement,type,type_list,ifstatement,
 	SEMICOLON,LPAREN,RPAREN,LBRACE,RBRACE,LBRACKET,RBRACKET,COMMA,COLON,DOT,block,WHILE,whilestatement,listvalexpr,tuplevalexpr,
-	DATA,GROUP,datadef,groupdef,datamember_list,groupmember_list,dataexpr,initassign_list,listrefexpr,datamemberrefexpr
+	DATA,GROUP,datadef,groupdef,datamember_list,groupmember_list,dataexpr,initassign_list,listrefexpr,datamemberrefexpr,doublevalexpr
 };
 
 class VMValue{
@@ -40,6 +40,7 @@ class TokenValue{
 public:
 	int intval;
 	bool boolval;
+	double doubleval;
 	string str;
 
 	shared_ptr<FunctionAST> function_ast;

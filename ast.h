@@ -141,6 +141,23 @@ public:
     virtual vector<shared_ptr<ExprAST> > GetCallExprList();
 };
 
+class DoubleValExprAST : public ExprAST{
+public:
+	double Value;
+	int PoolIndex;
+    DoubleValExprAST(shared_ptr<CodegenInfo> cgi,double val):Value(val){
+    	TypeInfo=make_shared<BasicTypeAST>("double");
+		VMValue v;v.double_value=Value;
+		PoolIndex=cgi->PublicConstantPool.SetValue(v);
+	}
+    virtual bool IsConstant(){return true;}
+    virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
+    virtual shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars){return TypeInfo;}
+    virtual vector<int> FindChildFunction(){return vector<int>();};
+    virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){return true;};
+    virtual vector<shared_ptr<ExprAST> > GetCallExprList();
+};
+
 class BoolValExprAST : public ExprAST{
 public:
 	bool Value;

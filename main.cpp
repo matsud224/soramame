@@ -77,6 +77,11 @@ pair<Symbol,TokenValue> intval_lex(char *str,Lexer *lex){
 	t.intval=atoi(str);
 	return pair<Symbol,TokenValue>(INTVAL ,t);
 };
+pair<Symbol,TokenValue> doubleval_lex(char *str,Lexer *lex){
+	TokenValue t;
+	t.doubleval=atof(str);
+	return pair<Symbol,TokenValue>(DOUBLEVAL ,t);
+};
 pair<Symbol,TokenValue> asciival_lex(char *str,Lexer *lex){
 	TokenValue t;
 	string str_temp(str);
@@ -136,6 +141,7 @@ TokenRule TOKENRULE[TOKENRULECOUNT]={
     {"\\]",INITIAL,true,rbracket_lex},
     {"[a-zA-Z_][a-zA-Z0-9_]*",INITIAL,true,ident_lex},
     {"[%=~\\|\\^\\+\\-\\*/<>&!]{1,3}",INITIAL,true,operator_lex},
+    {"\\d+\\.\\d+",INITIAL,true,doubleval_lex},
     {"\\d+",INITIAL,true,intval_lex},
     {"\"(?>[^\\\\\"]|\\\\.)*?\"",INITIAL,true,stringval_lex},
     {"\'[\x20-\x7E]\'",INITIAL,true,asciival_lex},
@@ -159,6 +165,7 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{program,program,datadef,SYNTAXEND},program_adddatadef_reduce},
     {{program,program,groupdef,SYNTAXEND},program_addgroupdef_reduce},
     {{intvalexpr,INTVAL,SYNTAXEND},intvalexpr_reduce},
+    {{doublevalexpr,DOUBLEVAL,SYNTAXEND},doublevalexpr_reduce},
     {{boolvalexpr,BOOLVAL,SYNTAXEND},boovalexpr_reduce},
     {{stringvalexpr,STRINGVAL,SYNTAXEND},stringvalexpr_reduce},
     {{operator_n,OPERATOR,SYNTAXEND},operator_n_reduce},
@@ -198,6 +205,7 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{funcallexpr,closureexpr,LPAREN,arg_list,RPAREN,SYNTAXEND},funcallexpr_reduce},
     {{funcallexpr,variableexpr,LPAREN,arg_list,RPAREN,SYNTAXEND},funcallexpr_reduce},
     {{primary,intvalexpr,SYNTAXEND},NULL},
+    {{primary,doublevalexpr,SYNTAXEND},NULL},
     {{primary,boolvalexpr,SYNTAXEND},NULL},
     {{primary,stringvalexpr,SYNTAXEND},NULL},
     {{primary,funcallexpr,SYNTAXEND},NULL},
@@ -299,7 +307,7 @@ int main()
         }
         cerr<<"\b"<<RESET<<" \b"<<endl;
     }catch(NoMatchRule){
-        cerr<<BG_RED<<"トークンを生成できません"<<RESET<<endl;
+        cerr<<BG_RED<<"トークンを生成できません  line:"<<lexer->curr_line<<RESET<<endl;
     }catch(OnigurumaException ex){
     	cerr<<BG_RED"正規表現エンジン 鬼車で問題が発生しました："<<ex.Message<<RESET;
     }catch(ParserException){
@@ -310,100 +318,3 @@ int main()
 
     return 0;
 }
-
-/*
-int main(int argc, char* argv[])
-{
-    if(argc==2){
-        string code(argv[1]);
-        cout<<"入力:"<<endl<<code<<endl<<endl;
-        Lexer lexer(code);
-
-
-        lexer.SetOrigin();
-        cout<<"ASTを生成しています..."<<endl;;
-        Parser parser(&lexer);
-        parser.Parse();
-        cout<<"完了"<<endl;
-        cout<<"型をチェックしています...";
-        parser.TypeCheck();
-        cout<<"完了"<<endl;
-        cout<<"コードを生成しています...";
-        parser.Codegen();
-        cout<<"完了"<<endl<<endl<<"実行します..."<<endl;
-        CodegenInfo cgi=parser.GetCGInfo();
-        VM vm(&cgi);
-        vm.Run();
-        cout<<endl<<"終了しました。"<<endl;
-    }else if(argc==3){
-        string code(argv[2]);
-        if(string(argv[1])=="-t"){
-            cout<<"入力:"<<endl<<code<<endl<<endl;
-            Lexer lexer(code);
-
-
-            lexer.SetOrigin();
-            cout<<"ASTを生成しています..."<<endl;;
-            Parser parser(&lexer);
-            parser.Parse();
-            cout<<"完了"<<endl;
-            cout<<"型をチェックしています...";
-            parser.TypeCheck();
-            cout<<"完了"<<endl;
-            cout<<"コードを生成しています...";
-            parser.Codegen();
-            cout<<"完了"<<endl;
-            CodegenInfo cgi=parser.GetCGInfo();
-        }else if(string(argv[1])=="-s"){
-            cout<<"未実装です"<<endl;
-        }else{
-            error(string(argv[1])+":無効なオプションです。");
-        }
-	}else{
-		error("コマンドライン引数を確認して下さい。");
-		return -1;
-	}
-
-	getch();
-
-    return 0;
-}
-
-
-
-    lexerのテスト用
-    cout<<"lexer:"<<endl;
-    while(lexer.CurrentToken!=token_eof){
-        lexer.GetNextToken();
-        switch(lexer.CurrentToken){
-            case token_eof:
-                cout<<"<eof>"<<endl;
-                break;
-            case token_func:
-                cout<<"<func>"<<endl;
-                break;
-            case token_identifier:
-                cout<<"<identifier> "<<lexer.CurrentIdentifier<<endl;
-                break;
-            case token_intval:
-                cout<<"<intval> "<<lexer.CurrentIntVal<<endl;
-                break;
-            case token_floatval:
-                cout<<"<floatval> "<<lexer.CurrentFloatVal<<endl;
-                break;
-            case token_operator:
-                cout<<"<operator> "<<lexer.CurrentOperator<<endl;
-                break;
-            case token_boolval:
-                cout<<"<bool> "<<lexer.CurrentFloatVal<<endl;
-                break;
-            case token_stringval:
-                cout<<"<stringval>"<<lexer.CurrentStringVal<<endl;
-                break;
-            default:
-                cout<<"<char>"<<(char)(lexer.CurrentToken)<<endl;
-                break;
-        }
-    }
-    cout<<endl;*/
-

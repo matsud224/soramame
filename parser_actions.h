@@ -10,6 +10,7 @@ TokenValue program_addvardef_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue program_adddatadef_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue program_addgroupdef_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue intvalexpr_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
+TokenValue doublevalexpr_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue boovalexpr_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue stringvalexpr_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue operator_n_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
