@@ -9,12 +9,14 @@
 #include "parser.h"
 #include "common.h"
 #include "color_text.h"
-
+#include "utility.h"
 
 using namespace std;
 
 
 TokenValue Parser::dummy;
+
+
 
 string Parser::Symbol2Str(Symbol s){
     switch(s){
@@ -108,6 +110,8 @@ string Parser::Symbol2Str(Symbol s){
     	return ",";
     case COLON:
     	return ":";
+	case DOT:
+		return ".";
 	case block:
 		return "block";
 	case WHILE:
@@ -132,8 +136,18 @@ string Parser::Symbol2Str(Symbol s){
 		return "<<LINEEND>>";
 	case DOUBLEVAL:
 		return "DOUBLEVAL";
+	case dataexpr:
+		return "dataexpr";
+	case initassign_list:
+		return "initassign_list";
+	case listrefexpr:
+		return "listrefexpr";
+	case datamemberrefexpr:
+		return "datamemberrefexpr";
+	case doublevalexpr:
+		return "doublevalexpr";
     default:
-        return "<UNKNOWN SYMBOL>";
+        return "<UNKNOWN SYMBOL :"+IntToString(s)+">";
     }
 }
 

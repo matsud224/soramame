@@ -6,7 +6,7 @@
 
 TokenValue success(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values){
     #ifdef PARSER_DEBUG
-		cout<<BG_CYAN"acceptされました"<<RESET<<endl
+		cout<<BG_CYAN"acceptされました"<<RESET<<endl;
     #endif
     return values[0];
 }
@@ -202,6 +202,7 @@ TokenValue expression_add_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> 
 	return t;
 }
 
+
 TokenValue expression_addparen_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values)
 {
 	TokenValue t;
@@ -360,7 +361,7 @@ TokenValue while_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values)
 
 TokenValue listvalexpr_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values){
 	TokenValue t;
-	shared_ptr<list<shared_ptr<ExprAST> > > lst=make_shared<list<shared_ptr<ExprAST> > >();
+	shared_ptr<vector<shared_ptr<ExprAST> > > lst=make_shared<vector<shared_ptr<ExprAST> > >();
 	lst->assign(values[1].arg_exp_list->begin(),values[1].arg_exp_list->end());
 	t.expression_ast=make_shared<ListValExprAST>(cgi,lst);
 	return t;
@@ -376,7 +377,7 @@ TokenValue type_tupletype_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue>
 TokenValue tuplevalexpr_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values)
 {
 	TokenValue t;
-	shared_ptr<list<shared_ptr<ExprAST> > > lst=make_shared<list<shared_ptr<ExprAST> > >();
+	shared_ptr<vector<shared_ptr<ExprAST> > > lst=make_shared<vector<shared_ptr<ExprAST> > >();
 	lst->assign(values[1].arg_exp_list->begin(),values[1].arg_exp_list->end());
 	t.expression_ast=make_shared<TupleValExprAST>(cgi,lst);
 	return t;

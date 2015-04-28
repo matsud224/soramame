@@ -8,6 +8,7 @@
 #include "common.h"
 #include "oniguruma.h"
 #include <memory>
+#include "exceptions.h"
 
 using namespace std;
 
@@ -26,19 +27,7 @@ public:
 
 extern TokenRule TOKENRULE[];
 
-class LexerException{
 
-};
-
-class NoMatchRule : public LexerException{
-
-};
-
-class OnigurumaException : public LexerException{
-public:
-	unsigned char *Message;
-	OnigurumaException(unsigned char *message):Message(message){}
-};
 
 class Lexer{
 private:

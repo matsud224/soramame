@@ -25,7 +25,8 @@ enum{
     invoke,
     loadlocal,loadbyindex,loadfield,
 	ret,ret_withvalue,
-    storelocal,storefield,storebyindex,
+    pushreflocal,pushreffield,pushrefbyindex,
+    store,
     makeclosure,
     skip,iffalse_skip,
     icmpeq,icmpne,icmplt,icmple,icmpgt,icmpge,
@@ -58,6 +59,5 @@ public:
     void Init();
     VMValue Run(bool currflame_only); //trueで、呼び出し時点のフレームがポップされたら関数を抜ける
 };
-
 
 

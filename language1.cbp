@@ -67,6 +67,7 @@
 		<Unit filename="common.h" />
 		<Unit filename="compiler.cpp" />
 		<Unit filename="compiler.h" />
+		<Unit filename="exceptions.h" />
 		<Unit filename="lexer.cpp" />
 		<Unit filename="lexer.h" />
 		<Unit filename="main.cpp" />

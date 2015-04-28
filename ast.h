@@ -40,7 +40,7 @@ public:
 
 class TypeAST{
 public:
-	virtual ~TypeAST(){cout<<"回収されました(TypeAST)"<<endl;}
+	virtual ~TypeAST(){}
 	virtual string GetName()=0;
 };
 
@@ -105,7 +105,7 @@ class ExprAST{
 public:
 	shared_ptr<TypeAST> TypeInfo;
 
-    virtual ~ExprAST(){cout<<"回収されました(ExprAST)"<<endl;}
+    virtual ~ExprAST(){}
     virtual bool IsBuilt(){return true;}; //ASTが構築されたか
     virtual bool IsConstant()=0; //定数か
     virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo)=0;
@@ -192,14 +192,14 @@ public:
 
 class ListValExprAST : public ExprAST{
 public:
-    shared_ptr<list<shared_ptr<ExprAST> > > Value;
+    shared_ptr<vector<shared_ptr<ExprAST> > > Value;
     int PoolIndex;
-    ListValExprAST(shared_ptr<CodegenInfo> cgi,shared_ptr<list<shared_ptr<ExprAST> > > val):Value(val){
+    ListValExprAST(shared_ptr<CodegenInfo> cgi,shared_ptr<vector<shared_ptr<ExprAST> > > val):Value(val){
         TypeInfo=nullptr;
         PoolIndex=-1;
     }
     virtual bool IsConstant(){
-		list<shared_ptr<ExprAST> >::iterator iter;
+		vector<shared_ptr<ExprAST> >::iterator iter;
 		for(iter=Value->begin();iter!=Value->end();iter++){
 			if((*iter)->IsConstant()==false){
 				return false;
@@ -216,14 +216,14 @@ public:
 
 class TupleValExprAST : public ExprAST{
 public:
-    shared_ptr<list<shared_ptr<ExprAST> > > Value;
+    shared_ptr<vector<shared_ptr<ExprAST> > > Value;
     int PoolIndex;
-    TupleValExprAST(shared_ptr<CodegenInfo> cgi,shared_ptr<list<shared_ptr<ExprAST> > > val):Value(val){
+    TupleValExprAST(shared_ptr<CodegenInfo> cgi,shared_ptr<vector<shared_ptr<ExprAST> > > val):Value(val){
         TypeInfo=nullptr;
         PoolIndex=-1;
     }
     virtual bool IsConstant(){
-		list<shared_ptr<ExprAST> >::iterator iter;
+		vector<shared_ptr<ExprAST> >::iterator iter;
 		for(iter=Value->begin();iter!=Value->end();iter++){
 			if((*iter)->IsConstant()==false){
 				return false;
@@ -358,6 +358,7 @@ public:
     	return false;
 	}
     virtual vector<shared_ptr<ExprAST> > GetCallExprList();
+    void AssignmentCodegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
 };
 
 class CallExprAST : public ExprAST,public enable_shared_from_this<CallExprAST>{
@@ -393,6 +394,7 @@ public:
     virtual vector<int> FindChildFunction();
     virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index);
     virtual vector<shared_ptr<ExprAST> > GetCallExprList();
+    void AssignmentCodegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
 };
 
 class DataMemberRefExprAST : public ExprAST{
@@ -410,6 +412,7 @@ public:
     virtual vector<int> FindChildFunction();
     virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index);
     virtual vector<shared_ptr<ExprAST> > GetCallExprList();
+    void AssignmentCodegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
 };
 
 class UnaryExprAST : public ExprAST{
@@ -449,7 +452,7 @@ public:
 	virtual vector<int> FindChildFunction()=0;
 	virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int)=0;
 	virtual vector<shared_ptr<ExprAST> > GetCallExprList()=0;
-	virtual ~StatementAST(){cout<<"回収されました(StatementAST)"<<endl;}
+	virtual ~StatementAST(){}
 };
 
 class IfStatementAST : public StatementAST{

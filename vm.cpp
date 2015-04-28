@@ -54,7 +54,7 @@ VMValue VM::Run(bool currflame_only){
 	int current_flame_depth=Environment.size();
     shared_ptr<Flame> currentflame;
     int counter;
-	int i;
+	int i;int bytecode;
 
     while(true){
 		v=VMValue();
@@ -66,7 +66,8 @@ VMValue VM::Run(bool currflame_only){
 			v.int_value=0;
 			return v;
         }
-        switch(OPERAND_GET){
+        bytecode=OPERAND_GET;
+        switch(bytecode){
         case ipush:
             v.int_value=OPERAND_GET;
             STACK_PUSH(v);
@@ -325,16 +326,17 @@ VMValue VM::Run(bool currflame_only){
                 STACK_PUSH(v);
             }
             break;
-        case storelocal:
+        case pushreflocal:
+        	{
             flameback=OPERAND_GET;
             localindex=OPERAND_GET; //localindex
-            v=STACK_GET; STACK_POP; //値
-            //cout<<"localindex:"<<localindex<<endl;
             currentflame=Environment.back();
 			for(i=0;i<flameback;i++){
 				currentflame=currentflame->StaticLink;
 			}
-			(*(currentflame->Variables))[localindex].second=v;
+			VMValue v2;v2.tempref_value=&((*(currentflame->Variables))[localindex].second);
+            STACK_PUSH(v2);
+        	}
             break;
 		case makeclosure:
 			{
@@ -362,7 +364,7 @@ VMValue VM::Run(bool currflame_only){
 			break;
 		case makelist:
 			{
-				shared_ptr<list<VMValue> > newlist=make_shared< list<VMValue> >();
+				shared_ptr<vector<VMValue> > newlist=make_shared< vector<VMValue> >();
 				iopr1=OPERAND_GET; //リストサイズ
 				for(int i=0;i<iopr1;i++){
 					VMValue lv;
@@ -391,12 +393,8 @@ VMValue VM::Run(bool currflame_only){
 		case loadbyindex:
 			{
 				iopr1=STACK_GET.int_value; STACK_POP;
-				shared_ptr<list<VMValue> > lst=static_pointer_cast<list<VMValue> >(STACK_GET.ref_value); STACK_POP;
-				list<VMValue>::iterator iter=lst->begin();
-				for(int i=0;i<iopr1;i++){
-					iter++;
-				}
-				STACK_PUSH(*iter);
+				shared_ptr<vector<VMValue> > lst=static_pointer_cast<vector<VMValue> >(STACK_GET.ref_value); STACK_POP;
+				STACK_PUSH(lst->at(iopr1));
 			}
 			break;
 		case loadfield:
@@ -412,32 +410,31 @@ VMValue VM::Run(bool currflame_only){
 				}
 			}
 			break;
-		case storebyindex:
+		case pushrefbyindex:
 			{
 				iopr1=STACK_GET.int_value; STACK_POP;
-				shared_ptr<list<VMValue> > lst=(static_pointer_cast<list<VMValue> >(STACK_GET.ref_value)); STACK_POP;
-				list<VMValue>::iterator iter=lst->begin();
-				for(int i=0;i<iopr1;i++){
-					iter++;
-				}
-				(*iter)=STACK_GET; STACK_POP;
+				shared_ptr<vector<VMValue> > lst=(static_pointer_cast<vector<VMValue> >(STACK_GET.ref_value)); STACK_POP;
+				VMValue v2; v2.ref_value=lst; v2.tempref_value=&((*lst)[iopr1]);
+				STACK_PUSH(v2);
 			}
 			break;
-		case storefield:
+		case pushreffield:
 			{
 				string name=*(static_pointer_cast<string>(ExecutableData->PublicConstantPool.GetValue(OPERAND_GET).ref_value));
 				shared_ptr<DataObject> obj=(static_pointer_cast<DataObject>(STACK_GET.ref_value)); STACK_POP;
-				map<string,VMValue>::iterator iter;
-				for(iter=obj->MemberMap->begin();iter!=obj->MemberMap->end();iter++){
-					if(iter->first==name){
-						iter->second=STACK_GET;
-						break;
-					}
-				}
+				VMValue v2; v2.ref_value=obj; v2.tempref_value=&((*(obj->MemberMap))[name]);
+				STACK_PUSH(v2);
+			}
+			break;
+		case store:
+			{
+				VMValue dest=STACK_GET;STACK_POP;
+				VMValue content=STACK_GET;STACK_POP;
+				*(dest.tempref_value)=content;
 			}
 			break;
         default:
-            error("不正な命令です");
+            error("不正な命令です...code("+IntToString(bytecode)+")");
             break;
         }
     }

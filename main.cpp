@@ -17,6 +17,7 @@
 #include <math.h>
 #include "parser_actions.h"
 #include <memory>
+#include "exceptions.h"
 
 
 using namespace std;
@@ -200,6 +201,7 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{expression,primary,SYNTAXEND},expression_primary_reduce},
     {{expression,parenexpr,SYNTAXEND},NULL},
     {{expression,expression,primary,SYNTAXEND},expression_add_reduce},
+    {{expression,expression,operator_n,SYNTAXEND},expression_add_reduce},
     {{expression,expression,parenexpr,SYNTAXEND},expression_addparen_reduce},
     {{funcallexpr,primary,LPAREN,arg_list,RPAREN,SYNTAXEND},funcallexpr_reduce},
     {{funcallexpr,parenexpr,LPAREN,arg_list,RPAREN,SYNTAXEND},funcallexpr_reduce},
@@ -215,7 +217,6 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{primary,dataexpr,SYNTAXEND},NULL},
     {{primary,listrefexpr,SYNTAXEND},NULL},
     {{primary,datamemberrefexpr,SYNTAXEND},NULL},
-	{{primary,operator_n,SYNTAXEND},NULL},
     {{variableexpr,IDENT,SYNTAXEND},variableexpr_reduce},
     {{parenexpr,LPAREN,expression,RPAREN,SYNTAXEND},parenexpr_reduce},
     {{returnstatement,RETURN_S,expression,SYNTAXEND},returnstatement_reduce},

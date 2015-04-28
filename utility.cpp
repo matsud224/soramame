@@ -3,7 +3,7 @@
 #include <iostream>
 #include "utility.h"
 #include "lexer.h"
-
+#include <sstream>
 using namespace std;
 
 void error(string msg)
@@ -11,6 +11,13 @@ void error(string msg)
     cerr<<msg<<endl;
     abort();
     return;
+}
+
+string IntToString(int number)
+{
+  stringstream ss;
+  ss << number;
+  return ss.str();
 }
 
 string escape_str(string str){

@@ -24,6 +24,9 @@ public:
 	bool bool_value;
 	double double_value;
 	shared_ptr<void> ref_value;
+	VMValue* tempref_value;
+	/*代入時に代入先のポインタを入れる。このとき、参照先の親オブジェクトへの参照をref_valueに持っておく
+	たとえばvectorの要素へのポインタをtempref_valueにへ入れているときref_valueにはそのvectorへの参照を入れる（参照が０になって解放されないために）*/
 };
 
 class FunctionAST;

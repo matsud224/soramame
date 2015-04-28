@@ -110,10 +110,4 @@ public:
     }
 };
 
-class ParserException{
 
-};
-
-class SyntaxError : public ParserException{
-
-};
