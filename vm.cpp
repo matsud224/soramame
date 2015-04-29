@@ -104,49 +104,49 @@ VMValue VM::Run(bool currflame_only){
         case isub:
             iopr1=STACK_GET.int_value; STACK_POP;
             iopr2=STACK_GET.int_value; STACK_POP;
-            v.int_value=iopr2-iopr1;
+            v.int_value=iopr1-iopr2;
             STACK_PUSH(v);
 			break;
 		case dsub:
             dopr1=STACK_GET.double_value; STACK_POP;
             dopr2=STACK_GET.double_value; STACK_POP;
-            v.double_value=dopr2-dopr1;
+            v.double_value=dopr1-dopr2;
             STACK_PUSH(v);
 			break;
         case imul:
             iopr1=STACK_GET.int_value; STACK_POP;
             iopr2=STACK_GET.int_value; STACK_POP;
-            v.int_value=iopr2*iopr1;
+            v.int_value=iopr1*iopr2;
             STACK_PUSH(v);
             break;
 		case dmul:
             dopr1=STACK_GET.double_value; STACK_POP;
 			dopr2=STACK_GET.double_value; STACK_POP;
-            v.double_value=dopr2*dopr1;
+            v.double_value=dopr1*dopr2;
             STACK_PUSH(v);
             break;
         case band:
             bopr1=STACK_GET.bool_value; STACK_POP;
             bopr2=STACK_GET.bool_value; STACK_POP;
-            v.bool_value=bopr2 && bopr1;
+            v.bool_value=bopr1 && bopr2;
             STACK_PUSH(v);
             break;
         case idiv:
             iopr1=STACK_GET.int_value; STACK_POP;
             iopr2=STACK_GET.int_value; STACK_POP;
-            v.int_value=iopr2/iopr1;
+            v.int_value=iopr1/iopr2;
             STACK_PUSH(v);
             break;
 		case ddiv:
             dopr1=STACK_GET.double_value; STACK_POP;
 			dopr2=STACK_GET.double_value; STACK_POP;
-            v.double_value=dopr2/dopr1;
+            v.double_value=dopr1/dopr2;
             STACK_PUSH(v);
             break;
         case imod:
             iopr1=STACK_GET.int_value; STACK_POP;
             iopr2=STACK_GET.int_value; STACK_POP;
-            v.int_value=iopr2%iopr1;
+            v.int_value=iopr1%iopr2;
             STACK_PUSH(v);
             break;
         case ineg:
@@ -167,97 +167,97 @@ VMValue VM::Run(bool currflame_only){
         case ilshift:
             iopr1=STACK_GET.int_value; STACK_POP;
             iopr2=STACK_GET.int_value; STACK_POP;
-            v.int_value=iopr2<<iopr1;
+            v.int_value=iopr1<<iopr2;
             STACK_PUSH(v);
             break;
         case irshift:
             iopr1=STACK_GET.int_value; STACK_POP;
             iopr2=STACK_GET.int_value; STACK_POP;
-            v.int_value=iopr2>>iopr1;
+            v.int_value=iopr1>>iopr2;
             STACK_PUSH(v);
             break;
 		case icmpeq:
 			iopr1=STACK_GET.int_value; STACK_POP;
             iopr2=STACK_GET.int_value; STACK_POP;
-            v.bool_value=iopr2==iopr1;
+            v.bool_value=iopr1==iopr2;
             STACK_PUSH(v);
 			break;
 		case icmpne:
 			iopr1=STACK_GET.int_value; STACK_POP;
             iopr2=STACK_GET.int_value; STACK_POP;
-            v.bool_value=iopr2!=iopr1;
+            v.bool_value=iopr1!=iopr2;
             STACK_PUSH(v);
 			break;
 		case icmplt:
 			iopr1=STACK_GET.int_value; STACK_POP;
             iopr2=STACK_GET.int_value; STACK_POP;
-            v.bool_value=iopr2<iopr1;
+            v.bool_value=iopr1<iopr2;
             STACK_PUSH(v);
 			break;
 		case icmple:
 			iopr1=STACK_GET.int_value; STACK_POP;
             iopr2=STACK_GET.int_value; STACK_POP;
-            v.int_value=iopr2<=iopr1;
+            v.bool_value=iopr1<=iopr2;
             STACK_PUSH(v);
 			break;
 		case icmpgt:
 			iopr1=STACK_GET.int_value; STACK_POP;
             iopr2=STACK_GET.int_value; STACK_POP;
-            v.int_value=iopr2>iopr1;
+            v.bool_value=iopr1>iopr2;
             STACK_PUSH(v);
 			break;
 		case icmpge:
 			iopr1=STACK_GET.int_value; STACK_POP;
             iopr2=STACK_GET.int_value; STACK_POP;
-            v.int_value=iopr2>=iopr1;
+            v.bool_value=iopr1>=iopr2;
             STACK_PUSH(v);
 			break;
 		case dcmpeq:
 			dopr1=STACK_GET.double_value; STACK_POP;
             dopr2=STACK_GET.double_value; STACK_POP;
-            v.bool_value=dopr2==dopr1;
+            v.bool_value=dopr1==dopr2;
             STACK_PUSH(v);
 			break;
 		case dcmpne:
 			dopr1=STACK_GET.double_value; STACK_POP;
             dopr2=STACK_GET.double_value; STACK_POP;
-            v.bool_value=dopr2!=dopr1;
+            v.bool_value=dopr1!=dopr2;
             STACK_PUSH(v);
 			break;
 		case dcmplt:
 			dopr1=STACK_GET.double_value; STACK_POP;
             dopr2=STACK_GET.double_value; STACK_POP;
-            v.bool_value=dopr2<dopr1;
+            v.bool_value=dopr1<dopr2;
             STACK_PUSH(v);
 			break;
 		case dcmple:
 			dopr1=STACK_GET.double_value; STACK_POP;
             dopr2=STACK_GET.double_value; STACK_POP;
-            v.double_value=dopr2<=dopr1;
+            v.bool_value=dopr1<=dopr2;
             STACK_PUSH(v);
 			break;
 		case dcmpgt:
 			dopr1=STACK_GET.double_value; STACK_POP;
             dopr2=STACK_GET.double_value; STACK_POP;
-            v.double_value=dopr2>dopr1;
+            v.bool_value=dopr1>dopr2;
             STACK_PUSH(v);
 			break;
 		case dcmpge:
 			dopr1=STACK_GET.double_value; STACK_POP;
             dopr2=STACK_GET.double_value; STACK_POP;
-            v.double_value=dopr2>=dopr1;
+            v.bool_value=dopr1>=dopr2;
             STACK_PUSH(v);
 			break;
 		case bcmpeq:
 			bopr1=STACK_GET.bool_value; STACK_POP;
             bopr2=STACK_GET.bool_value; STACK_POP;
-            v.bool_value=bopr2==bopr1;
+            v.bool_value=bopr1==bopr2;
             STACK_PUSH(v);
 			break;
 		case bcmpne:
 			bopr1=STACK_GET.bool_value; STACK_POP;
             bopr2=STACK_GET.bool_value; STACK_POP;
-            v.bool_value=bopr2!=bopr1;
+            v.bool_value=bopr1!=bopr2;
             STACK_PUSH(v);
 			break;
         case invoke:

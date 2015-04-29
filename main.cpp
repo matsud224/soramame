@@ -200,7 +200,7 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{statement,whilestatement,SYNTAXEND},NULL},
     {{expression,primary,SYNTAXEND},expression_primary_reduce},
     {{expression,operator_n,SYNTAXEND},expression_primary_reduce},
-    {{expression,parenexpr,SYNTAXEND},NULL},
+    {{expression,parenexpr,SYNTAXEND},expression_paren_reduce},
     {{expression,expression,primary,SYNTAXEND},expression_add_reduce},
     {{expression,expression,operator_n,SYNTAXEND},expression_add_reduce},
     {{expression,expression,parenexpr,SYNTAXEND},expression_addparen_reduce},

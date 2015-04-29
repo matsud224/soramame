@@ -238,87 +238,87 @@ void BinaryExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<Codege
     LHS->Codegen(bytecodes,geninfo);
 
     if(Operator=="+"){
-        if(TypeInfo->GetName()=="int"){
+        if(LHS->TypeInfo->GetName()=="int"){
             bytecodes->push_back(iadd);
-        }else if(TypeInfo->GetName()=="double"){
+        }else if(LHS->TypeInfo->GetName()=="double"){
 			bytecodes->push_back(dadd);
         }
     }else if(Operator=="-"){
-        if(TypeInfo->GetName()=="int"){
+        if(LHS->TypeInfo->GetName()=="int"){
             bytecodes->push_back(isub);
-        }else if(TypeInfo->GetName()=="double"){
+        }else if(LHS->TypeInfo->GetName()=="double"){
 			bytecodes->push_back(dsub);
         }
     }else if(Operator=="*"){
-        if(TypeInfo->GetName()=="int"){
+        if(LHS->TypeInfo->GetName()=="int"){
             bytecodes->push_back(imul);
-        }else if(TypeInfo->GetName()=="double"){
+        }else if(LHS->TypeInfo->GetName()=="double"){
 			bytecodes->push_back(dmul);
         }
     }else if(Operator=="/"){
-        if(TypeInfo->GetName()=="int"){
+        if(LHS->TypeInfo->GetName()=="int"){
             bytecodes->push_back(idiv);
-        }else if(TypeInfo->GetName()=="double"){
+        }else if(LHS->TypeInfo->GetName()=="double"){
 			bytecodes->push_back(ddiv);
         }
     }else if(Operator=="<<"){
-        if(TypeInfo->GetName()=="int"){
+        if(LHS->TypeInfo->GetName()=="int"){
             bytecodes->push_back(ilshift);
         }
     }else if(Operator==">>"){
-        if(TypeInfo->GetName()=="int"){
+        if(LHS->TypeInfo->GetName()=="int"){
             bytecodes->push_back(irshift);
         }
     }else if(Operator=="%"){
-        if(TypeInfo->GetName()=="int"){
+        if(LHS->TypeInfo->GetName()=="int"){
             bytecodes->push_back(imod);
         }
     }else if(Operator=="&&"){
-        if(TypeInfo->GetName()=="bool"){
+        if(LHS->TypeInfo->GetName()=="bool"){
             bytecodes->push_back(band);
         }
     }else if(Operator=="||"){
-        if(TypeInfo->GetName()=="bool"){
+        if(LHS->TypeInfo->GetName()=="bool"){
             bytecodes->push_back(bor);
         }
     }else if(Operator=="=="){
         if(LHS->TypeInfo->GetName()=="int"){
             bytecodes->push_back(icmpeq);
-        }else if(TypeInfo->GetName()=="double"){
+        }else if(LHS->TypeInfo->GetName()=="double"){
 			bytecodes->push_back(dcmpeq);
-        }else if(TypeInfo->GetName()=="bool"){
+        }else if(LHS->TypeInfo->GetName()=="bool"){
 			bytecodes->push_back(bcmpeq);
         }
     }else if(Operator=="!="){
         if(LHS->TypeInfo->GetName()=="int"){
             bytecodes->push_back(icmpne);
-        }else if(TypeInfo->GetName()=="double"){
+        }else if(LHS->TypeInfo->GetName()=="double"){
 			bytecodes->push_back(dcmpne);
-        }else if(TypeInfo->GetName()=="bool"){
+        }else if(LHS->TypeInfo->GetName()=="bool"){
 			bytecodes->push_back(bcmpne);
         }
     }else if(Operator=="<"){
         if(LHS->TypeInfo->GetName()=="int"){
             bytecodes->push_back(icmplt);
-        }else if(TypeInfo->GetName()=="double"){
+        }else if(LHS->TypeInfo->GetName()=="double"){
 			bytecodes->push_back(dcmplt);
         }
     }else if(Operator==">"){
         if(LHS->TypeInfo->GetName()=="int"){
             bytecodes->push_back(icmpgt);
-        }else if(TypeInfo->GetName()=="double"){
+        }else if(LHS->TypeInfo->GetName()=="double"){
 			bytecodes->push_back(dcmpgt);
         }
     }else if(Operator=="<="){
         if(LHS->TypeInfo->GetName()=="int"){
             bytecodes->push_back(icmple);
-        }else if(TypeInfo->GetName()=="double"){
+        }else if(LHS->TypeInfo->GetName()=="double"){
 			bytecodes->push_back(dcmple);
         }
     }else if(Operator==">="){
 		if(LHS->TypeInfo->GetName()=="int"){
             bytecodes->push_back(icmpge);
-        }else if(TypeInfo->GetName()=="double"){
+        }else if(LHS->TypeInfo->GetName()=="double"){
 			bytecodes->push_back(dcmpge);
         }
     }
@@ -464,12 +464,12 @@ shared_ptr<ExprAST> UnBuiltExprAST::BuildAST(shared_ptr<CodegenInfo> geninfo)
     stack<shared_ptr<OperatorAST> > operatorstack;
 	int input_pos=0;
 
-	/*
+
 	cout<<"ExprList size:"<<ExprList->size()<<endl;
 	for(auto iter=ExprList->begin();iter!=ExprList->end();iter++){
 		cout<<typeid(**iter).name()<<endl;
 	}
-	*/
+
 
     while(input_pos < ExprList->size()){
         if(typeid(OperatorAST) == typeid(*(ExprList->at(input_pos)))){

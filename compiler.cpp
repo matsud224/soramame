@@ -92,6 +92,20 @@ void Compiler::ASTgen()
     arglist[0]=pair<string,shared_ptr<TypeAST> >("val",make_shared<BasicTypeAST>("int"));
     RegisterBuiltinFunction("abs",abs_int,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("int"),true);
 
+    arglist[0]=pair<string,shared_ptr<TypeAST> >("val",make_shared<BasicTypeAST>("int"));
+    RegisterBuiltinFunction("i2d",int2double,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("double"),true);
+
+    arglist[0]=pair<string,shared_ptr<TypeAST> >("val",make_shared<BasicTypeAST>("double"));
+    RegisterBuiltinFunction("d2i",double2int,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("int"),true);
+
+	RegisterBuiltinFunction("sin",math_sin,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("double"),true);
+	RegisterBuiltinFunction("cos",math_cos,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("double"),true);
+	RegisterBuiltinFunction("tan",math_tan,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("double"),true);
+	RegisterBuiltinFunction("asin",math_asin,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("double"),true);
+	RegisterBuiltinFunction("acos",math_acos,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("double"),true);
+	RegisterBuiltinFunction("atan",math_atan,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("double"),true);
+	RegisterBuiltinFunction("sqrt",math_sqrt,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("double"),true);
+
     arglist[0]=pair<string,shared_ptr<TypeAST> >("str",make_shared<BasicTypeAST>("string"));
     RegisterBuiltinFunction("length",length_str,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("int"),true);
 

@@ -20,44 +20,39 @@ using namespace std;
 
 
 //**************GLUT用のいろいろ*******************
-int glut_dispfunid;
-int glut_keyboardfunid;
-int glut_mousefunid;
+shared_ptr<ClosureObject> glut_dispfun;
+shared_ptr<ClosureObject> glut_keyboardfun;
+shared_ptr<ClosureObject> glut_mousefun;
+
 shared_ptr<VM> glut_vmptr;
+
 void display(){
-	/*shared_ptr<ClosureObject> cobj=reinterpret_cast<shared_ptr<ClosureObject> >(STACK_GET.ref_value);
-	shared_ptr<FunctionAST> callee=reinterpret_cast<shared_FunctionAST> >(GETCONSTANT(cobj->PoolIndex));
-	STACK_POP;
+	auto cobj=glut_dispfun;
+	auto callee=cobj->FunctionRef;
 
 	if(callee->isBuiltin){
 		//ビルトイン関数の場合は、フレームを作らず、直に値をスタックに置く
 		string builtin_name=callee->Name;
 		string typestr=callee->TypeInfo->GetName();
 
-		CodeInfo->BuiltinFunctionList[pair<string,string>(builtin_name,typestr)](this);
+		glut_vmptr->ExecutableData->BuiltinFunctionList[pair<string,string>(builtin_name,typestr)](glut_vmptr);
 
 	}else{
 		//フレームを作成
-		vector< pair<string,int> > *vars=make_shared<vector< pair<string,int> >();
-		//引数の準備
-		for(int i=callee->Args->size()-1;i>=0;i--){
-			(*vars).push_back(pair<string,int>(callee->Args->at(i).first,reinterpret_cast<int>(STACK_GETINT)));
-			STACK_POP;
-		}
+		shared_ptr< vector< pair<string,VMValue> > > vars=make_shared<vector< pair<string,VMValue> > >();
+
 		//ローカル変数の準備
 		for(int i=callee->LocalVariables->size()-1;i>=0;i--){
-			(*vars).push_back(pair<string,int>(callee->LocalVariables->at(i).first,0)); //ローカル変数はすべて0に初期化される
+			VMValue v;v.int_value=0;
+			(*vars).push_back(pair<string,VMValue>(callee->LocalVariables->at(i).first,v)); //ローカル変数はすべて0に初期化される
 		}
-		shared_ptr<Flame> inv_flame=make_shared<Flame(vars,&(callee->bytecodes),cobj->ParentFlame);
+		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,cobj->ParentFlame);
 		for(unsigned int i=0;i<callee->ChildPoolIndex->size();i++){
 			//コンスタントプール内のクロージャに生成元のフレームを覚えさせる
-			reinterpret_cast<FunctionAST *>(CodeInfo->PublicConstantPool.GetValue((*(callee->ChildPoolIndex))[i]))->ParentFlame=inv_flame;
+			static_pointer_cast<FunctionObject>(glut_vmptr->ExecutableData->PublicConstantPool.GetValue(callee->ChildPoolIndex->at(i)).ref_value)->ParentFlame=inv_flame;
 		}
-		if(callee->ChildPoolIndex->size()==0){
-			inv_flame->NoChildren=true;
-		}
-		Environment.push_back(inv_flame);
-	}*/
+		glut_vmptr->Environment.push_back(inv_flame);
+	}
 
 	glut_vmptr->Run(true); //指定された関数のフレームを作成し、実行。そのフレームがポップされた時点で帰ってくる（trueを指定したので）
 }
@@ -75,72 +70,81 @@ void resize(int w, int h)
 }
 
 void mouse(int button, int state, int x, int y)
-{/*
-	shared_ptr<ClosureObject> cobj=reinterpret_cast<shared_ptr<ClosureObject> >(STACK_GET.ref_value);
-	shared_ptr<FunctionAST> callee=reinterpret_cast<shared_FunctionAST> >(GETCONSTANT(cobj->PoolIndex));
-	STACK_POP;
+{
+	auto cobj=glut_mousefun;
+	auto callee=cobj->FunctionRef;
 
 	if(callee->isBuiltin){
 		//ビルトイン関数の場合は、フレームを作らず、直に値をスタックに置く
 		string builtin_name=callee->Name;
 		string typestr=callee->TypeInfo->GetName();
 
-		CodeInfo->BuiltinFunctionList[pair<string,string>(builtin_name,typestr)](this);
+		glut_vmptr->ExecutableData->BuiltinFunctionList[pair<string,string>(builtin_name,typestr)](glut_vmptr);
 
 	}else{
 		//フレームを作成
-		vector< pair<string,int> > *vars=make_shared<vector< pair<string,int> >();
+		shared_ptr< vector< pair<string,VMValue> > > vars=make_shared<vector< pair<string,VMValue> > >();
 		//引数の準備
-		for(int i=callee->Args->size()-1;i>=0;i--){
-			(*vars).push_back(pair<string,int>(callee->Args->at(i).first,reinterpret_cast<int>(STACK_GETINT)));
-			STACK_POP;
-		}
+		VMValue v;
+		v.int_value=y; (*vars).push_back(pair<string,VMValue>("y",v));
+		v.int_value=x; (*vars).push_back(pair<string,VMValue>("x",v));
+		v.int_value=state; (*vars).push_back(pair<string,VMValue>("state",v));
+		v.int_value=button; (*vars).push_back(pair<string,VMValue>("button",v));
+
 		//ローカル変数の準備
 		for(int i=callee->LocalVariables->size()-1;i>=0;i--){
-			(*vars).push_back(pair<string,int>(callee->LocalVariables->at(i).first,0)); //ローカル変数はすべて0に初期化される
+			VMValue v;v.int_value=0;
+			(*vars).push_back(pair<string,VMValue>(callee->LocalVariables->at(i).first,v)); //ローカル変数はすべて0に初期化される
 		}
-		shared_ptr<Flame> inv_flame=make_shared<Flame(vars,&(callee->bytecodes),cobj->ParentFlame);
+		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,cobj->ParentFlame);
 		for(unsigned int i=0;i<callee->ChildPoolIndex->size();i++){
 			//コンスタントプール内のクロージャに生成元のフレームを覚えさせる
-			reinterpret_cast<FunctionAST *>(CodeInfo->PublicConstantPool.GetValue((*(callee->ChildPoolIndex))[i]))->ParentFlame=inv_flame;
+			static_pointer_cast<FunctionObject>(glut_vmptr->ExecutableData->PublicConstantPool.GetValue(callee->ChildPoolIndex->at(i)).ref_value)->ParentFlame=inv_flame;
 		}
-		if(callee->ChildPoolIndex->size()==0){
-			inv_flame->NoChildren=true;
-		}
-		Environment.push_back(inv_flame);
-	}*/
+		glut_vmptr->Environment.push_back(inv_flame);
+	}
 
 	glut_vmptr->Run(true); //指定された関数のフレームを作成し、実行。そのフレームがポップされた時点で帰ってくる（trueを指定したので）
+
 }
 
 
 void keyboard(unsigned char key, int x, int y)
 {
-/*	ClosureObject *cobj=reinterpret_cast<ClosureObject *>(glut_vmptr->CodeInfo->PublicConstantPool.GetValue(glut_keyboardfunid));
-	FunctionAST *callee=reinterpret_cast<FunctionAST *>(glut_vmptr->CodeInfo->PublicConstantPool.GetValue(cobj->PoolIndex));
+	auto cobj=glut_keyboardfun;
+	auto callee=cobj->FunctionRef;
 
-	//フレームを作成
-	vector< pair<string,int> > *vars=make_shared<vector< pair<string,int> >();
-	//引数の準備
-	glut_vmptr->Environment.back()->OperandStack.push(y);
-	glut_vmptr->Environment.back()->OperandStack.push(x);
-	glut_vmptr->Environment.back()->OperandStack.push(key);
-	for(int i=callee->Args->size()-1;i>=0;i--){
-		(*vars).push_back(pair<string,int>(callee->Args->at(i).first,reinterpret_cast<int>(glut_vmptr->Environment.back()->OperandStack.top())));
-		glut_vmptr->Environment.back()->OperandStack.pop();
+	if(callee->isBuiltin){
+		//ビルトイン関数の場合は、フレームを作らず、直に値をスタックに置く
+		string builtin_name=callee->Name;
+		string typestr=callee->TypeInfo->GetName();
+
+		glut_vmptr->ExecutableData->BuiltinFunctionList[pair<string,string>(builtin_name,typestr)](glut_vmptr);
+
+	}else{
+		//フレームを作成
+		shared_ptr< vector< pair<string,VMValue> > > vars=make_shared<vector< pair<string,VMValue> > >();
+		//引数の準備
+		VMValue v;
+		v.int_value=y; (*vars).push_back(pair<string,VMValue>("y",v));
+		v.int_value=x; (*vars).push_back(pair<string,VMValue>("x",v));
+		v.int_value=key; (*vars).push_back(pair<string,VMValue>("key",v));
+
+		//ローカル変数の準備
+		for(int i=callee->LocalVariables->size()-1;i>=0;i--){
+			VMValue v;v.int_value=0;
+			(*vars).push_back(pair<string,VMValue>(callee->LocalVariables->at(i).first,v)); //ローカル変数はすべて0に初期化される
+		}
+		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,cobj->ParentFlame);
+		for(unsigned int i=0;i<callee->ChildPoolIndex->size();i++){
+			//コンスタントプール内のクロージャに生成元のフレームを覚えさせる
+			static_pointer_cast<FunctionObject>(glut_vmptr->ExecutableData->PublicConstantPool.GetValue(callee->ChildPoolIndex->at(i)).ref_value)->ParentFlame=inv_flame;
+		}
+		glut_vmptr->Environment.push_back(inv_flame);
 	}
-	//ローカル変数の準備
-	for(int i=callee->LocalVariables->size()-1;i>=0;i--){
-		(*vars).push_back(pair<string,int>(callee->LocalVariables->at(i).first,0)); //ローカル変数はすべて0に初期化される
-	}
-	Flame *inv_flame=make_shared<Flame(vars,&(callee->bytecodes),cobj->ParentFlame);
-	for(unsigned int i=0;i<callee->ChildPoolIndex->size();i++){
-		//コンスタントプール内のクロージャに生成元のフレームを覚えさせる
-		reinterpret_cast<FunctionAST *>(glut_vmptr->CodeInfo->PublicConstantPool.GetValue((*(callee->ChildPoolIndex))[i]))->ParentFlame=inv_flame;
-	}
-	glut_vmptr->Environment.push_back(inv_flame);
-*/
+
 	glut_vmptr->Run(true); //指定された関数のフレームを作成し、実行。そのフレームがポップされた時点で帰ってくる（trueを指定したので）
+
 }
 //**************GLUT用のいろいろ*******************
 
@@ -160,13 +164,27 @@ void print_double(shared_ptr<VM> vmptr){
 }
 
 void print_bool(shared_ptr<VM> vmptr){
-	bool bopr1=static_cast<bool>(VM_STACK_GET.int_value); VM_STACK_POP;
+	bool bopr1=static_cast<bool>(VM_STACK_GET.bool_value); VM_STACK_POP;
 	cout<<(bopr1?"true":"false")<<flush;
 }
 
 void abs_int(shared_ptr<VM> vmptr){
 	int iopr1=VM_STACK_GET.int_value; VM_STACK_POP;
 	VMValue v;v.int_value=abs(iopr1);
+	//返り値を直にプッシュ
+	VM_STACK_PUSH(v);
+}
+
+void int2double(shared_ptr<VM> vmptr){
+	int iopr1=VM_STACK_GET.int_value; VM_STACK_POP;
+	VMValue v;v.double_value=iopr1;
+	//返り値を直にプッシュ
+	VM_STACK_PUSH(v);
+}
+
+void double2int(shared_ptr<VM> vmptr){
+	int iopr1=VM_STACK_GET.double_value; VM_STACK_POP;
+	VMValue v;v.int_value=iopr1;
 	//返り値を直にプッシュ
 	VM_STACK_PUSH(v);
 }
@@ -202,19 +220,19 @@ void glut_openwindow(shared_ptr<VM> vmptr){
 }
 
 void glut_setdispfunc(shared_ptr<VM> vmptr){
-	glut_dispfunid=VM_STACK_GET.int_value;VM_STACK_POP;
+	glut_dispfun=static_pointer_cast<ClosureObject>(VM_STACK_GET.ref_value);VM_STACK_POP;
 	glut_vmptr=vmptr;
 	glutDisplayFunc(display);
 }
 
 void glut_setmousefunc(shared_ptr<VM> vmptr){
-	glut_mousefunid=VM_STACK_GET.int_value;VM_STACK_POP;
+	glut_mousefun=static_pointer_cast<ClosureObject>(VM_STACK_GET.ref_value);VM_STACK_POP;
 	glut_vmptr=vmptr;
 	glutMouseFunc(mouse);
 }
 
 void glut_setkeyboardfunc(shared_ptr<VM> vmptr){
-	glut_keyboardfunid=VM_STACK_GET.int_value;VM_STACK_POP;
+	glut_keyboardfun=static_pointer_cast<ClosureObject>(VM_STACK_GET.ref_value);VM_STACK_POP;
 	glut_vmptr=vmptr;
 	glutKeyboardFunc(keyboard);
 }
@@ -290,3 +308,58 @@ void glut_color3i(shared_ptr<VM> vmptr){
 	glColor3ub(r,g,b);
 }
 
+void math_sin(shared_ptr<VM> vmptr)
+{
+	double iopr1=VM_STACK_GET.double_value; VM_STACK_POP;
+	VMValue v;v.double_value=sin(iopr1);
+	//返り値を直にプッシュ
+	VM_STACK_PUSH(v);
+}
+
+void math_cos(shared_ptr<VM> vmptr)
+{
+	double iopr1=VM_STACK_GET.double_value; VM_STACK_POP;
+	VMValue v;v.double_value=cos(iopr1);
+	//返り値を直にプッシュ
+	VM_STACK_PUSH(v);
+}
+
+void math_tan(shared_ptr<VM> vmptr)
+{
+	double iopr1=VM_STACK_GET.double_value; VM_STACK_POP;
+	VMValue v;v.double_value=tan(iopr1);
+	//返り値を直にプッシュ
+	VM_STACK_PUSH(v);
+}
+
+void math_asin(shared_ptr<VM> vmptr)
+{
+	double iopr1=VM_STACK_GET.double_value; VM_STACK_POP;
+	VMValue v;v.double_value=asin(iopr1);
+	//返り値を直にプッシュ
+	VM_STACK_PUSH(v);
+}
+
+void math_acos(shared_ptr<VM> vmptr)
+{
+	double iopr1=VM_STACK_GET.double_value; VM_STACK_POP;
+	VMValue v;v.double_value=acos(iopr1);
+	//返り値を直にプッシュ
+	VM_STACK_PUSH(v);
+}
+
+void math_atan(shared_ptr<VM> vmptr)
+{
+	double iopr1=VM_STACK_GET.double_value; VM_STACK_POP;
+	VMValue v;v.double_value=atan(iopr1);
+	//返り値を直にプッシュ
+	VM_STACK_PUSH(v);
+}
+
+void math_sqrt(shared_ptr<VM> vmptr)
+{
+	double iopr1=VM_STACK_GET.double_value; VM_STACK_POP;
+	VMValue v;v.double_value=sqrt(iopr1);
+	//返り値を直にプッシュ
+	VM_STACK_PUSH(v);
+}

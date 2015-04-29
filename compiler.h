@@ -104,8 +104,8 @@ public:
 		TypeCheck();
 		cout<<BG_GREEN<<"コード生成を行っています..."<<RESET<<endl;
 		Codegen();
-		cout<<BG_GREEN<<"コンパイル時関数実行を行っています..."<<RESET<<endl;
-		CTFE(3);
+		//cout<<BG_GREEN<<"コンパイル時関数実行を行っています..."<<RESET<<endl;
+		//CTFE(3);
 
 		shared_ptr<Executable> ret_executable=make_shared<Executable>();
 		ret_executable->BuiltinFunctionList=genInfo->BuiltinFunctionList;
