@@ -27,14 +27,13 @@ shared_ptr<ExprAST> GetInitValue(shared_ptr<TypeAST>  type,shared_ptr<CodegenInf
 		}
 		error("unknown type.");
 	}else if(typeid(ListTypeAST)==typeid(*type)){
-		auto emptylist=make_shared< vector< shared_ptr<ExprAST> > >();
+		auto emptylist=make_shared< list< shared_ptr<ExprAST> > >();
 		auto emptylistval=make_shared< ListValExprAST >(cgi,emptylist);
 		return emptylistval;
 	}else if(typeid(TupleTypeAST)==typeid(*type)){
-		shared_ptr<vector<shared_ptr<ExprAST> > > initlist=make_shared<vector<shared_ptr<ExprAST> > >();
-		shared_ptr<TupleTypeAST>  tt=dynamic_pointer_cast<TupleTypeAST>(type);
-		vector<shared_ptr<TypeAST> >::iterator iter;
-		for(iter=tt->ContainTypeList.begin();iter!=tt->ContainTypeList.end();iter++){
+		auto initlist=make_shared<list<shared_ptr<ExprAST> > >();
+		auto tt=dynamic_pointer_cast<TupleTypeAST>(type);
+		for(auto iter=tt->ContainTypeList.begin();iter!=tt->ContainTypeList.end();iter++){
 			initlist->push_back(GetInitValue((*iter),cgi));
 		}
 		return make_shared<TupleValExprAST>(cgi,initlist);
@@ -163,7 +162,6 @@ vector<int> ListRefExprAST::FindChildFunction()
 {
 	vector<int> result_list;
 	vector<int> list_tmp;
-	vector<shared_ptr<ExprAST> >::iterator iter;
 
 	list_tmp=target->FindChildFunction();
 	result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
@@ -221,27 +219,14 @@ void BinaryExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<Codege
     if(Operator=="="){
 		if(typeid(*LHS)==typeid(ListRefExprAST)){
 			shared_ptr<ListRefExprAST> lhs_cast=dynamic_pointer_cast<ListRefExprAST>(LHS);
-			/*//一旦スタックにロードして、それに対して代入
-			bytecodes->push_back(loadlocal);
-			bytecodes->push_back(dynamic_pointer_cast<VariableExprAST>(lhs_cast->target)->FlameBack);
-			bytecodes->push_back(dynamic_pointer_cast<VariableExprAST>(lhs_cast->target)->LocalIndex);
-			lhs_cast->IndexExpression->Codegen(bytecodes,geninfo);
-			bytecodes->push_back(storebyindex);*/
 			lhs_cast->AssignmentCodegen(bytecodes,geninfo);
 		}else if(typeid(*LHS)==typeid(DataMemberRefExprAST)){
 			shared_ptr<DataMemberRefExprAST> lhs_cast=dynamic_pointer_cast<DataMemberRefExprAST>(LHS);
-			/*//一旦スタックにロードして、それに対して代入
-			bytecodes->push_back(loadlocal);
-			bytecodes->push_back(dynamic_pointer_cast<VariableExprAST>(lhs_cast->target)->FlameBack);
-			bytecodes->push_back(dynamic_pointer_cast<VariableExprAST>(lhs_cast->target)->LocalIndex);
-			bytecodes->push_back(storefield);
-			bytecodes->push_back((make_shared<StringValExprAST>(geninfo,lhs_cast->MemberName))->PoolIndex);*/
 			lhs_cast->AssignmentCodegen(bytecodes,geninfo);
 		}else if(typeid(*LHS)==typeid(VariableExprAST)){
-			bytecodes->push_back(pushreflocal);
+			bytecodes->push_back(storelocal);
 			bytecodes->push_back(dynamic_pointer_cast<VariableExprAST>(LHS)->FlameBack);
 			bytecodes->push_back(dynamic_pointer_cast<VariableExprAST>(LHS)->LocalIndex);
-			bytecodes->push_back(store);
 		}else{
 			error("代入式の左辺が不正です");
 		}
@@ -460,16 +445,14 @@ void ListRefExprAST::AssignmentCodegen(shared_ptr<vector<int> > bytecodes, share
 {
 	target->Codegen(bytecodes,geninfo);
 	IndexExpression->Codegen(bytecodes,geninfo);
-	bytecodes->push_back(pushrefbyindex);
-	bytecodes->push_back(store);
+	bytecodes->push_back(storebyindex);
 }
 
 void DataMemberRefExprAST::AssignmentCodegen(shared_ptr<vector<int> > bytecodes, shared_ptr<CodegenInfo> geninfo)
 {
 	target->Codegen(bytecodes,geninfo);
-	bytecodes->push_back(pushreffield);
+	bytecodes->push_back(storefield);
 	bytecodes->push_back((make_shared<StringValExprAST>(geninfo,MemberName))->PoolIndex);
-	bytecodes->push_back(store);
 }
 
 
@@ -480,6 +463,8 @@ shared_ptr<ExprAST> UnBuiltExprAST::BuildAST(shared_ptr<CodegenInfo> geninfo)
     queue<shared_ptr<ExprAST> > output;
     stack<shared_ptr<OperatorAST> > operatorstack;
 	int input_pos=0;
+
+
 
     while(input_pos < ExprList->size()){
         if(typeid(OperatorAST) == typeid(*(ExprList->at(input_pos)))){
@@ -613,10 +598,9 @@ void VariableDefStatementAST::Codegen(shared_ptr<vector<int> > bytecodes, shared
 {
 	if(InitialValue!=nullptr){
 		InitialValue->Codegen(bytecodes,geninfo);
-		bytecodes->push_back(pushreflocal);
+		bytecodes->push_back(storelocal);
 		bytecodes->push_back(FlameBack);
 		bytecodes->push_back(LocalIndex);
-		bytecodes->push_back(store);
 	}
 }
 
@@ -1166,8 +1150,7 @@ vector<int> ListValExprAST::FindChildFunction()
 	vector<int> result_list;
 	vector<int> list_tmp;
 
-    vector<shared_ptr<ExprAST> >::iterator iter;
-    for(iter=Value->begin();iter!=Value->end();iter++){
+    for(auto iter=Value->begin();iter!=Value->end();iter++){
 		list_tmp=(*iter)->FindChildFunction();
 		result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
     }
@@ -1177,8 +1160,7 @@ vector<int> ListValExprAST::FindChildFunction()
 
 shared_ptr<TypeAST>  ListValExprAST::CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars)
 {
-	vector<shared_ptr<ExprAST> >::iterator iter;
-    for(iter=Value->begin();iter!=Value->end();iter++){
+    for(auto iter=Value->begin();iter!=Value->end();iter++){
 		if((*iter)->IsBuilt()==false){
 			(*iter)=(dynamic_pointer_cast<UnBuiltExprAST >(*iter))->BuildAST(geninfo);
 		}
@@ -1213,8 +1195,7 @@ vector<int> TupleValExprAST::FindChildFunction()
 	vector<int> result_list;
 	vector<int> list_tmp;
 
-    vector<shared_ptr<ExprAST> >::iterator iter;
-    for(iter=Value->begin();iter!=Value->end();iter++){
+    for(auto iter=Value->begin();iter!=Value->end();iter++){
 		list_tmp=(*iter)->FindChildFunction();
 		result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
     }
@@ -1224,9 +1205,8 @@ vector<int> TupleValExprAST::FindChildFunction()
 
 shared_ptr<TypeAST>  TupleValExprAST::CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars)
 {
-	vector<shared_ptr<ExprAST> >::iterator iter;
 	vector<shared_ptr<TypeAST> > typelist;
-    for(iter=Value->begin();iter!=Value->end();iter++){
+    for(auto iter=Value->begin();iter!=Value->end();iter++){
 		if((*iter)->IsBuilt()==false){
 			(*iter)=(dynamic_pointer_cast<UnBuiltExprAST >(*iter))->BuildAST(geninfo);
 		}
@@ -1317,8 +1297,7 @@ shared_ptr<TypeAST>  DataValExprAST::CheckType(shared_ptr<vector<Environment> > 
 }
 
 bool ListValExprAST::IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){
-	vector<shared_ptr<ExprAST> >::iterator iter;
-	for(iter=Value->begin();iter!=Value->end();iter++){
+	for(auto iter=Value->begin();iter!=Value->end();iter++){
 		if((*iter)->IsCTFEable(cgi,curr_fun_index)==false){
 			return false;
 		}
@@ -1327,8 +1306,7 @@ bool ListValExprAST::IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){
 }
 
 bool TupleValExprAST::IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){
-	vector<shared_ptr<ExprAST> >::iterator iter;
-	for(iter=Value->begin();iter!=Value->end();iter++){
+	for(auto iter=Value->begin();iter!=Value->end();iter++){
 		if((*iter)->IsCTFEable(cgi,curr_fun_index)==false){
 			return false;
 		}
@@ -1602,7 +1580,6 @@ vector<shared_ptr<ExprAST> > ListRefExprAST::GetCallExprList()
 {
 	vector<shared_ptr<ExprAST> > result;
 	vector<shared_ptr<ExprAST> > temp;
-	vector<shared_ptr<ExprAST> >::iterator iter;
 
 	temp=target->GetCallExprList();
 	result.insert(result.end(),temp.begin(),temp.end());

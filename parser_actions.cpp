@@ -361,7 +361,7 @@ TokenValue while_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values)
 
 TokenValue listvalexpr_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values){
 	TokenValue t;
-	shared_ptr<vector<shared_ptr<ExprAST> > > lst=make_shared<vector<shared_ptr<ExprAST> > >();
+	auto lst=make_shared<list<shared_ptr<ExprAST> > >();
 	lst->assign(values[1].arg_exp_list->begin(),values[1].arg_exp_list->end());
 	t.expression_ast=make_shared<ListValExprAST>(cgi,lst);
 	return t;
@@ -377,7 +377,7 @@ TokenValue type_tupletype_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue>
 TokenValue tuplevalexpr_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values)
 {
 	TokenValue t;
-	shared_ptr<vector<shared_ptr<ExprAST> > > lst=make_shared<vector<shared_ptr<ExprAST> > >();
+	auto lst=make_shared<list<shared_ptr<ExprAST> > >();
 	lst->assign(values[1].arg_exp_list->begin(),values[1].arg_exp_list->end());
 	t.expression_ast=make_shared<TupleValExprAST>(cgi,lst);
 	return t;

@@ -192,15 +192,14 @@ public:
 
 class ListValExprAST : public ExprAST{
 public:
-    shared_ptr<vector<shared_ptr<ExprAST> > > Value;
+    shared_ptr<list<shared_ptr<ExprAST> > > Value;
     int PoolIndex;
-    ListValExprAST(shared_ptr<CodegenInfo> cgi,shared_ptr<vector<shared_ptr<ExprAST> > > val):Value(val){
+    ListValExprAST(shared_ptr<CodegenInfo> cgi,shared_ptr<list<shared_ptr<ExprAST> > > val):Value(val){
         TypeInfo=nullptr;
         PoolIndex=-1;
     }
     virtual bool IsConstant(){
-		vector<shared_ptr<ExprAST> >::iterator iter;
-		for(iter=Value->begin();iter!=Value->end();iter++){
+		for(auto iter=Value->begin();iter!=Value->end();iter++){
 			if((*iter)->IsConstant()==false){
 				return false;
 			}
@@ -216,15 +215,14 @@ public:
 
 class TupleValExprAST : public ExprAST{
 public:
-    shared_ptr<vector<shared_ptr<ExprAST> > > Value;
+    shared_ptr<list<shared_ptr<ExprAST> > > Value;
     int PoolIndex;
-    TupleValExprAST(shared_ptr<CodegenInfo> cgi,shared_ptr<vector<shared_ptr<ExprAST> > > val):Value(val){
+    TupleValExprAST(shared_ptr<CodegenInfo> cgi,shared_ptr<list<shared_ptr<ExprAST> > > val):Value(val){
         TypeInfo=nullptr;
         PoolIndex=-1;
     }
     virtual bool IsConstant(){
-		vector<shared_ptr<ExprAST> >::iterator iter;
-		for(iter=Value->begin();iter!=Value->end();iter++){
+		for(auto iter=Value->begin();iter!=Value->end();iter++){
 			if((*iter)->IsConstant()==false){
 				return false;
 			}

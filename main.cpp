@@ -146,7 +146,7 @@ TokenRule TOKENRULE[TOKENRULECOUNT]={
     {"\\d+",INITIAL,true,intval_lex},
     {"\"(?>[^\\\\\"]|\\\\.)*?\"",INITIAL,true,stringval_lex},
     {"\'[\x20-\x7E]\'",INITIAL,true,asciival_lex},
-    {"\\s+",INITIAL,false,NULL}, //空白は読み飛ばす（コールバック関数をNULLにしておく）
+    {"[\t\x20]+",INITIAL,false,NULL}, //空白は読み飛ばす（コールバック関数をNULLにしておく）
 
 	{"#\\{",COMMENT,false,commentstart_lex},
     {"}#",COMMENT,false,commentend_lex},

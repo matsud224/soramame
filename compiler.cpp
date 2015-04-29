@@ -204,10 +204,9 @@ void Compiler::Codegen()
 		//トップレベル関数はもうコード生成が済んでいるのでCodegenはダメ
 		genInfo->Bootstrap->push_back(makeclosure);
         genInfo->Bootstrap->push_back((*iterf)->PoolIndex);
-        genInfo->Bootstrap->push_back(pushreflocal);
+        genInfo->Bootstrap->push_back(storelocal);
 		genInfo->Bootstrap->push_back(0);
 		genInfo->Bootstrap->push_back(counter++);
-		genInfo->Bootstrap->push_back(store);
     }
 	//グローバル変数の初期化
     for(iterv=genInfo->TopLevelVariableDef.begin();iterv!=genInfo->TopLevelVariableDef.end();iterv++){
