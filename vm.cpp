@@ -53,7 +53,6 @@ VMValue VM::Run(bool currflame_only){
 
 	int current_flame_depth=Environment.size();
     shared_ptr<Flame> currentflame;
-    int counter;
 	int i;int bytecode;
 
     while(true){
@@ -74,6 +73,10 @@ VMValue VM::Run(bool currflame_only){
             break;
 		case bpush:
 			v.bool_value=OPERAND_GET==0?false:true;
+			STACK_PUSH(v);
+			break;
+		case pushnull:
+			v.ref_value=nullptr;
 			STACK_PUSH(v);
 			break;
 		case ldc:
@@ -296,7 +299,6 @@ VMValue VM::Run(bool currflame_only){
         case loadlocal:
         	flameback=OPERAND_GET;
             localindex=OPERAND_GET;
-            counter=flameback;
 			currentflame=Environment.back();
 			for(i=0;i<flameback;i++){
 				currentflame=currentflame->StaticLink;

@@ -12,7 +12,7 @@ class CodegenInfo;
 class Executable;
 
 enum{
-    ipush,bpush,
+    ipush,bpush,pushnull,
     ldc,
     iadd,dadd,
     isub,dsub,

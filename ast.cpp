@@ -25,7 +25,7 @@ shared_ptr<ExprAST> GetInitValue(shared_ptr<TypeAST>  type,shared_ptr<CodegenInf
 		}else if(name=="bool"){
 			return make_shared<BoolValExprAST>(false);
 		}
-		error("unknown type.");
+
 	}else if(typeid(ListTypeAST)==typeid(*type)){
 		auto emptylist=make_shared< list< shared_ptr<ExprAST> > >();
 		auto emptylistval=make_shared< ListValExprAST >(cgi,emptylist);
@@ -37,9 +37,9 @@ shared_ptr<ExprAST> GetInitValue(shared_ptr<TypeAST>  type,shared_ptr<CodegenInf
 			initlist->push_back(GetInitValue((*iter),cgi));
 		}
 		return make_shared<TupleValExprAST>(cgi,initlist);
-	}else{
-		error("初期化できません");
 	}
+
+	return make_shared<NullValExprAST>(type);
 }
 
 vector<int> FunctionAST::FindChildFunction()
@@ -699,6 +699,7 @@ shared_ptr<TypeAST>  VariableExprAST::CheckType(shared_ptr<vector<Environment> >
 						vector<shared_ptr<TypeAST> > typelist2=dynamic_pointer_cast<FunctionTypeAST >((*env)[currentenv].Items[i].VariableInfo.second)->TypeList;
 						if(typelist.size()!=typelist2.size()){continue;}
 						bool fail=false;
+
 						for(int i=0;i<typelist.size()-1;i++){
 							if(typelist[i]->GetName()!=typelist2[i]->GetName()){
 								fail=true;
@@ -919,6 +920,9 @@ shared_ptr<TypeAST>  CallExprAST::CheckType(shared_ptr<vector<Environment> > env
 			(*iter2)=(dynamic_pointer_cast<UnBuiltExprAST >(*iter2))->BuildAST(geninfo);
 		}
 		(*iter2)->CheckType(env,geninfo,CurrentLocalVars);
+		if((*iter2)->TypeInfo==nullptr){
+			error("グローバル変数の型宣言は必須です");
+		}
 		argtype.push_back((*iter2)->TypeInfo);
 	}
 
@@ -1645,6 +1649,17 @@ void DoubleValExprAST::Codegen(shared_ptr<vector<int> > bytecodes, shared_ptr<Co
 }
 
 vector<shared_ptr<ExprAST> > DoubleValExprAST::GetCallExprList()
+{
+	vector<shared_ptr<ExprAST> > result;
+	return result;
+}
+
+void NullValExprAST::Codegen(shared_ptr<vector<int> > bytecodes, shared_ptr<CodegenInfo> geninfo)
+{
+	bytecodes->push_back(pushnull);
+}
+
+vector<shared_ptr<ExprAST> > NullValExprAST::GetCallExprList()
 {
 	vector<shared_ptr<ExprAST> > result;
 	return result;

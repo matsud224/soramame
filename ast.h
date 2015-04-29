@@ -170,6 +170,17 @@ public:
 	virtual vector<shared_ptr<ExprAST> > GetCallExprList();
 };
 
+class NullValExprAST : public ExprAST{
+public:
+    NullValExprAST(shared_ptr<TypeAST> type){TypeInfo=type;}
+    virtual bool IsConstant(){return true;}
+    virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
+    virtual shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars){return TypeInfo;}
+    virtual vector<int> FindChildFunction(){return vector<int>();};
+	virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){return true;}
+	virtual vector<shared_ptr<ExprAST> > GetCallExprList();
+};
+
 class StringValExprAST : public ExprAST{
 public:
     shared_ptr<string> Value;

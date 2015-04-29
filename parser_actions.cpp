@@ -4,6 +4,14 @@
 #include "color_text.h"
 #include <memory>
 
+
+//指定された演算子が使用されているかチェックします
+void AssertOperator(TokenValue exp,string op){
+	if(dynamic_pointer_cast<OperatorAST>(exp.expression_ast)->Operator!=op){
+		error("記号の使用が不適切です");
+	}
+}
+
 TokenValue success(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values){
     #ifdef PARSER_DEBUG
 		cout<<BG_CYAN"acceptされました"<<RESET<<endl;
@@ -85,6 +93,7 @@ TokenValue function_norettype_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenVal
 
 TokenValue function_withrettype_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values)
 {
+	AssertOperator(values[5],"=>");
 	TokenValue t;
 	t.function_ast=make_shared<FunctionAST>(cgi,values[1].str,values[3].parameter_list,values[6].type_ast,values[8].block_ast);
 	return t;
@@ -145,12 +154,14 @@ TokenValue variabledef_nonassignment_reduce(shared_ptr<CodegenInfo> cgi,vector<T
 
 TokenValue variabledef_withassignment_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values)
 {
+	AssertOperator(values[3],"=");
 	TokenValue t;
 	t.variabledef_ast=make_shared<VariableDefStatementAST>(make_shared<pair<string,shared_ptr<TypeAST> > >(values[0].str,values[2].type_ast),make_shared<UnBuiltExprAST>(values[4].expression_list));
 	return t;
 }
 
 TokenValue variabledef_infer_reduce(shared_ptr<CodegenInfo>,vector<TokenValue> values){
+	AssertOperator(values[1],"=");
 	TokenValue t;
 	t.variabledef_ast=make_shared<VariableDefStatementAST>(make_shared<pair<string,shared_ptr<TypeAST> > >(values[0].str,nullptr),make_shared<UnBuiltExprAST>(values[2].expression_list));
 	return t;
@@ -255,6 +266,7 @@ TokenValue type_normal_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> val
 
 TokenValue type_fun_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values)
 {
+	AssertOperator(values[4],"=>");
 	TokenValue t;
 	shared_ptr<vector<shared_ptr<TypeAST> > > v=make_shared<vector<shared_ptr<TypeAST> > >(*values[2].type_list);
 	v->push_back(values[5].type_ast);
@@ -294,6 +306,7 @@ TokenValue type_list_addtype_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValu
 
 TokenValue closureexpr_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values)
 {
+	AssertOperator(values[4],"=>");
 	TokenValue t;
 	t.expression_ast=make_shared<FunctionAST>(cgi,"<anonymous>",values[2].parameter_list,values[5].type_ast,values[7].block_ast);
 	return t;
@@ -434,6 +447,7 @@ TokenValue gmlist_addvoid_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue>
 
 TokenValue gmlist_addnonvoid_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values)
 {
+	AssertOperator(values[6],"=>");
 	TokenValue t;
 	vector<shared_ptr<TypeAST> > args=*(values[4].type_list);
 	args.push_back(values[7].type_ast);
@@ -468,6 +482,7 @@ TokenValue ialist_empty_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> v
 
 TokenValue ialist_add_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values)
 {
+	AssertOperator(values[2],"=");
 	TokenValue t;
 	shared_ptr<vector< pair<string,shared_ptr<ExprAST> > > > m=make_shared<vector< pair<string,shared_ptr<ExprAST> > > >(*(values[0].datainitval_list)); //parameterと型が一緒なので使わせてもらう
 	m->push_back(pair<string,shared_ptr<ExprAST> >(values[1].str,make_shared<UnBuiltExprAST>(values[3].expression_list)));
