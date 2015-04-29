@@ -289,9 +289,6 @@ VMValue VM::Run(bool currflame_only){
 						//コンスタントプール内のクロージャに生成元のフレームを覚えさせる
 						static_pointer_cast<FunctionObject>(ExecutableData->PublicConstantPool.GetValue(callee->ChildPoolIndex->at(i)).ref_value)->ParentFlame=inv_flame;
 					}
-					if(callee->ChildPoolIndex->size()==0){
-						inv_flame->NoChildren=true;
-					}
 					Environment.push_back(inv_flame);
                 }
             }
@@ -307,9 +304,6 @@ VMValue VM::Run(bool currflame_only){
 			STACK_PUSH((*(currentflame->Variables))[localindex].second);
             break;
         case ret:
-        	/*if(Environment.back()->NoChildren){
-				Environment.back().reset();
-        	}*/
             Environment.pop_back();
             break;
         case ret_withvalue:
@@ -318,9 +312,6 @@ VMValue VM::Run(bool currflame_only){
 				//ブートストラップコードへのreturn...
 				return v;
             }
-            /*if(Environment.back()->NoChildren){
-				Environment.back().reset();
-        	}*/
             Environment.pop_back();
             if(!Environment.empty()){
                 STACK_PUSH(v);

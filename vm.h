@@ -43,10 +43,8 @@ public:
     shared_ptr<vector<int> > CodePtr; //バイトコードへのポインタ
     shared_ptr<Flame> StaticLink;
     int PC;
-    bool NoChildren;
     Flame(shared_ptr< vector< pair<string,VMValue> > > vars,shared_ptr< vector<int> > codeptr,shared_ptr<Flame> staticlink):Variables(vars),CodePtr(codeptr),StaticLink(staticlink){
     	PC=0;
-    	NoChildren=false;
 	}
 };
 

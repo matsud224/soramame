@@ -199,6 +199,7 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{statement,ifstatement,SYNTAXEND},NULL},
     {{statement,whilestatement,SYNTAXEND},NULL},
     {{expression,primary,SYNTAXEND},expression_primary_reduce},
+    {{expression,operator_n,SYNTAXEND},expression_primary_reduce},
     {{expression,parenexpr,SYNTAXEND},NULL},
     {{expression,expression,primary,SYNTAXEND},expression_add_reduce},
     {{expression,expression,operator_n,SYNTAXEND},expression_add_reduce},

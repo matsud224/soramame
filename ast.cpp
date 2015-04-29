@@ -464,7 +464,12 @@ shared_ptr<ExprAST> UnBuiltExprAST::BuildAST(shared_ptr<CodegenInfo> geninfo)
     stack<shared_ptr<OperatorAST> > operatorstack;
 	int input_pos=0;
 
-
+	/*
+	cout<<"ExprList size:"<<ExprList->size()<<endl;
+	for(auto iter=ExprList->begin();iter!=ExprList->end();iter++){
+		cout<<typeid(**iter).name()<<endl;
+	}
+	*/
 
     while(input_pos < ExprList->size()){
         if(typeid(OperatorAST) == typeid(*(ExprList->at(input_pos)))){
@@ -472,35 +477,38 @@ shared_ptr<ExprAST> UnBuiltExprAST::BuildAST(shared_ptr<CodegenInfo> geninfo)
                 //未登録の演算子
                 error("未定義の演算子です:"+dynamic_pointer_cast<OperatorAST>(ExprList->at(input_pos))->Operator);
             }
+
+            string op1=dynamic_pointer_cast<OperatorAST>(ExprList->at(input_pos))->Operator;bool unary_force=false;
+
+			if(geninfo->OperatorList.count(op1)==2){
+				//unary/binaryの両方が存在
+				if(input_pos==0){
+					//強制的にunaryとして扱う
+					unary_force=true;
+				}
+				multimap<string,OperatorInfo>::iterator iter=geninfo->OperatorList.find(op1);
+				for(int i=0;i<2;i++){
+					if(unary_force && (*iter).second.UnaryOrBinary==Unary){
+						op1=(*iter).first;
+						dynamic_pointer_cast<OperatorAST>(ExprList->at(input_pos))->Info=(*iter).second;
+						break;
+					}else if(!unary_force && (*iter).second.UnaryOrBinary==Binary){
+						op1=(*iter).first;
+						dynamic_pointer_cast<OperatorAST>(ExprList->at(input_pos))->Info=(*iter).second;
+						break;
+					}
+				}
+			}else if(geninfo->OperatorList.count(op1)==1){
+				multimap<string,OperatorInfo>::iterator iter=geninfo->OperatorList.find(op1);
+				op1=(*iter).first;
+				dynamic_pointer_cast<OperatorAST>(ExprList->at(input_pos))->Info=(*iter).second;
+			}else{
+				error("演算子が未定義です");
+			}
+
             while(!operatorstack.empty()){
-                string op1=dynamic_pointer_cast<OperatorAST>(ExprList->at(input_pos))->Operator;
-                string op2=operatorstack.top()->Operator;
-                bool unary_force=false;
-
-                if(geninfo->OperatorList.count(op1)==2){
-					//unary/binaryの両方が存在
-					if(input_pos==0){
-						//強制的にunaryとして扱う
-						unary_force=true;
-					}
-					multimap<string,OperatorInfo>::iterator iter=geninfo->OperatorList.find(op1);
-					for(int i=0;i<2;i++){
-						if(unary_force && (*iter).second.UnaryOrBinary==Unary){
-							op1=(*iter).first;
-							break;
-						}else if(!unary_force && (*iter).second.UnaryOrBinary==Binary){
-							op1=(*iter).first;
-							break;
-						}
-					}
-                }else if(geninfo->OperatorList.count(op1)==1){
-					multimap<string,OperatorInfo>::iterator iter=geninfo->OperatorList.find(op1);
-					op1=(*iter).first;
-                }else{
-					error("演算子が未定義です");
-                }
-
-                if((geninfo->OperatorList.find(op1)->second.Associativity==Left && geninfo->OperatorList.find(op1)->second.Precedence<=geninfo->OperatorList.find(op2)->second.Precedence) || (geninfo->OperatorList.find(op1)->second.Precedence<geninfo->OperatorList.find(op2)->second.Precedence)){
+                OperatorInfo op2=operatorstack.top()->Info;
+                if((dynamic_pointer_cast<OperatorAST>(ExprList->at(input_pos))->Info.Associativity==Left && dynamic_pointer_cast<OperatorAST>(ExprList->at(input_pos))->Info.Precedence<=op2.Precedence) || (dynamic_pointer_cast<OperatorAST>(ExprList->at(input_pos))->Info.Precedence<op2.Precedence)){
                     output.push(operatorstack.top());
                     operatorstack.pop();
                 }else{
@@ -535,13 +543,15 @@ shared_ptr<ExprAST> UnBuiltExprAST::BuildAST(shared_ptr<CodegenInfo> geninfo)
             shared_ptr<OperatorAST> op=dynamic_pointer_cast<OperatorAST>(calcstack.top()); calcstack.pop();
             shared_ptr<ExprAST> operand1,operand2;
 
-            if(geninfo->OperatorList.find(op->Operator)->second.UnaryOrBinary==Binary){
+            if(op->Info.UnaryOrBinary==Binary){
                 operand2=calcstack.top(); calcstack.pop();
                 operand1=calcstack.top(); calcstack.pop();
                 calcstack.push(make_shared<BinaryExprAST>(op->Operator,operand1,operand2)); //マージ
-            }else{
+            }else if(op->Info.UnaryOrBinary==Unary){
                 operand1=calcstack.top(); calcstack.pop();
                 calcstack.push(make_shared<UnaryExprAST>(op->Operator,operand1)); //マージ
+            }else{
+				error("unknown error.");
             }
         }
     }
@@ -739,6 +749,11 @@ shared_ptr<TypeAST>  UnaryExprAST::CheckType(shared_ptr<vector<Environment> > en
 	shared_ptr<TypeAST> oprandt=Operand->CheckType(env,geninfo,CurrentLocalVars);
 	if(Operator=="!"){
 		if(oprandt->GetName()!="bool"){
+			error("型に問題があります。単項演算子:"+Operator+" オペランド:"+oprandt->GetName());
+		}
+		TypeInfo=oprandt;
+	}else if(Operator=="-"){
+		if(oprandt->GetName()!="int" && oprandt->GetName()!="double"){
 			error("型に問題があります。単項演算子:"+Operator+" オペランド:"+oprandt->GetName());
 		}
 		TypeInfo=oprandt;

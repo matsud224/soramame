@@ -265,6 +265,7 @@ public:
 class OperatorAST : public ExprAST{
 public:
     string Operator;
+	OperatorInfo Info;
 
     OperatorAST(string n):Operator(n){};
     virtual bool IsConstant(){return true;}
