@@ -42,8 +42,9 @@ public:
     stack< VMValue > OperandStack; //ここで計算を行う
     shared_ptr<vector<int> > CodePtr; //バイトコードへのポインタ
     shared_ptr<Flame> StaticLink;
+    shared_ptr<Flame> DynamicLink;
     int PC;
-    Flame(shared_ptr< vector< pair<string,VMValue> > > vars,shared_ptr< vector<int> > codeptr,shared_ptr<Flame> staticlink):Variables(vars),CodePtr(codeptr),StaticLink(staticlink){
+    Flame(shared_ptr< vector< pair<string,VMValue> > > vars,shared_ptr< vector<int> > codeptr,shared_ptr<Flame> dynamiclink,shared_ptr<Flame> staticlink):Variables(vars),CodePtr(codeptr),DynamicLink(dynamiclink),StaticLink(staticlink){
     	PC=0;
 	}
 };
@@ -51,7 +52,7 @@ public:
 class VM : public enable_shared_from_this<VM>{
 public:
 	shared_ptr<Executable> ExecutableData;
-	vector<shared_ptr<Flame> > Environment;
+	shared_ptr<Flame> CurrentFlame;
     VM( shared_ptr<Executable> exec):ExecutableData(exec){}
     void Init();
     VMValue Run(bool currflame_only); //trueで、呼び出し時点のフレームがポップされたら関数を抜ける

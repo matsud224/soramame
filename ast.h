@@ -376,8 +376,9 @@ public:
     shared_ptr<ExprAST> callee;
     VMValue CalculatedValue; //callee==nullptrの時はこちらの計算結果を利用
     shared_ptr<vector<shared_ptr<ExprAST> > > args;
+    bool IsTail;
 
-    CallExprAST(shared_ptr<ExprAST> callee_func,shared_ptr<vector<shared_ptr<ExprAST> > > args_list):callee(callee_func),args(args_list){TypeInfo=nullptr;}
+    CallExprAST(shared_ptr<ExprAST> callee_func,shared_ptr<vector<shared_ptr<ExprAST> > > args_list):callee(callee_func),args(args_list){TypeInfo=nullptr;IsTail=false;}
 
     virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
     virtual bool IsConstant(){

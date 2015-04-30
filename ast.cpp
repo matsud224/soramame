@@ -339,6 +339,7 @@ void CallExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenI
     }
     callee->Codegen(bytecodes,geninfo);
     bytecodes->push_back(invoke);
+	bytecodes->push_back(IsTail?1:0);
 }
 
 void ListRefExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo)
@@ -884,21 +885,37 @@ shared_ptr<TypeAST>  FunctionAST::CheckType(shared_ptr<vector<Environment> > env
 
 	for(iter2=Body->Body->begin();iter2!=Body->Body->end();iter2++){
 		if(typeid(*(*iter2))==typeid(ReturnStatementAST)){
+			auto ft_ptr=dynamic_pointer_cast<FunctionTypeAST>(TypeInfo);
+			auto r_ptr=dynamic_pointer_cast<ReturnStatementAST>(*iter2);
 			//return文の場合特別扱い。返す値の型とこの関数の返り値の型が不一致ならばエラー
-			if(dynamic_pointer_cast<ReturnStatementAST>(*iter2)->Expression==nullptr){
-				if(dynamic_pointer_cast<FunctionTypeAST>(TypeInfo)->TypeList.back()->GetName()=="!!undefined!!"){
+			if(r_ptr->Expression==nullptr){
+				if(ft_ptr->TypeList.back()->GetName()=="!!undefined!!"){
 					//推論が必要
-					dynamic_pointer_cast<FunctionTypeAST>(TypeInfo)->TypeList.pop_back();
-					dynamic_pointer_cast<FunctionTypeAST>(TypeInfo)->TypeList.push_back(make_shared<BasicTypeAST>("void"));
-				}else if(dynamic_pointer_cast<FunctionTypeAST>(TypeInfo)->TypeList.back()->GetName() != "void"){
+					ft_ptr->TypeList.pop_back();
+					ft_ptr->TypeList.push_back(make_shared<BasicTypeAST>("void"));
+				}else if(ft_ptr->TypeList.back()->GetName() != "void"){
 					error("'returnする値の型'と、'関数の戻り値の型'が一致しません。");
 				}
-			}else if(dynamic_pointer_cast<FunctionTypeAST>(TypeInfo)->TypeList.back()->GetName()=="!!undefined!!"){
+			}else if(ft_ptr->TypeList.back()->GetName()=="!!undefined!!"){
 				//推論が必要
-				dynamic_pointer_cast<FunctionTypeAST>(TypeInfo)->TypeList.pop_back();
-				dynamic_pointer_cast<FunctionTypeAST>(TypeInfo)->TypeList.push_back(dynamic_pointer_cast<ReturnStatementAST>(*iter2)->Expression->TypeInfo);
-			}else if(dynamic_pointer_cast<FunctionTypeAST>(TypeInfo)->TypeList.back()->GetName() != dynamic_pointer_cast<ReturnStatementAST>(*iter2)->Expression->TypeInfo->GetName()){
+				ft_ptr->TypeList.pop_back();
+				ft_ptr->TypeList.push_back(r_ptr->Expression->TypeInfo);
+			}else if(ft_ptr->TypeList.back()->GetName() != r_ptr->Expression->TypeInfo->GetName()){
 				error("'returnする値の型'と、'関数の戻り値の型'が一致しません。");
+			}
+
+			//末尾呼び出しの判定(return statement)
+			if(r_ptr->Expression!=nullptr && typeid(*(r_ptr->Expression))==typeid(CallExprAST)){
+				//cout<<BG_YELLOW<<"末尾呼び出しを発見しました"<<RESET<<endl;
+				dynamic_pointer_cast<CallExprAST>(r_ptr->Expression)->IsTail=true;
+			}
+		}
+
+		if(iter2==Body->Body->end()-1 && typeid(*(*iter2))==typeid(ExpressionStatementAST)){
+			//末尾呼び出しの判定(return statement)
+			if(dynamic_pointer_cast<ExpressionStatementAST>(*iter2)->Expression!=nullptr && typeid(*(dynamic_pointer_cast<ExpressionStatementAST>(*iter2)->Expression))==typeid(CallExprAST)){
+				//cout<<BG_YELLOW<<"末尾呼び出しを発見しました"<<RESET<<endl;
+				dynamic_pointer_cast<CallExprAST>(dynamic_pointer_cast<ExpressionStatementAST>(*iter2)->Expression)->IsTail=true;
 			}
 		}
 	}

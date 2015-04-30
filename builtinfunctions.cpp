@@ -11,10 +11,10 @@
 #include <memory>
 
 
-#define VM_STACK_POP vmptr->Environment.back()->OperandStack.pop()
-#define VM_STACK_PUSH(x) vmptr->Environment.back()->OperandStack.push((x))
-#define VM_STACK_GET vmptr->Environment.back()->OperandStack.top()
-#define VM_OPERAND_GET (*(vmptr->Environment.back()->CodePtr))[vmptr->Environment.back()->PC++]
+#define VM_STACK_POP vmptr->CurrentFlame->OperandStack.pop()
+#define VM_STACK_PUSH(x) vmptr->CurrentFlame->OperandStack.push((x))
+#define VM_STACK_GET vmptr->CurrentFlame->OperandStack.top()
+#define VM_OPERAND_GET (*(vmptr->CurrentFlame->CodePtr))[vmptr->CurrentFlame->PC++]
 
 using namespace std;
 
@@ -46,12 +46,12 @@ void display(){
 			VMValue v;v.int_value=0;
 			(*vars).push_back(pair<string,VMValue>(callee->LocalVariables->at(i).first,v)); //ローカル変数はすべて0に初期化される
 		}
-		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,cobj->ParentFlame);
+		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,glut_vmptr->CurrentFlame,cobj->ParentFlame);
 		for(unsigned int i=0;i<callee->ChildPoolIndex->size();i++){
 			//コンスタントプール内のクロージャに生成元のフレームを覚えさせる
 			static_pointer_cast<FunctionObject>(glut_vmptr->ExecutableData->PublicConstantPool.GetValue(callee->ChildPoolIndex->at(i)).ref_value)->ParentFlame=inv_flame;
 		}
-		glut_vmptr->Environment.push_back(inv_flame);
+		glut_vmptr->CurrentFlame=inv_flame;
 	}
 
 	glut_vmptr->Run(true); //指定された関数のフレームを作成し、実行。そのフレームがポップされた時点で帰ってくる（trueを指定したので）
@@ -96,12 +96,12 @@ void mouse(int button, int state, int x, int y)
 			VMValue v;v.int_value=0;
 			(*vars).push_back(pair<string,VMValue>(callee->LocalVariables->at(i).first,v)); //ローカル変数はすべて0に初期化される
 		}
-		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,cobj->ParentFlame);
+		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,glut_vmptr->CurrentFlame,cobj->ParentFlame);
 		for(unsigned int i=0;i<callee->ChildPoolIndex->size();i++){
 			//コンスタントプール内のクロージャに生成元のフレームを覚えさせる
 			static_pointer_cast<FunctionObject>(glut_vmptr->ExecutableData->PublicConstantPool.GetValue(callee->ChildPoolIndex->at(i)).ref_value)->ParentFlame=inv_flame;
 		}
-		glut_vmptr->Environment.push_back(inv_flame);
+		glut_vmptr->CurrentFlame=inv_flame;
 	}
 
 	glut_vmptr->Run(true); //指定された関数のフレームを作成し、実行。そのフレームがポップされた時点で帰ってくる（trueを指定したので）
@@ -135,12 +135,12 @@ void keyboard(unsigned char key, int x, int y)
 			VMValue v;v.int_value=0;
 			(*vars).push_back(pair<string,VMValue>(callee->LocalVariables->at(i).first,v)); //ローカル変数はすべて0に初期化される
 		}
-		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,cobj->ParentFlame);
+		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,glut_vmptr->CurrentFlame,cobj->ParentFlame);
 		for(unsigned int i=0;i<callee->ChildPoolIndex->size();i++){
 			//コンスタントプール内のクロージャに生成元のフレームを覚えさせる
 			static_pointer_cast<FunctionObject>(glut_vmptr->ExecutableData->PublicConstantPool.GetValue(callee->ChildPoolIndex->at(i)).ref_value)->ParentFlame=inv_flame;
 		}
-		glut_vmptr->Environment.push_back(inv_flame);
+		glut_vmptr->CurrentFlame=inv_flame;
 	}
 
 	glut_vmptr->Run(true); //指定された関数のフレームを作成し、実行。そのフレームがポップされた時点で帰ってくる（trueを指定したので）
