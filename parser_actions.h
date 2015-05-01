@@ -48,6 +48,7 @@ TokenValue type_list_type_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue type_list_addtype_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue closureexpr_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue callccexpr_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
+TokenValue callccexpr_void_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values);
 TokenValue closureexpr_rettypeinfer_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue arg_list_empty_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue arg_list_expression_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);

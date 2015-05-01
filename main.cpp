@@ -241,6 +241,7 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{closureexpr,FUN,LPAREN,parameter_list,RPAREN,operator_n,type,LBRACE,block,RBRACE,SYNTAXEND},closureexpr_reduce},
     {{closureexpr,FUN,LPAREN,parameter_list,RPAREN,LBRACE,block,RBRACE,SYNTAXEND},closureexpr_rettypeinfer_reduce},
     {{callccexpr,CALLCC,LPAREN,IDENT,COMMA,type,RPAREN,LBRACE,block,RBRACE,SYNTAXEND},callccexpr_reduce},
+    {{callccexpr,CALLCC,LPAREN,IDENT,RPAREN,LBRACE,block,RBRACE,SYNTAXEND},callccexpr_void_reduce},
     {{arg_list,EMPTY,SYNTAXEND},arg_list_empty_reduce},
     {{arg_list,expression,SYNTAXEND},arg_list_expression_reduce},
     {{arg_list,arg_list,COMMA,expression,SYNTAXEND},arg_list_addexpression_reduce},

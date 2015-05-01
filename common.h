@@ -6,7 +6,7 @@
 using namespace std;
 
 const int TOKENRULECOUNT=36;
-const int SYNTAXRULECOUNT=106;
+const int SYNTAXRULECOUNT=107;
 const int SYMBOLCOUNT=65; //SYNTAXEND,INPUTEND,EMPTYをのぞく
 
 

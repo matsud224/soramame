@@ -527,3 +527,10 @@ TokenValue callccexpr_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> val
 	t.expression_ast=make_shared<ContinuationAST>(cgi,values[4].type_ast,values[2].str,values[7].block_ast);
 	return t;
 }
+
+TokenValue callccexpr_void_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values)
+{
+	TokenValue t;
+	t.expression_ast=make_shared<ContinuationAST>(cgi,make_shared<BasicTypeAST>("void"),values[2].str,values[5].block_ast);
+	return t;
+}

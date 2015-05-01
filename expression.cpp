@@ -243,6 +243,10 @@ void CallExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenI
     for(iter=args->rbegin();iter!=args->rend();iter++){
         (*iter)->Codegen(bytecodes,geninfo);
     }
+	if(args->size()==0 && typeid(*(callee->TypeInfo))==typeid(ContinuationTypeAST)){
+		//引数がvoidの時でもダミーの値を乗っける
+		bytecodes->push_back(pushnull);
+	}
     callee->Codegen(bytecodes,geninfo);
     if(typeid(*(callee->TypeInfo))==typeid(FunctionTypeAST)){
 		bytecodes->push_back(invoke);
