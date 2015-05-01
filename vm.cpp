@@ -1,7 +1,10 @@
 #include "vm.h"
 #include "utility.h"
 #include <string>
-#include "ast.h"
+#include "ast_etc.h"
+#include "statement.h"
+#include "type.h"
+#include "expression.h"
 #include "basic_object.h"
 #include <map>
 #include <memory>
@@ -421,8 +424,33 @@ VMValue VM::Run(bool currflame_only){
 				}
 			}
 			break;
+		case makecontinuation:
+			{
+				vector<pair<int,stack<VMValue> > > snapshot;
+				for(shared_ptr<Flame> f=CurrentFlame;f!=nullptr;f=f->DynamicLink){
+					snapshot.push_back(pair<int,stack<VMValue> >(f->PC,f->OperandStack));
+				}
+				snapshot.front().first+=4; //PCを適切な位置にする
+				v.ref_value=make_shared<ContinuationObject>(snapshot,CurrentFlame);
+				STACK_PUSH(v);
+			}
+			break;
+		case resume_continuation:
+			{
+				shared_ptr<ContinuationObject> contobj=(static_pointer_cast<ContinuationObject>(STACK_GET.ref_value));STACK_POP;
+				VMValue arg=STACK_GET;STACK_POP;
+				CurrentFlame=contobj->StartFlame;
+				int index=0;
+				for(shared_ptr<Flame> f=CurrentFlame;f!=nullptr;f=f->DynamicLink,index++){
+					auto item=contobj->Snapshot[index];
+					f->PC=item.first;
+					f->OperandStack=item.second;
+				}
+				CurrentFlame->OperandStack.push(arg);
+			}
+			break;
         default:
-            error("不正な命令です...code("+IntToString(bytecode)+")");
+            error("不正な命令です("+IntToString(bytecode)+")");
             break;
         }
     }

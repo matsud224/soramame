@@ -1,7 +1,10 @@
 #pragma once
 
 #include <memory>
-#include "ast.h"
+#include "ast_etc.h"
+#include "statement.h"
+#include "type.h"
+#include "expression.h"
 
 class Flame;
 class FunctionObject;
@@ -12,6 +15,14 @@ public:
 	shared_ptr<Flame> ParentFlame;
 
 	ClosureObject(shared_ptr<FunctionObject> fref,shared_ptr<Flame> parent):FunctionRef(fref),ParentFlame(parent){};
+};
+
+class ContinuationObject{
+public:
+	vector<pair<int,stack<VMValue> > > Snapshot;
+	shared_ptr<Flame> StartFlame;
+
+	ContinuationObject(vector<pair<int,stack<VMValue> > > snapshot,shared_ptr<Flame> startflame):Snapshot(snapshot),StartFlame(startflame){};
 };
 
 class DataObject{

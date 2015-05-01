@@ -13,93 +13,8 @@
 
 using namespace std;
 
-
-class OperatorInfo;
-class TypeAST;
-class ExprAST;
-class FunctionAST;
-class Flame;
-class VariableDefStatementAST;
-class TopLevelItem;
-class BlockAST;
 class FunctionObject;
-
-class EnvItem{
-public:
-	pair<string,shared_ptr<TypeAST> > VariableInfo;
-	int LocalIndex;
-};
-
-class Environment{
-public:
-	vector< EnvItem > Items;
-	bool is_internalblock; //関数内部のブロック（if,whileなど）か？
-	shared_ptr<vector< pair<string,shared_ptr<TypeAST> > > > LocalVariablesPtr;
-};
-
-
-class TypeAST{
-public:
-	virtual ~TypeAST(){}
-	virtual string GetName()=0;
-};
-
-//単一の型
-class BasicTypeAST : public TypeAST{
-public:
-    BasicTypeAST(string n):Name(n){}
-    string Name;
-    virtual string GetName(){
-		return Name;
-    }
-};
-
-//関数型
-class FunctionTypeAST : public TypeAST{
-public:
-	FunctionTypeAST(vector<shared_ptr<TypeAST> > t_list):TypeList(t_list){}
-	vector<shared_ptr<TypeAST> > TypeList;
-	virtual string GetName(){
-		string s="fun(";
-		for(int i=0;i<TypeList.size()-1;i++){
-			s+=TypeList[i]->GetName();
-			if(i!=TypeList.size()-2){
-				s+=",";
-			}
-		}
-		s+=")=>"+TypeList[TypeList.size()-1]->GetName();
-		return s;
-	}
-
-};
-
-//リスト型
-class ListTypeAST : public TypeAST{
-public:
-    ListTypeAST(shared_ptr<TypeAST> t):ContainType(t){}
-    shared_ptr<TypeAST>  ContainType;
-    virtual string GetName(){
-		return "["+ContainType->GetName()+"]";
-    }
-};
-
-//タプル型
-class TupleTypeAST : public TypeAST{
-public:
-    TupleTypeAST(vector<shared_ptr<TypeAST> > t_list):ContainTypeList(t_list){}
-    vector<shared_ptr<TypeAST> > ContainTypeList;
-    virtual string GetName(){
-		string name="(";
-		for(int i=0;i<ContainTypeList.size();i++){
-			name+=ContainTypeList[i]->GetName();
-			if(i!=ContainTypeList.size()-1){
-				name+=",";
-			}
-		}
-		name+=")";
-		return name;
-    }
-};
+class ContinuationObject;
 
 class ExprAST{
 public:
@@ -204,10 +119,8 @@ public:
 class ListValExprAST : public ExprAST{
 public:
     shared_ptr<list<shared_ptr<ExprAST> > > Value;
-    int PoolIndex;
     ListValExprAST(shared_ptr<CodegenInfo> cgi,shared_ptr<list<shared_ptr<ExprAST> > > val):Value(val){
         TypeInfo=nullptr;
-        PoolIndex=-1;
     }
     virtual bool IsConstant(){
 		for(auto iter=Value->begin();iter!=Value->end();iter++){
@@ -227,10 +140,8 @@ public:
 class TupleValExprAST : public ExprAST{
 public:
     shared_ptr<list<shared_ptr<ExprAST> > > Value;
-    int PoolIndex;
     TupleValExprAST(shared_ptr<CodegenInfo> cgi,shared_ptr<list<shared_ptr<ExprAST> > > val):Value(val){
         TypeInfo=nullptr;
-        PoolIndex=-1;
     }
     virtual bool IsConstant(){
 		for(auto iter=Value->begin();iter!=Value->end();iter++){
@@ -251,10 +162,8 @@ class DataValExprAST : public ExprAST{
 public:
     shared_ptr<vector< pair<string,shared_ptr<ExprAST> > > > InitValue;
 
-    int PoolIndex;
     DataValExprAST(string TypeName,shared_ptr<vector< pair<string,shared_ptr<ExprAST> > > > initval):InitValue(initval){
         TypeInfo=make_shared<BasicTypeAST>(TypeName);
-        PoolIndex=-1;
     }
     virtual bool IsConstant(){
 		vector< pair<string,shared_ptr<ExprAST> > >::iterator iter;
@@ -344,6 +253,30 @@ public:
     virtual vector<shared_ptr<ExprAST> > GetCallExprList();
 };
 
+class ContinuationAST : public ExprAST{
+public:
+	string VarName;
+	shared_ptr<BlockAST> Body;
+	shared_ptr<FunctionAST> InternalClosure; //結局は構文糖衣みたいなもの
+
+	virtual bool IsConstant(){return false;}
+
+    shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars);
+    vector<int> FindChildFunction();
+
+    ContinuationAST(shared_ptr<CodegenInfo> cgi,shared_ptr<TypeAST> t,string varname,shared_ptr<BlockAST> bdy):VarName(varname),Body(bdy){
+        TypeInfo=t;
+
+        shared_ptr<vector< pair<string,shared_ptr<TypeAST> > > > args=make_shared< vector< pair<string,shared_ptr<TypeAST> > > >();
+        args->push_back(pair<string,shared_ptr<TypeAST> >(varname,make_shared<ContinuationTypeAST>(t)));
+        InternalClosure=make_shared<FunctionAST>(cgi,"<anonymous>",args,t,Body);
+    }
+
+    virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
+
+    virtual bool IsCTFEable(shared_ptr<CodegenInfo>,int){return false;};
+    virtual vector<shared_ptr<ExprAST> > GetCallExprList();
+};
 
 class VariableExprAST : public ExprAST{
 public:
@@ -368,7 +301,7 @@ public:
     	return false;
 	}
     virtual vector<shared_ptr<ExprAST> > GetCallExprList();
-    void AssignmentCodegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
+
 };
 
 class CallExprAST : public ExprAST,public enable_shared_from_this<CallExprAST>{
@@ -452,116 +385,4 @@ public:
     virtual vector<int> FindChildFunction(){return vector<int>();}; //AST未構築なので呼び出されることはない。
     virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){return LHS->IsCTFEable(cgi,curr_fun_index)&&RHS->IsCTFEable(cgi,curr_fun_index);}
 	virtual vector<shared_ptr<ExprAST> > GetCallExprList();
-};
-
-
-
-class StatementAST{
-public:
-    virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo)=0;
-    virtual void CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars)=0;
-	virtual vector<int> FindChildFunction()=0;
-	virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int)=0;
-	virtual vector<shared_ptr<ExprAST> > GetCallExprList()=0;
-	virtual ~StatementAST(){}
-};
-
-class IfStatementAST : public StatementAST{
-public:
-    shared_ptr<ExprAST> Condition;
-    shared_ptr<BlockAST> ThenBody;
-    shared_ptr<BlockAST> ElseBody;
-
-    IfStatementAST(shared_ptr<ExprAST> cond,shared_ptr<BlockAST> thenbody,shared_ptr<BlockAST> elsebody):Condition(cond),ThenBody(thenbody),ElseBody(elsebody){}
-    virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
-    virtual void CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr< vector< pair<string,shared_ptr<TypeAST> > > > CurrentLocalVars);
-    virtual vector<int> FindChildFunction();
-    virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int);
-    virtual vector<shared_ptr<ExprAST> > GetCallExprList();
-};
-
-class WhileStatementAST : public StatementAST{
-public:
-    shared_ptr<ExprAST> Condition;
-    shared_ptr<BlockAST> Body;
-
-    WhileStatementAST(shared_ptr<ExprAST> cond,shared_ptr<BlockAST> body):Condition(cond),Body(body){}
-    virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
-    virtual void CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars);
-    virtual vector<int> FindChildFunction();
-    virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int);
-    virtual vector<shared_ptr<ExprAST> > GetCallExprList();
-};
-
-
-class ReturnStatementAST : public StatementAST{
-public:
-    shared_ptr<ExprAST> Expression;
-
-    ReturnStatementAST(shared_ptr<ExprAST> exp):Expression(exp){};
-    virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
-    virtual void CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars);
-    virtual vector<int> FindChildFunction();
-    virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int);
-    virtual vector<shared_ptr<ExprAST> > GetCallExprList();
-};
-
-class VariableDefStatementAST : public StatementAST{
-public:
-    shared_ptr<pair<string,shared_ptr<TypeAST> > > Variable;
-    shared_ptr<ExprAST> InitialValue; //初期値（初期値が未設定の時はnullptr）
-    int LocalIndex;
-    int FlameBack; //常に0
-
-    VariableDefStatementAST(shared_ptr<pair<string,shared_ptr<TypeAST> > > var,shared_ptr<ExprAST> initval):Variable(var),InitialValue(initval){}
-    virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
-    virtual void CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars);
-    virtual vector<int> FindChildFunction();
-    virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int);
-    virtual vector<shared_ptr<ExprAST> > GetCallExprList();
-};
-
-class ExpressionStatementAST : public StatementAST{
-public:
-    shared_ptr<ExprAST> Expression;
-
-    ExpressionStatementAST(shared_ptr<ExprAST> evalexpr):Expression(evalexpr){}
-    virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
-    virtual void CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars);
-    virtual vector<int> FindChildFunction();
-    virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int);
-    virtual vector<shared_ptr<ExprAST> > GetCallExprList();
-};
-
-class BlockAST{
-public:
-	shared_ptr<vector<shared_ptr<StatementAST> > > Body;
-
-	BlockAST(shared_ptr<vector<shared_ptr<StatementAST> > > body):Body(body){}
-
-	void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
-	void CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,bool isinternalblock,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars);
-    vector<int> FindChildFunction();
-    bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int);
-    vector<shared_ptr<ExprAST> > GetCallExprList();
-};
-
-
-class DataDefAST{
-public:
-	string Name;
-	vector< pair<string,shared_ptr<TypeAST> >  > MemberList;
-
-	DataDefAST(){}
-	DataDefAST(vector< pair<string,shared_ptr<TypeAST> >  > member):MemberList(member){}
-};
-
-class GroupDefAST{
-public:
-	string Name;
-	string TargetName; //括弧の中の名前
-	vector< pair<string,shared_ptr<TypeAST> >  > MemberList;
-
-	GroupDefAST(){}
-	GroupDefAST(vector< pair<string,shared_ptr<TypeAST> >  > member):MemberList(member){}
 };

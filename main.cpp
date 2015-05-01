@@ -2,7 +2,10 @@
 #include "lexer.h"
 #include <string>
 #include <vector>
-#include "ast.h"
+#include "ast_etc.h"
+#include "statement.h"
+#include "type.h"
+#include "expression.h"
 #include "vm.h"
 #include "utility.h"
 #include <map>
@@ -43,6 +46,8 @@ pair<Symbol,TokenValue> else_lex(char *str,Lexer *lex){return pair<Symbol,TokenV
 pair<Symbol,TokenValue> return_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(RETURN_S ,Lexer::dummy);};
 pair<Symbol,TokenValue> data_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(DATA ,Lexer::dummy);};
 pair<Symbol,TokenValue> group_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(GROUP ,Lexer::dummy);};
+pair<Symbol,TokenValue> continuation_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(CONTINUATION ,Lexer::dummy);};
+pair<Symbol,TokenValue> callcc_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(CALLCC ,Lexer::dummy);};
 pair<Symbol,TokenValue> boolval_lex(char *str,Lexer *lex){
 	TokenValue t;
 	string val(str);
@@ -130,6 +135,8 @@ TokenRule TOKENRULE[TOKENRULECOUNT]={
     {"false",INITIAL,true,boolval_lex},
     {"data",INITIAL,true,data_lex},
     {"group",INITIAL,true,group_lex},
+    {"continuation",INITIAL,true,continuation_lex},
+    {"callcc",INITIAL,true,callcc_lex},
     {";",INITIAL,true,semicolon_lex},
 	{":",INITIAL,true,colon_lex},
     {",",INITIAL,true,comma_lex},
@@ -212,6 +219,7 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{primary,stringvalexpr,SYNTAXEND},NULL},
     {{primary,funcallexpr,SYNTAXEND},NULL},
     {{primary,closureexpr,SYNTAXEND},NULL},
+    {{primary,callccexpr,SYNTAXEND},NULL},
     {{primary,variableexpr,SYNTAXEND},NULL},
     {{primary,listvalexpr,SYNTAXEND},NULL},
     {{primary,tuplevalexpr,SYNTAXEND},NULL},
@@ -226,11 +234,13 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{type,FUN,LPAREN,type_list,RPAREN,operator_n,type,SYNTAXEND},type_fun_reduce},
     {{type,LBRACKET,type,RBRACKET,SYNTAXEND},type_listtype_reduce},
     {{type,LPAREN,type_list,RPAREN,SYNTAXEND},type_tupletype_reduce},
+    {{type,CONTINUATION,LPAREN,type,RPAREN,SYNTAXEND},type_conttype_reduce},
     {{type_list,EMPTY,SYNTAXEND},type_list_empty_reduce},
     {{type_list,type,SYNTAXEND},type_list_type_reduce},
     {{type_list,type_list,COMMA,type,SYNTAXEND},type_list_addtype_reduce},
     {{closureexpr,FUN,LPAREN,parameter_list,RPAREN,operator_n,type,LBRACE,block,RBRACE,SYNTAXEND},closureexpr_reduce},
     {{closureexpr,FUN,LPAREN,parameter_list,RPAREN,LBRACE,block,RBRACE,SYNTAXEND},closureexpr_rettypeinfer_reduce},
+    {{callccexpr,CALLCC,LPAREN,IDENT,COMMA,type,RPAREN,LBRACE,block,RBRACE,SYNTAXEND},callccexpr_reduce},
     {{arg_list,EMPTY,SYNTAXEND},arg_list_empty_reduce},
     {{arg_list,expression,SYNTAXEND},arg_list_expression_reduce},
     {{arg_list,arg_list,COMMA,expression,SYNTAXEND},arg_list_addexpression_reduce},

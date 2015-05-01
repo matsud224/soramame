@@ -6,7 +6,10 @@
 #include "vm.h"
 #include "compiler.h"
 #include "basic_object.h"
-#include "ast.h"
+#include "ast_etc.h"
+#include "statement.h"
+#include "type.h"
+#include "expression.h"
 #include <GL/glut.h>
 #include <memory>
 

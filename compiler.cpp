@@ -1,5 +1,8 @@
 #include "compiler.h"
-#include "ast.h"
+#include "ast_etc.h"
+#include "statement.h"
+#include "type.h"
+#include "expression.h"
 #include "builtinfunctions.h"
 #include <typeinfo>
 #include <memory>

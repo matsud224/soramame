@@ -32,8 +32,8 @@ enum{
     dcmpeq,dcmpne,dcmplt,dcmple,dcmpgt,dcmpge,
     bcmpeq,bcmpne,
     back,
-    makelist,
-    makedata
+    makelist,makedata,
+    makecontinuation,resume_continuation
 };
 
 class Flame{

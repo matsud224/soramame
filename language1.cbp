@@ -58,8 +58,8 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 		</Compiler>
-		<Unit filename="ast.cpp" />
-		<Unit filename="ast.h" />
+		<Unit filename="ast_etc.cpp" />
+		<Unit filename="ast_etc.h" />
 		<Unit filename="basic_object.h" />
 		<Unit filename="builtinfunctions.cpp" />
 		<Unit filename="builtinfunctions.h" />
@@ -68,6 +68,8 @@
 		<Unit filename="compiler.cpp" />
 		<Unit filename="compiler.h" />
 		<Unit filename="exceptions.h" />
+		<Unit filename="expression.cpp" />
+		<Unit filename="expression.h" />
 		<Unit filename="lexer.cpp" />
 		<Unit filename="lexer.h" />
 		<Unit filename="main.cpp" />
@@ -75,6 +77,9 @@
 		<Unit filename="parser.h" />
 		<Unit filename="parser_actions.cpp" />
 		<Unit filename="parser_actions.h" />
+		<Unit filename="statement.cpp" />
+		<Unit filename="statement.h" />
+		<Unit filename="type.h" />
 		<Unit filename="utility.cpp" />
 		<Unit filename="utility.h" />
 		<Unit filename="vm.cpp" />

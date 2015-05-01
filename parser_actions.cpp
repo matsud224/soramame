@@ -1,6 +1,9 @@
 #include "parser_actions.h"
 #include "common.h"
-#include "ast.h"
+#include "ast_etc.h"
+#include "statement.h"
+#include "type.h"
+#include "expression.h"
 #include "color_text.h"
 #include <memory>
 
@@ -281,6 +284,13 @@ TokenValue type_fun_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values
 	return t;
 }
 
+TokenValue type_conttype_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values)
+{
+	TokenValue t;
+	t.type_ast=make_shared<ContinuationTypeAST>(values[2].type_ast);
+	return t;
+}
+
 TokenValue type_listtype_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values)
 {
 	TokenValue t;
@@ -508,5 +518,12 @@ TokenValue datamemberrefexpr_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenVal
 {
 	TokenValue t;
 	t.expression_ast=make_shared<DataMemberRefExprAST>(values[0].expression_ast,values[2].str); //parameterと型が一緒なので使わせてもらう
+	return t;
+}
+
+TokenValue callccexpr_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values)
+{
+	TokenValue t;
+	t.expression_ast=make_shared<ContinuationAST>(cgi,values[4].type_ast,values[2].str,values[7].block_ast);
 	return t;
 }
