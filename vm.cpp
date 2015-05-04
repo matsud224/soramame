@@ -273,6 +273,7 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 
 					if(is_async){
 						thread t(VM::BuiltinFunctionList[pair<string,string>(builtin_name,typestr)],CurrentFlame);
+						t.detach();
 					}else{
 						VM::BuiltinFunctionList[pair<string,string>(builtin_name,typestr)](CurrentFlame);
 					}
@@ -295,7 +296,7 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 						static_pointer_cast<FunctionObject>(VM::PublicConstantPool.GetValue(callee->ChildPoolIndex->at(i)).ref_value)->ParentFlame=inv_flame;
 					}
 					if(is_async){
-						cout<<"thread started!"<<endl;
+						//cout<<"thread started!"<<endl;
 						thread t(VM::Run,inv_flame,true);
 						t.detach();
 
