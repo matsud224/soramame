@@ -13,6 +13,7 @@ class VariableDefStatementAST;
 class TypeAST;
 class DataDefAST;
 class GroupDefAST;
+class Flame;
 class VM;
 
 
@@ -52,13 +53,11 @@ public:
 class CodegenInfo{
 public:
     multimap<string,OperatorInfo> OperatorList;
-    map<pair<string,string>, void (*)(shared_ptr<VM>) > BuiltinFunctionList; //関数名と型名から関数を引っ張ってくる
     vector<shared_ptr<FunctionAST> > TopLevelFunction;
     vector<shared_ptr<VariableDefStatementAST> > TopLevelVariableDef;
     vector<shared_ptr<DataDefAST> > TopLevelDataDef;
     vector<shared_ptr<GroupDefAST> > TopLevelGroupDef;
     shared_ptr<vector<int> > Bootstrap;
-    ConstantPool PublicConstantPool;
     int MainFuncPoolIndex; //main関数のコンスタントプール・インデックス
 	vector<int> ChildPoolIndex;
 	shared_ptr<vector< pair<string,shared_ptr<TypeAST> > > > LocalVariables;
@@ -71,9 +70,7 @@ public:
 
 class Executable{
 public:
-	map<pair<string,string>, void (*)(shared_ptr<VM>) > BuiltinFunctionList; //関数名と型名から関数を引っ張ってくる
 	shared_ptr<vector<int> > Bootstrap;
-	ConstantPool PublicConstantPool;
 	int MainFuncPoolIndex; //main関数のコンスタントプール・インデックス
 	vector<int> ChildPoolIndex;
 	shared_ptr<vector< pair<string,shared_ptr<TypeAST> > > > LocalVariables;
@@ -86,7 +83,7 @@ private:
     void TypeCheck();
     void CTFE(int);
     void Codegen();
-    void RegisterBuiltinFunction(string name,void (*funcptr)(shared_ptr<VM>),shared_ptr<vector< pair<string,shared_ptr<TypeAST> > > > arg,shared_ptr<TypeAST>  rettype,bool ctfeable); //トップレベル関数リスト、ビルトイン関数リストへ登録します
+    void RegisterBuiltinFunction(string name,void (*funcptr)(shared_ptr<Flame>),shared_ptr<vector< pair<string,shared_ptr<TypeAST> > > > arg,shared_ptr<TypeAST>  rettype,bool ctfeable); //トップレベル関数リスト、ビルトイン関数リストへ登録します
 public:
 	shared_ptr<Lexer> lexer;
 	shared_ptr<Parser> parser;
@@ -108,9 +105,7 @@ public:
 		//CTFE(3);
 
 		shared_ptr<Executable> ret_executable=make_shared<Executable>();
-		ret_executable->BuiltinFunctionList=genInfo->BuiltinFunctionList;
 		ret_executable->Bootstrap=move(genInfo->Bootstrap);
-		ret_executable->PublicConstantPool=genInfo->PublicConstantPool;
 		ret_executable->MainFuncPoolIndex=genInfo->MainFuncPoolIndex;
 		ret_executable->ChildPoolIndex=genInfo->ChildPoolIndex;
 		ret_executable->LocalVariables=move(genInfo->LocalVariables);

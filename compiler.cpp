@@ -7,9 +7,9 @@
 #include <typeinfo>
 #include <memory>
 
-void Compiler::RegisterBuiltinFunction(string name,void (*funcptr)(shared_ptr<VM>),shared_ptr<vector< pair<string,shared_ptr<TypeAST> > > > arg,shared_ptr<TypeAST>  rettype,bool ctfeable){
+void Compiler::RegisterBuiltinFunction(string name,void (*funcptr)(shared_ptr<Flame>),shared_ptr<vector< pair<string,shared_ptr<TypeAST> > > > arg,shared_ptr<TypeAST>  rettype,bool ctfeable){
 	genInfo->TopLevelFunction.push_back(make_shared<FunctionAST>(genInfo,name,arg,rettype,ctfeable));
-	genInfo->BuiltinFunctionList[pair<string,string>(name,genInfo->TopLevelFunction.back()->TypeInfo->GetName())]=funcptr;
+	VM::BuiltinFunctionList[pair<string,string>(name,genInfo->TopLevelFunction.back()->TypeInfo->GetName())]=funcptr;
 }
 
 void Compiler::ASTgen()
@@ -25,6 +25,7 @@ void Compiler::ASTgen()
     genInfo->OperatorList.insert(pair<string,OperatorInfo >("&&",OperatorInfo(Binary,Left,5)));
     genInfo->OperatorList.insert(pair<string,OperatorInfo >("||",OperatorInfo(Binary,Left,5)));
     genInfo->OperatorList.insert(pair<string,OperatorInfo >("!",OperatorInfo(Unary,Right,70)));
+    genInfo->OperatorList.insert(pair<string,OperatorInfo >("?",OperatorInfo(Unary,Right,70)));
 
 	genInfo->OperatorList.insert(pair<string,OperatorInfo >("-",OperatorInfo(Unary,Right,70)));
 
@@ -80,6 +81,8 @@ void Compiler::ASTgen()
 
     arglist.push_back(pair<string,shared_ptr<TypeAST> >("val",make_shared<BasicTypeAST>("int")));
     RegisterBuiltinFunction("print",print_int,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
+
+    RegisterBuiltinFunction("sleep",sleep_msec,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
 
     arglist[0]=pair<string,shared_ptr<TypeAST> >("val",make_shared<BasicTypeAST>("double"));
     RegisterBuiltinFunction("print",print_double,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
@@ -233,6 +236,7 @@ void Compiler::Codegen()
     genInfo->Bootstrap->push_back(makeclosure);
 	genInfo->Bootstrap->push_back(genInfo->MainFuncPoolIndex);
 	genInfo->Bootstrap->push_back(invoke);
+	genInfo->Bootstrap->push_back(0);
 	genInfo->Bootstrap->push_back(0);
 	genInfo->Bootstrap->push_back(ret);
 

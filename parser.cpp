@@ -485,7 +485,6 @@ void Parser::Put(shared_ptr<Lexer> lexer,shared_ptr<CodegenInfo> cgi,pair<Symbol
 			input_backup=btp.input_backup;
 			cgi->TopLevelFunction=btp.TopLevelFunction;
 			cgi->TopLevelVariableDef=btp.TopLevelVariableDef;
-			cgi->PublicConstantPool=btp.PublicConstantPool;
 			if(btp.Conflict_Type==ShiftReduce){
 				if(ActionTable[pair<int,Symbol>(StateStack.back(),input.first)].size()<=btp.selected_count){
 					//これ以上バックトラックできない
@@ -603,7 +602,6 @@ void Parser::Put(shared_ptr<Lexer> lexer,shared_ptr<CodegenInfo> cgi,pair<Symbol
 				input_backup=btp.input_backup;
 				cgi->TopLevelFunction=btp.TopLevelFunction;
 				cgi->TopLevelVariableDef=btp.TopLevelVariableDef;
-				cgi->PublicConstantPool=btp.PublicConstantPool;
 				if(btp.Conflict_Type==ShiftReduce){
 					if(ActionTable[pair<int,Symbol>(StateStack.back(),input.first)].size()<=btp.selected_count){
 						//これ以上バックトラックできない
@@ -755,7 +753,7 @@ void Parser::CreateBacktrackingPoint(int code_pos,State state,int curr_line,Conf
 	p.input_backup=input_backup;
 	p.TopLevelFunction=cgi->TopLevelFunction;
 	p.TopLevelVariableDef=cgi->TopLevelVariableDef;
-	p.PublicConstantPool=cgi->PublicConstantPool;
+	//p.PublicConstantPool=cgi->PublicConstantPool;
 	BacktrackingPoint_list.push_back(p);
 }
 

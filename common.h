@@ -5,9 +5,9 @@
 
 using namespace std;
 
-const int TOKENRULECOUNT=36;
-const int SYNTAXRULECOUNT=107;
-const int SYMBOLCOUNT=65; //SYNTAXEND,INPUTEND,EMPTYをのぞく
+const int TOKENRULECOUNT=39;
+const int SYNTAXRULECOUNT=114;
+const int SYMBOLCOUNT=70; //SYNTAXEND,INPUTEND,EMPTYをのぞく
 
 
 enum Symbol{
@@ -16,7 +16,7 @@ enum Symbol{
 	variableexpr, parenexpr, funcallexpr, closureexpr, returnstatement,type,type_list,ifstatement,
 	SEMICOLON,LPAREN,RPAREN,LBRACE,RBRACE,LBRACKET,RBRACKET,COMMA,COLON,DOT,block,WHILE,whilestatement,listvalexpr,tuplevalexpr,
 	DATA,GROUP,datadef,groupdef,datamember_list,groupmember_list,dataexpr,initassign_list,listrefexpr,datamemberrefexpr,doublevalexpr,
-	CONTINUATION,CALLCC,callccexpr
+	CONTINUATION,CALLCC,callccexpr,NEW,newobjexpr,CHANNEL,ASYNC,asyncstatement
 };
 
 class VMValue{

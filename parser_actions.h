@@ -40,6 +40,7 @@ TokenValue returnstatement_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue returnstatement_noexp_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue type_normal_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue type_fun_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
+TokenValue type_chantype_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values);
 TokenValue type_conttype_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue type_listtype_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue type_tupletype_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
@@ -57,6 +58,7 @@ TokenValue ifstatement_noelse_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>)
 TokenValue ifstatement_withelse_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue block_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values);
 TokenValue while_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values);
+TokenValue async_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values);
 TokenValue listvalexpr_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values);
 TokenValue tuplevalexpr_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values);
 TokenValue datadef_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values);
@@ -72,3 +74,4 @@ TokenValue ialist_empty_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> va
 TokenValue ialist_add_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values);
 TokenValue listrefexpr_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values);
 TokenValue datamemberrefexpr_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values);
+TokenValue newobjexpr_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values);

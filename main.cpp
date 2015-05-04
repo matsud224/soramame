@@ -21,6 +21,8 @@
 #include "parser_actions.h"
 #include <memory>
 #include "exceptions.h"
+#include <thread>
+#include <chrono>
 
 
 using namespace std;
@@ -43,11 +45,14 @@ pair<Symbol,TokenValue> if_lex(char *str,Lexer *lex){return pair<Symbol,TokenVal
 pair<Symbol,TokenValue> while_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(WHILE ,Lexer::dummy);};
 pair<Symbol,TokenValue> fun_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(FUN ,Lexer::dummy);};
 pair<Symbol,TokenValue> else_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(ELSE ,Lexer::dummy);};
+pair<Symbol,TokenValue> new_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(NEW ,Lexer::dummy);};
 pair<Symbol,TokenValue> return_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(RETURN_S ,Lexer::dummy);};
 pair<Symbol,TokenValue> data_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(DATA ,Lexer::dummy);};
 pair<Symbol,TokenValue> group_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(GROUP ,Lexer::dummy);};
 pair<Symbol,TokenValue> continuation_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(CONTINUATION ,Lexer::dummy);};
+pair<Symbol,TokenValue> channel_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(CHANNEL ,Lexer::dummy);};
 pair<Symbol,TokenValue> callcc_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(CALLCC ,Lexer::dummy);};
+pair<Symbol,TokenValue> async_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(ASYNC ,Lexer::dummy);};
 pair<Symbol,TokenValue> boolval_lex(char *str,Lexer *lex){
 	TokenValue t;
 	string val(str);
@@ -127,6 +132,8 @@ TokenRule TOKENRULE[TOKENRULECOUNT]={
 	{"[\\r\\n|\\n|\\r]",INITIAL,true,nextline_lex},
 	{"var",INITIAL,true,var_lex},
 	{"fun",INITIAL,true,fun_lex},
+	{"new",INITIAL,true,new_lex},
+	{"channel",INITIAL,true,channel_lex},
     {"if",INITIAL,true,if_lex},
     {"while",INITIAL,true,while_lex},
     {"else",INITIAL,true,else_lex},
@@ -137,6 +144,7 @@ TokenRule TOKENRULE[TOKENRULECOUNT]={
     {"group",INITIAL,true,group_lex},
     {"continuation",INITIAL,true,continuation_lex},
     {"callcc",INITIAL,true,callcc_lex},
+    {"async",INITIAL,true,async_lex},
     {";",INITIAL,true,semicolon_lex},
 	{":",INITIAL,true,colon_lex},
     {",",INITIAL,true,comma_lex},
@@ -148,7 +156,7 @@ TokenRule TOKENRULE[TOKENRULECOUNT]={
     {"\\[",INITIAL,true,lbracket_lex},
     {"\\]",INITIAL,true,rbracket_lex},
     {"[a-zA-Z_][a-zA-Z0-9_]*",INITIAL,true,ident_lex},
-    {"[%=~\\|\\^\\+\\-\\*/<>&!]{1,3}",INITIAL,true,operator_lex},
+    {"[%=~\\|\\^\\+\\-\\*/<>&!\\?]{1,3}",INITIAL,true,operator_lex},
     {"\\d+\\.\\d+",INITIAL,true,doubleval_lex},
     {"\\d+",INITIAL,true,intval_lex},
     {"\"(?>[^\\\\\"]|\\\\.)*?\"",INITIAL,true,stringval_lex},
@@ -203,6 +211,10 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{statement,returnstatement,LINEEND,SYNTAXEND},NULL},
     {{statement,returnstatement,SYNTAXEND},NULL},
 
+	{{statement,asyncstatement,SEMICOLON,SYNTAXEND},NULL},
+    {{statement,asyncstatement,LINEEND,SYNTAXEND},NULL},
+    {{statement,asyncstatement,SYNTAXEND},NULL},
+
     {{statement,ifstatement,SYNTAXEND},NULL},
     {{statement,whilestatement,SYNTAXEND},NULL},
     {{expression,primary,SYNTAXEND},expression_primary_reduce},
@@ -224,6 +236,7 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{primary,listvalexpr,SYNTAXEND},NULL},
     {{primary,tuplevalexpr,SYNTAXEND},NULL},
     {{primary,dataexpr,SYNTAXEND},NULL},
+    {{primary,newobjexpr,SYNTAXEND},NULL},
     {{primary,listrefexpr,SYNTAXEND},NULL},
     {{primary,datamemberrefexpr,SYNTAXEND},NULL},
     {{variableexpr,IDENT,SYNTAXEND},variableexpr_reduce},
@@ -235,6 +248,7 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{type,LBRACKET,type,RBRACKET,SYNTAXEND},type_listtype_reduce},
     {{type,LPAREN,type_list,RPAREN,SYNTAXEND},type_tupletype_reduce},
     {{type,CONTINUATION,LPAREN,type,RPAREN,SYNTAXEND},type_conttype_reduce},
+    {{type,CHANNEL,LPAREN,type,RPAREN,SYNTAXEND},type_chantype_reduce},
     {{type_list,EMPTY,SYNTAXEND},type_list_empty_reduce},
     {{type_list,type,SYNTAXEND},type_list_type_reduce},
     {{type_list,type_list,COMMA,type,SYNTAXEND},type_list_addtype_reduce},
@@ -249,6 +263,7 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{ifstatement,IF,LPAREN,expression,RPAREN,LBRACE,block,RBRACE,ELSE,LBRACE,block,RBRACE,SYNTAXEND},ifstatement_withelse_reduce},
     {{block,statement_list,SYNTAXEND},block_reduce},
     {{whilestatement,WHILE,LPAREN,expression,RPAREN,LBRACE,block,RBRACE,SYNTAXEND},while_reduce},
+    {{asyncstatement,ASYNC,expression,SYNTAXEND},async_reduce},
     {{listvalexpr,LBRACKET,arg_list,RBRACKET,SYNTAXEND},listvalexpr_reduce},
     {{tuplevalexpr,LPAREN,arg_list,RPAREN,SYNTAXEND},tuplevalexpr_reduce},
     {{datadef,DATA,IDENT,LBRACE,datamember_list,RBRACE,SYNTAXEND},datadef_reduce},
@@ -282,7 +297,9 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
 	{{listrefexpr,parenexpr,LBRACKET,expression,RBRACKET,SYNTAXEND},listrefexpr_reduce},
 
 	{{datamemberrefexpr,primary,DOT,IDENT,SYNTAXEND},datamemberrefexpr_reduce}, //構造体メンバ参照
-	{{datamemberrefexpr,parenexpr,DOT,IDENT,SYNTAXEND},datamemberrefexpr_reduce}
+	{{datamemberrefexpr,parenexpr,DOT,IDENT,SYNTAXEND},datamemberrefexpr_reduce},
+
+	{{newobjexpr,NEW,LPAREN,type,RPAREN,SYNTAXEND},newobjexpr_reduce}
 };
 
 
@@ -308,10 +325,8 @@ int main()
 		lexer.reset();
 		parser.reset();
 		compiler.reset();
-		shared_ptr<VM> vm=make_shared<VM>(executable);
 		cout<<BG_BLUE<<"VMを起動します..."<<RESET<<endl;
-		vm->Init();
-		vm->Run(false);
+		VM::Run(VM::GetInitialFlame(executable),false);
 		cout<<endl;
     }catch(SyntaxError){
         cerr<<BG_RED"Syntax error  line:";
@@ -330,6 +345,9 @@ int main()
     }catch(LexerException){
 		cerr<<BG_RED"レキシカルアナライザで問題が発生しました"<<RESET<<endl;
 	}
+
+	//std::chrono::milliseconds dura( 5000 );
+	//std::this_thread::sleep_for( dura );
 
     return 0;
 }

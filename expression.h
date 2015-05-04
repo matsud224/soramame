@@ -16,6 +16,7 @@ using namespace std;
 class FunctionObject;
 class ContinuationObject;
 
+
 class ExprAST{
 public:
 	shared_ptr<TypeAST> TypeInfo;
@@ -63,7 +64,7 @@ public:
     DoubleValExprAST(shared_ptr<CodegenInfo> cgi,double val):Value(val){
     	TypeInfo=make_shared<BasicTypeAST>("double");
 		VMValue v;v.double_value=Value;
-		PoolIndex=cgi->PublicConstantPool.SetValue(v);
+		PoolIndex=VM::PublicConstantPool.SetValue(v);
 	}
     virtual bool IsConstant(){return true;}
     virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
@@ -105,7 +106,7 @@ public:
         TypeInfo=make_shared<BasicTypeAST>("string");
         //コンスタントプールへの登録
         VMValue v;v.ref_value=Value;
-        PoolIndex=cgi->PublicConstantPool.SetValue(v);
+        PoolIndex=VM::PublicConstantPool.SetValue(v);
         //cout<<"#"<<PoolIndex<<" : <string>"<<Value<<endl;
     }
     virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
@@ -230,7 +231,7 @@ public:
 		TypeInfo=make_shared<FunctionTypeAST>(typelist);
         isBuiltin=false;
         VMValue v; v.ref_value=make_shared<FunctionObject>(Name,TypeInfo,isBuiltin,Args,LocalVariables,bytecodes,ChildPoolIndex);
-        PoolIndex=cgi->PublicConstantPool.SetValue(v);
+        PoolIndex=VM::PublicConstantPool.SetValue(v);
     }
 
     //組み込み関数用のコンストラクタ
@@ -244,7 +245,7 @@ public:
 		TypeInfo=make_shared<FunctionTypeAST>(typelist);
         isBuiltin=true;
         VMValue v; v.ref_value=make_shared<FunctionObject>(Name,TypeInfo,isBuiltin,Args);
-        PoolIndex=cgi->PublicConstantPool.SetValue(v);
+        PoolIndex=VM::PublicConstantPool.SetValue(v);
     }
 
     virtual void Codegen(shared_ptr<vector<int> > unused_argumnt,shared_ptr<CodegenInfo> geninfo);
@@ -271,6 +272,23 @@ public:
         args->push_back(pair<string,shared_ptr<TypeAST> >(varname,make_shared<ContinuationTypeAST>(t)));
         InternalClosure=make_shared<FunctionAST>(cgi,"<anonymous>",args,t,Body);
     }
+
+    virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
+
+    virtual bool IsCTFEable(shared_ptr<CodegenInfo>,int){return false;};
+    virtual vector<shared_ptr<ExprAST> > GetCallExprList();
+};
+
+class NewObjectAST : public ExprAST{
+public:
+	virtual bool IsConstant(){return false;}
+
+    shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars);
+    vector<int> FindChildFunction();
+
+    NewObjectAST(shared_ptr<TypeAST> t){
+        TypeInfo=t;
+	}
 
     virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
 
@@ -310,8 +328,11 @@ public:
     VMValue CalculatedValue; //callee==nullptrの時はこちらの計算結果を利用
     shared_ptr<vector<shared_ptr<ExprAST> > > args;
     bool IsTail;
+    bool IsAsync;
 
-    CallExprAST(shared_ptr<ExprAST> callee_func,shared_ptr<vector<shared_ptr<ExprAST> > > args_list):callee(callee_func),args(args_list){TypeInfo=nullptr;IsTail=false;}
+    CallExprAST(shared_ptr<ExprAST> callee_func,shared_ptr<vector<shared_ptr<ExprAST> > > args_list):callee(callee_func),args(args_list){
+    	TypeInfo=nullptr;IsTail=false;IsAsync=false;
+	}
 
     virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
     virtual bool IsConstant(){

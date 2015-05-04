@@ -17,9 +17,8 @@
 					<Add option="-g" />
 				</Compiler>
 				<Linker>
-					<Add option="-lreadline -lglut -lGLU -lGL" />
+					<Add option="-lglut -lGLU -lGL" />
 					<Add library="/usr/local/lib/libonig.a" />
-					<Add library="/usr/lib/x86_64-linux-gnu/libreadline.a" />
 				</Linker>
 			</Target>
 			<Target title="Debug(Parser)">
@@ -33,9 +32,8 @@
 					<Add option="-DPARSER_DEBUG" />
 				</Compiler>
 				<Linker>
-					<Add option="-lreadline -lglut -lGLU -lGL" />
+					<Add option="-lglut -lGLU -lGL" />
 					<Add library="/usr/local/lib/libonig.a" />
-					<Add library="/usr/lib/x86_64-linux-gnu/libreadline.a" />
 				</Linker>
 			</Target>
 			<Target title="Release">
@@ -47,9 +45,8 @@
 					<Add option="-Wextra" />
 				</Compiler>
 				<Linker>
-					<Add option="-lreadline -lglut -lGLU -lGL" />
+					<Add option="-lglut -lGLU -lGL" />
 					<Add library="/usr/local/lib/libonig.a" />
-					<Add library="/usr/lib/x86_64-linux-gnu/libreadline.a" />
 				</Linker>
 			</Target>
 		</Build>

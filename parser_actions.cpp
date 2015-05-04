@@ -291,6 +291,13 @@ TokenValue type_conttype_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> v
 	return t;
 }
 
+TokenValue type_chantype_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values)
+{
+	TokenValue t;
+	t.type_ast=make_shared<ChannelTypeAST>(values[2].type_ast);
+	return t;
+}
+
 TokenValue type_listtype_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values)
 {
 	TokenValue t;
@@ -532,5 +539,19 @@ TokenValue callccexpr_void_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue
 {
 	TokenValue t;
 	t.expression_ast=make_shared<ContinuationAST>(cgi,make_shared<BasicTypeAST>("void"),values[2].str,values[5].block_ast);
+	return t;
+}
+
+TokenValue newobjexpr_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values)
+{
+	TokenValue t;
+	t.expression_ast=make_shared<NewObjectAST>(values[2].type_ast);
+	return t;
+}
+
+TokenValue async_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values)
+{
+	TokenValue t;
+	t.statement_ast=make_shared<AsyncStatementAST>(make_shared<UnBuiltExprAST>(values[1].expression_list));
 	return t;
 }

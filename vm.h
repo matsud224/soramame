@@ -22,7 +22,7 @@ enum{
     imod,
     ineg,bnot,dneg,
     ilshift,irshift,
-    invoke,
+    invoke,invoke_async,
     loadlocal,loadbyindex,loadfield,
 	ret,ret_withvalue,
     storelocal,storefield,storebyindex,
@@ -33,7 +33,8 @@ enum{
     bcmpeq,bcmpne,
     back,
     makelist,makedata,
-    makecontinuation,resume_continuation
+    makecontinuation,resume_continuation,
+    makechannel,channel_send,channel_receive
 };
 
 class Flame{
@@ -49,13 +50,12 @@ public:
 	}
 };
 
-class VM : public enable_shared_from_this<VM>{
+class VM{
 public:
-	shared_ptr<Executable> ExecutableData;
-	shared_ptr<Flame> CurrentFlame;
-    VM( shared_ptr<Executable> exec):ExecutableData(exec){}
-    void Init();
-    VMValue Run(bool currflame_only); //trueで、呼び出し時点のフレームがポップされたら関数を抜ける
+	static map<pair<string,string>, void (*)(shared_ptr<Flame>) > BuiltinFunctionList; //関数名と型名から関数を引っ張ってくる
+	static ConstantPool PublicConstantPool;
+    static shared_ptr<Flame> GetInitialFlame(shared_ptr<Executable>);
+    static VMValue Run(shared_ptr<Flame>,bool); //trueで、呼び出し時点のフレームがポップされたら関数を抜ける
 };
 
 

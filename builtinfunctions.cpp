@@ -12,12 +12,14 @@
 #include "expression.h"
 #include <GL/glut.h>
 #include <memory>
+#include <thread>
+#include <chrono>
 
 
-#define VM_STACK_POP vmptr->CurrentFlame->OperandStack.pop()
-#define VM_STACK_PUSH(x) vmptr->CurrentFlame->OperandStack.push((x))
-#define VM_STACK_GET vmptr->CurrentFlame->OperandStack.top()
-#define VM_OPERAND_GET (*(vmptr->CurrentFlame->CodePtr))[vmptr->CurrentFlame->PC++]
+#define VM_STACK_POP curr_flame->OperandStack.pop()
+#define VM_STACK_PUSH(x) curr_flame->OperandStack.push((x))
+#define VM_STACK_GET curr_flame->OperandStack.top()
+#define VM_OPERAND_GET (*(curr_flame->CodePtr))[curr_flame->PC++]
 
 using namespace std;
 
@@ -27,7 +29,7 @@ shared_ptr<ClosureObject> glut_dispfun;
 shared_ptr<ClosureObject> glut_keyboardfun;
 shared_ptr<ClosureObject> glut_mousefun;
 
-shared_ptr<VM> glut_vmptr;
+shared_ptr<Flame> glut_current_flame;
 
 void display(){
 	auto cobj=glut_dispfun;
@@ -38,7 +40,7 @@ void display(){
 		string builtin_name=callee->Name;
 		string typestr=callee->TypeInfo->GetName();
 
-		glut_vmptr->ExecutableData->BuiltinFunctionList[pair<string,string>(builtin_name,typestr)](glut_vmptr);
+		VM::BuiltinFunctionList[pair<string,string>(builtin_name,typestr)](glut_current_flame);
 
 	}else{
 		//フレームを作成
@@ -49,16 +51,16 @@ void display(){
 			VMValue v;v.int_value=0;
 			(*vars).push_back(pair<string,VMValue>(callee->LocalVariables->at(i).first,v)); //ローカル変数はすべて0に初期化される
 		}
-		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,glut_vmptr->CurrentFlame,cobj->ParentFlame);
+		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,glut_current_flame,cobj->ParentFlame);
 		for(unsigned int i=0;i<callee->ChildPoolIndex->size();i++){
 			//コンスタントプール内のクロージャに生成元のフレームを覚えさせる
-			static_pointer_cast<FunctionObject>(glut_vmptr->ExecutableData->PublicConstantPool.GetValue(callee->ChildPoolIndex->at(i)).ref_value)->ParentFlame=inv_flame;
+			static_pointer_cast<FunctionObject>(VM::PublicConstantPool.GetValue(callee->ChildPoolIndex->at(i)).ref_value)->ParentFlame=inv_flame;
 		}
-		glut_vmptr->CurrentFlame=inv_flame;
-	}
 
-	glut_vmptr->Run(true); //指定された関数のフレームを作成し、実行。そのフレームがポップされた時点で帰ってくる（trueを指定したので）
+		VM::Run(inv_flame,true); //指定された関数のフレームを作成し、実行。そのフレームがポップされた時点で帰ってくる（trueを指定したので）
+	}
 }
+
 
 void resize(int w, int h)
 {
@@ -82,7 +84,7 @@ void mouse(int button, int state, int x, int y)
 		string builtin_name=callee->Name;
 		string typestr=callee->TypeInfo->GetName();
 
-		glut_vmptr->ExecutableData->BuiltinFunctionList[pair<string,string>(builtin_name,typestr)](glut_vmptr);
+		VM::BuiltinFunctionList[pair<string,string>(builtin_name,typestr)](glut_current_flame);
 
 	}else{
 		//フレームを作成
@@ -99,16 +101,14 @@ void mouse(int button, int state, int x, int y)
 			VMValue v;v.int_value=0;
 			(*vars).push_back(pair<string,VMValue>(callee->LocalVariables->at(i).first,v)); //ローカル変数はすべて0に初期化される
 		}
-		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,glut_vmptr->CurrentFlame,cobj->ParentFlame);
+		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,glut_current_flame,cobj->ParentFlame);
 		for(unsigned int i=0;i<callee->ChildPoolIndex->size();i++){
 			//コンスタントプール内のクロージャに生成元のフレームを覚えさせる
-			static_pointer_cast<FunctionObject>(glut_vmptr->ExecutableData->PublicConstantPool.GetValue(callee->ChildPoolIndex->at(i)).ref_value)->ParentFlame=inv_flame;
+			static_pointer_cast<FunctionObject>(VM::PublicConstantPool.GetValue(callee->ChildPoolIndex->at(i)).ref_value)->ParentFlame=inv_flame;
 		}
-		glut_vmptr->CurrentFlame=inv_flame;
+
+		VM::Run(inv_flame,true); //指定された関数のフレームを作成し、実行。そのフレームがポップされた時点で帰ってくる（trueを指定したので）
 	}
-
-	glut_vmptr->Run(true); //指定された関数のフレームを作成し、実行。そのフレームがポップされた時点で帰ってくる（trueを指定したので）
-
 }
 
 
@@ -122,7 +122,7 @@ void keyboard(unsigned char key, int x, int y)
 		string builtin_name=callee->Name;
 		string typestr=callee->TypeInfo->GetName();
 
-		glut_vmptr->ExecutableData->BuiltinFunctionList[pair<string,string>(builtin_name,typestr)](glut_vmptr);
+		VM::BuiltinFunctionList[pair<string,string>(builtin_name,typestr)](glut_current_flame);
 
 	}else{
 		//フレームを作成
@@ -138,67 +138,66 @@ void keyboard(unsigned char key, int x, int y)
 			VMValue v;v.int_value=0;
 			(*vars).push_back(pair<string,VMValue>(callee->LocalVariables->at(i).first,v)); //ローカル変数はすべて0に初期化される
 		}
-		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,glut_vmptr->CurrentFlame,cobj->ParentFlame);
+		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,glut_current_flame,cobj->ParentFlame);
 		for(unsigned int i=0;i<callee->ChildPoolIndex->size();i++){
 			//コンスタントプール内のクロージャに生成元のフレームを覚えさせる
-			static_pointer_cast<FunctionObject>(glut_vmptr->ExecutableData->PublicConstantPool.GetValue(callee->ChildPoolIndex->at(i)).ref_value)->ParentFlame=inv_flame;
+			static_pointer_cast<FunctionObject>(VM::PublicConstantPool.GetValue(callee->ChildPoolIndex->at(i)).ref_value)->ParentFlame=inv_flame;
 		}
-		glut_vmptr->CurrentFlame=inv_flame;
+		VM::Run(inv_flame,true); //指定された関数のフレームを作成し、実行。そのフレームがポップされた時点で帰ってくる（trueを指定したので）
 	}
 
-	glut_vmptr->Run(true); //指定された関数のフレームを作成し、実行。そのフレームがポップされた時点で帰ってくる（trueを指定したので）
 
 }
 //**************GLUT用のいろいろ*******************
 
-void print_str(shared_ptr<VM> vmptr){
+void print_str(shared_ptr<Flame> curr_flame){
 	string str=*(static_pointer_cast<string>(VM_STACK_GET.ref_value)); VM_STACK_POP;
 	cout<<str<<flush;
 }
 
-void print_int(shared_ptr<VM> vmptr){
+void print_int(shared_ptr<Flame> curr_flame){
 	int iopr1=VM_STACK_GET.int_value; VM_STACK_POP;
 	cout<<iopr1<<flush;
 }
 
-void print_double(shared_ptr<VM> vmptr){
+void print_double(shared_ptr<Flame> curr_flame){
 	double dopr1=VM_STACK_GET.double_value; VM_STACK_POP;
 	cout<<dopr1<<flush;
 }
 
-void print_bool(shared_ptr<VM> vmptr){
+void print_bool(shared_ptr<Flame> curr_flame){
 	bool bopr1=static_cast<bool>(VM_STACK_GET.bool_value); VM_STACK_POP;
 	cout<<(bopr1?"true":"false")<<flush;
 }
 
-void abs_int(shared_ptr<VM> vmptr){
+void abs_int(shared_ptr<Flame> curr_flame){
 	int iopr1=VM_STACK_GET.int_value; VM_STACK_POP;
 	VMValue v;v.int_value=abs(iopr1);
 	//返り値を直にプッシュ
 	VM_STACK_PUSH(v);
 }
 
-void int2double(shared_ptr<VM> vmptr){
+void int2double(shared_ptr<Flame> curr_flame){
 	int iopr1=VM_STACK_GET.int_value; VM_STACK_POP;
 	VMValue v;v.double_value=iopr1;
 	//返り値を直にプッシュ
 	VM_STACK_PUSH(v);
 }
 
-void double2int(shared_ptr<VM> vmptr){
+void double2int(shared_ptr<Flame> curr_flame){
 	int iopr1=VM_STACK_GET.double_value; VM_STACK_POP;
 	VMValue v;v.int_value=iopr1;
 	//返り値を直にプッシュ
 	VM_STACK_PUSH(v);
 }
 
-void rand_int(shared_ptr<VM> vmptr){
+void rand_int(shared_ptr<Flame> curr_flame){
 	//返り値を直にプッシュ
 	VMValue v;v.int_value=rand();
 	VM_STACK_PUSH(v);
 }
 
-void pow_int(shared_ptr<VM> vmptr){
+void pow_int(shared_ptr<Flame> curr_flame){
 	int iopr1=VM_STACK_GET.int_value; VM_STACK_POP;
 	int iopr2=VM_STACK_GET.int_value; VM_STACK_POP;
 	VMValue v;v.int_value=pow(iopr1,iopr2);
@@ -206,13 +205,13 @@ void pow_int(shared_ptr<VM> vmptr){
 	VM_STACK_PUSH(v);
 }
 
-void length_str(shared_ptr<VM> vmptr){
+void length_str(shared_ptr<Flame> curr_flame){
 	string str=*(static_pointer_cast<string>(VM_STACK_GET.ref_value)); VM_STACK_POP;
 	VMValue v;v.int_value=str.length();
 	VM_STACK_PUSH(v);
 }
 
-void glut_openwindow(shared_ptr<VM> vmptr){
+void glut_openwindow(shared_ptr<Flame> curr_flame){
 	int argc=0;char *argv[0];
 	glutInit(&argc,argv);
 	glutInitDisplayMode(GLUT_RGBA);
@@ -222,33 +221,33 @@ void glut_openwindow(shared_ptr<VM> vmptr){
 	glClearColor(1.0, 1.0, 1.0, 1.0);
 }
 
-void glut_setdispfunc(shared_ptr<VM> vmptr){
+void glut_setdispfunc(shared_ptr<Flame> curr_flame){
 	glut_dispfun=static_pointer_cast<ClosureObject>(VM_STACK_GET.ref_value);VM_STACK_POP;
-	glut_vmptr=vmptr;
+	glut_current_flame=curr_flame;
 	glutDisplayFunc(display);
 }
 
-void glut_setmousefunc(shared_ptr<VM> vmptr){
+void glut_setmousefunc(shared_ptr<Flame> curr_flame){
 	glut_mousefun=static_pointer_cast<ClosureObject>(VM_STACK_GET.ref_value);VM_STACK_POP;
-	glut_vmptr=vmptr;
+	glut_current_flame=curr_flame;
 	glutMouseFunc(mouse);
 }
 
-void glut_setkeyboardfunc(shared_ptr<VM> vmptr){
+void glut_setkeyboardfunc(shared_ptr<Flame> curr_flame){
 	glut_keyboardfun=static_pointer_cast<ClosureObject>(VM_STACK_GET.ref_value);VM_STACK_POP;
-	glut_vmptr=vmptr;
+	glut_current_flame=curr_flame;
 	glutKeyboardFunc(keyboard);
 }
 
-void glut_mainloop(shared_ptr<VM> vmptr){
+void glut_mainloop(shared_ptr<Flame> curr_flame){
 	glutMainLoop();
 }
 
-void glut_clear(shared_ptr<VM> vmptr){
+void glut_clear(shared_ptr<Flame> curr_flame){
 	glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void glut_char(shared_ptr<VM> vmptr){
+void glut_char(shared_ptr<Flame> curr_flame){
 	int x,y;
 	x=VM_STACK_GET.int_value;VM_STACK_POP;
 	y=VM_STACK_GET.int_value;VM_STACK_POP;
@@ -256,53 +255,53 @@ void glut_char(shared_ptr<VM> vmptr){
 	glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24,VM_STACK_GET.int_value);VM_STACK_POP;
 }
 
-void glut_begin_point(shared_ptr<VM> vmptr){
+void glut_begin_point(shared_ptr<Flame> curr_flame){
 	glBegin(GL_POINTS);
 }
 
-void glut_begin_line(shared_ptr<VM> vmptr){
+void glut_begin_line(shared_ptr<Flame> curr_flame){
 	glBegin(GL_LINES);
 }
 
-void glut_begin_strip(shared_ptr<VM> vmptr){
+void glut_begin_strip(shared_ptr<Flame> curr_flame){
 	glBegin(GL_LINE_STRIP);
 }
 
-void glut_begin_lineloop(shared_ptr<VM> vmptr){
+void glut_begin_lineloop(shared_ptr<Flame> curr_flame){
 	glBegin(GL_LINE_LOOP);
 }
 
-void glut_begin_triangle(shared_ptr<VM> vmptr){
+void glut_begin_triangle(shared_ptr<Flame> curr_flame){
 	glBegin(GL_TRIANGLES);
 }
 
-void glut_begin_quad(shared_ptr<VM> vmptr){
+void glut_begin_quad(shared_ptr<Flame> curr_flame){
 	glBegin(GL_QUADS);
 }
 
-void glut_begin_trianglefan(shared_ptr<VM> vmptr){
+void glut_begin_trianglefan(shared_ptr<Flame> curr_flame){
 	glBegin(GL_TRIANGLE_FAN);
 }
 
-void glut_begin_polygon(shared_ptr<VM> vmptr){
+void glut_begin_polygon(shared_ptr<Flame> curr_flame){
 	glBegin(GL_POLYGON);
 }
 
-void glut_flush(shared_ptr<VM> vmptr){
+void glut_flush(shared_ptr<Flame> curr_flame){
 	glFlush();
 }
 
-void glut_end(shared_ptr<VM> vmptr){
+void glut_end(shared_ptr<Flame> curr_flame){
 	glEnd();
 }
 
-void glut_vertex2i(shared_ptr<VM> vmptr){
+void glut_vertex2i(shared_ptr<Flame> curr_flame){
 	int x=VM_STACK_GET.int_value;VM_STACK_POP;
 	int y=VM_STACK_GET.int_value;VM_STACK_POP;
 	glVertex2i(x,y);
 }
 
-void glut_color3i(shared_ptr<VM> vmptr){
+void glut_color3i(shared_ptr<Flame> curr_flame){
 	int r,g,b;
 	r=VM_STACK_GET.int_value;VM_STACK_POP;
 	g=VM_STACK_GET.int_value;VM_STACK_POP;
@@ -311,7 +310,7 @@ void glut_color3i(shared_ptr<VM> vmptr){
 	glColor3ub(r,g,b);
 }
 
-void math_sin(shared_ptr<VM> vmptr)
+void math_sin(shared_ptr<Flame> curr_flame)
 {
 	double iopr1=VM_STACK_GET.double_value; VM_STACK_POP;
 	VMValue v;v.double_value=sin(iopr1);
@@ -319,7 +318,7 @@ void math_sin(shared_ptr<VM> vmptr)
 	VM_STACK_PUSH(v);
 }
 
-void math_cos(shared_ptr<VM> vmptr)
+void math_cos(shared_ptr<Flame> curr_flame)
 {
 	double iopr1=VM_STACK_GET.double_value; VM_STACK_POP;
 	VMValue v;v.double_value=cos(iopr1);
@@ -327,7 +326,7 @@ void math_cos(shared_ptr<VM> vmptr)
 	VM_STACK_PUSH(v);
 }
 
-void math_tan(shared_ptr<VM> vmptr)
+void math_tan(shared_ptr<Flame> curr_flame)
 {
 	double iopr1=VM_STACK_GET.double_value; VM_STACK_POP;
 	VMValue v;v.double_value=tan(iopr1);
@@ -335,7 +334,7 @@ void math_tan(shared_ptr<VM> vmptr)
 	VM_STACK_PUSH(v);
 }
 
-void math_asin(shared_ptr<VM> vmptr)
+void math_asin(shared_ptr<Flame> curr_flame)
 {
 	double iopr1=VM_STACK_GET.double_value; VM_STACK_POP;
 	VMValue v;v.double_value=asin(iopr1);
@@ -343,7 +342,7 @@ void math_asin(shared_ptr<VM> vmptr)
 	VM_STACK_PUSH(v);
 }
 
-void math_acos(shared_ptr<VM> vmptr)
+void math_acos(shared_ptr<Flame> curr_flame)
 {
 	double iopr1=VM_STACK_GET.double_value; VM_STACK_POP;
 	VMValue v;v.double_value=acos(iopr1);
@@ -351,7 +350,7 @@ void math_acos(shared_ptr<VM> vmptr)
 	VM_STACK_PUSH(v);
 }
 
-void math_atan(shared_ptr<VM> vmptr)
+void math_atan(shared_ptr<Flame> curr_flame)
 {
 	double iopr1=VM_STACK_GET.double_value; VM_STACK_POP;
 	VMValue v;v.double_value=atan(iopr1);
@@ -359,10 +358,16 @@ void math_atan(shared_ptr<VM> vmptr)
 	VM_STACK_PUSH(v);
 }
 
-void math_sqrt(shared_ptr<VM> vmptr)
+void math_sqrt(shared_ptr<Flame> curr_flame)
 {
 	double iopr1=VM_STACK_GET.double_value; VM_STACK_POP;
 	VMValue v;v.double_value=sqrt(iopr1);
 	//返り値を直にプッシュ
 	VM_STACK_PUSH(v);
+}
+
+void sleep_msec(shared_ptr<Flame> curr_flame)
+{
+	int sleeptime=VM_STACK_GET.int_value;VM_STACK_POP;
+	this_thread::sleep_for(chrono::milliseconds(sleeptime));
 }

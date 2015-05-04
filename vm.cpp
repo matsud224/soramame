@@ -7,46 +7,52 @@
 #include "expression.h"
 #include "basic_object.h"
 #include <map>
+#include <thread>
 #include <memory>
-
+#include <mutex>
+#include <condition_variable>
 
 #define STACK_POP CurrentFlame->OperandStack.pop()
 #define STACK_PUSH(x) CurrentFlame->OperandStack.push((x))
 #define STACK_GET CurrentFlame->OperandStack.top()
 #define OPERAND_GET (*(CurrentFlame->CodePtr))[CurrentFlame->PC++]
-#define GET_CONSTANT(x) ExecutableData->PublicConstantPool.GetValue((x))
+#define GET_CONSTANT(x) VM::PublicConstantPool.GetValue((x))
 
 using namespace std;
 
 
-void VM::Init()
+mutex mtx;
+
+map<pair<string,string>, void (*)(shared_ptr<Flame>) > VM::BuiltinFunctionList; //関数名と型名から関数を引っ張ってくる
+ConstantPool VM::PublicConstantPool;
+
+shared_ptr<Flame> VM::GetInitialFlame(shared_ptr<Executable> execdata)
 {
     //トップレベルのフレームを作成
     shared_ptr< vector< pair<string,VMValue> > > toplevel_vars=make_shared<vector< pair<string,VMValue> > >();
-	shared_ptr<Flame> tl_flame=make_shared<Flame>(toplevel_vars,ExecutableData->Bootstrap,nullptr,nullptr);
+	shared_ptr<Flame> tl_flame=make_shared<Flame>(toplevel_vars,execdata->Bootstrap,nullptr,nullptr);
 
     //ローカル変数の準備
-	for(int i=ExecutableData->LocalVariables->size()-1;i>=0;i--){
+	for(int i=execdata->LocalVariables->size()-1;i>=0;i--){
 		VMValue v;
-		(*toplevel_vars).push_back(pair<string,VMValue>(ExecutableData->LocalVariables->at(i).first,v)); //ローカル変数はのちに正しく初期化される
+		(*toplevel_vars).push_back(pair<string,VMValue>(execdata->LocalVariables->at(i).first,v)); //ローカル変数はのちに正しく初期化される
 	}
 
-    for(unsigned int i=0;i<ExecutableData->ChildPoolIndex.size();i++){
-		static_pointer_cast<FunctionObject>(ExecutableData->PublicConstantPool.GetValue(ExecutableData->ChildPoolIndex[i]).ref_value)->ParentFlame=tl_flame;
+    for(unsigned int i=0;i<execdata->ChildPoolIndex.size();i++){
+		static_pointer_cast<FunctionObject>(VM::PublicConstantPool.GetValue(execdata->ChildPoolIndex[i]).ref_value)->ParentFlame=tl_flame;
 	}
-    CurrentFlame=tl_flame;
+    return tl_flame;
 }
 
-VMValue VM::Run(bool currflame_only){
+VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
     VMValue v;
     int iopr1,iopr2;
     bool bopr1,bopr2;
     double dopr1,dopr2;
     int flameback,localindex;
 
-	shared_ptr<Flame> current_flame_ptr=CurrentFlame;
-    shared_ptr<Flame> currentflame;
 	int i;int bytecode;
+	shared_ptr<Flame> initial_flame=CurrentFlame; //呼び出し時のフレーム
 
     while(true){
 		v=VMValue();
@@ -54,7 +60,7 @@ VMValue VM::Run(bool currflame_only){
 			v.int_value=0;
 			return v;
         }
-        if(currflame_only && CurrentFlame==current_flame_ptr->DynamicLink){
+        if(currflame_only && CurrentFlame==initial_flame->DynamicLink){
 			v.int_value=0;
 			return v;
         }
@@ -258,16 +264,18 @@ VMValue VM::Run(bool currflame_only){
             	shared_ptr<ClosureObject> cobj=static_pointer_cast<ClosureObject>(STACK_GET.ref_value);STACK_POP;
                 shared_ptr<FunctionObject> callee=cobj->FunctionRef;
 				bool is_tail=OPERAND_GET==0?false:true;
-				//cout<<callee->Name<<endl;
-				//cout<<callee->isBuiltin<<endl;
+				bool is_async=OPERAND_GET==0?false:true;
 
                 if(callee->isBuiltin){
 					//ビルトイン関数の場合は、フレームを作らず、直に値をスタックに置く
 					string builtin_name=callee->Name;
 					string typestr=callee->TypeInfo->GetName();
 
-					ExecutableData->BuiltinFunctionList[pair<string,string>(builtin_name,typestr)](shared_from_this());
-
+					if(is_async){
+						thread t(VM::BuiltinFunctionList[pair<string,string>(builtin_name,typestr)],CurrentFlame);
+					}else{
+						VM::BuiltinFunctionList[pair<string,string>(builtin_name,typestr)](CurrentFlame);
+					}
                 }else{
 					//フレームを作成
 					shared_ptr< vector< pair<string,VMValue> > > vars=make_shared<vector< pair<string,VMValue> > >();
@@ -284,20 +292,30 @@ VMValue VM::Run(bool currflame_only){
 					shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,is_tail?CurrentFlame->DynamicLink:CurrentFlame,cobj->ParentFlame);
 					for(unsigned int i=0;i<callee->ChildPoolIndex->size();i++){
 						//コンスタントプール内のクロージャに生成元のフレームを覚えさせる
-						static_pointer_cast<FunctionObject>(ExecutableData->PublicConstantPool.GetValue(callee->ChildPoolIndex->at(i)).ref_value)->ParentFlame=inv_flame;
+						static_pointer_cast<FunctionObject>(VM::PublicConstantPool.GetValue(callee->ChildPoolIndex->at(i)).ref_value)->ParentFlame=inv_flame;
 					}
-					CurrentFlame=inv_flame;
+					if(is_async){
+						cout<<"thread started!"<<endl;
+						thread t(VM::Run,inv_flame,true);
+						t.detach();
+
+					}else{
+						CurrentFlame=inv_flame;
+					}
                 }
             }
             break;
         case loadlocal:
-        	flameback=OPERAND_GET;
-            localindex=OPERAND_GET;
-			currentflame=CurrentFlame;
-			for(i=0;i<flameback;i++){
-				currentflame=currentflame->StaticLink;
-			}
-			STACK_PUSH((*(currentflame->Variables))[localindex].second);
+        	{
+				flameback=OPERAND_GET;
+				localindex=OPERAND_GET;
+				shared_ptr<Flame> fp=CurrentFlame;
+				for(i=0;i<flameback;i++){
+					fp=fp->StaticLink;
+				}
+				STACK_PUSH((*(fp->Variables))[localindex].second);
+
+        	}
             break;
         case ret:
             CurrentFlame=CurrentFlame->DynamicLink;
@@ -317,7 +335,7 @@ VMValue VM::Run(bool currflame_only){
 			{
 			//オペランドにpoolindexをとり、クロージャオブジェクトを生成
 			iopr1=OPERAND_GET; //poolindex
-			shared_ptr<ClosureObject> cobj=make_shared<ClosureObject>(static_pointer_cast<FunctionObject>(ExecutableData->PublicConstantPool.GetValue(iopr1).ref_value),static_pointer_cast<FunctionObject>(ExecutableData->PublicConstantPool.GetValue(iopr1).ref_value)->ParentFlame);
+			shared_ptr<ClosureObject> cobj=make_shared<ClosureObject>(static_pointer_cast<FunctionObject>(VM::PublicConstantPool.GetValue(iopr1).ref_value),static_pointer_cast<FunctionObject>(VM::PublicConstantPool.GetValue(iopr1).ref_value)->ParentFlame);
 			v.ref_value=cobj;
 			STACK_PUSH(v);
 			}
@@ -378,7 +396,7 @@ VMValue VM::Run(bool currflame_only){
 			break;
 		case loadfield:
 			{
-				string name=*(static_pointer_cast<string>(ExecutableData->PublicConstantPool.GetValue(OPERAND_GET).ref_value));
+				string name=*(static_pointer_cast<string>(VM::PublicConstantPool.GetValue(OPERAND_GET).ref_value));
 				shared_ptr<DataObject> obj=(static_pointer_cast<DataObject>(STACK_GET.ref_value)); STACK_POP;
 				map<string,VMValue>::iterator iter;
 				for(iter=obj->MemberMap->begin();iter!=obj->MemberMap->end();iter++){
@@ -390,15 +408,18 @@ VMValue VM::Run(bool currflame_only){
 			}
 			break;
 		case storelocal:
-            flameback=OPERAND_GET;
-            localindex=OPERAND_GET; //localindex
-            v=STACK_GET; STACK_POP; //値
-            //cout<<"localindex:"<<localindex<<endl;
-            currentflame=CurrentFlame;
-			for(i=0;i<flameback;i++){
-				currentflame=currentflame->StaticLink;
+			{
+				flameback=OPERAND_GET;
+				localindex=OPERAND_GET; //localindex
+				v=STACK_GET; STACK_POP; //値
+				//cout<<"localindex:"<<localindex<<endl;
+				shared_ptr<Flame> fp=CurrentFlame;
+				for(i=0;i<flameback;i++){
+					fp=fp->StaticLink;
+				}
+				(*(fp->Variables))[localindex].second=v;
+
 			}
-			(*(currentflame->Variables))[localindex].second=v;
             break;
 		case storebyindex:
 			{
@@ -413,7 +434,7 @@ VMValue VM::Run(bool currflame_only){
 			break;
 		case storefield:
 			{
-				string name=*(static_pointer_cast<string>(ExecutableData->PublicConstantPool.GetValue(OPERAND_GET).ref_value));
+				string name=*(static_pointer_cast<string>(VM::PublicConstantPool.GetValue(OPERAND_GET).ref_value));
 				shared_ptr<DataObject> obj=(static_pointer_cast<DataObject>(STACK_GET.ref_value)); STACK_POP;
 				map<string,VMValue>::iterator iter;
 				for(iter=obj->MemberMap->begin();iter!=obj->MemberMap->end();iter++){
@@ -447,6 +468,61 @@ VMValue VM::Run(bool currflame_only){
 					f->OperandStack=item.second;
 				}
 				CurrentFlame->OperandStack.push(arg);
+			}
+			break;
+		case makechannel:
+			{
+				v.ref_value=make_shared<ChannelObject>();
+				STACK_PUSH(v);
+			}
+			break;
+		case channel_send:
+			{
+				unique_lock<mutex> lock(mtx);
+				shared_ptr<ChannelObject> chan=static_pointer_cast<ChannelObject>(STACK_GET.ref_value); STACK_POP;
+				//cout<<"attempt to send... s:"<<chan->Senders.size()<<",r:"<<chan->Receivers.size()<<endl;
+				if(chan->Receivers.size()==0){
+					//受信者がいないので寝る
+					bool is_ready=false;
+					shared_ptr<condition_variable> cond=make_shared<condition_variable>();
+					auto tinfo=pair<shared_ptr<condition_variable> ,bool*>(cond,&is_ready);
+					chan->Senders.push(pair<pair<shared_ptr<condition_variable> ,bool*>,VMValue>(tinfo,STACK_GET));
+					STACK_POP;
+					cond->wait(lock,[&]{return is_ready;});
+				}else{
+					auto tinfo=pair<shared_ptr<condition_variable> ,bool*>(nullptr,NULL);
+					chan->Senders.push(pair<pair<shared_ptr<condition_variable> ,bool*>,VMValue>(tinfo,STACK_GET));
+
+					//寝ているスレッド（受信者）を起こす
+					*(chan->Receivers.front().second)=true;
+					chan->Receivers.front().first->notify_one();
+					chan->Receivers.pop();
+				}
+			}
+			break;
+		case channel_receive:
+			{
+				unique_lock<mutex> lock(mtx);
+				shared_ptr<ChannelObject> chan=static_pointer_cast<ChannelObject>(STACK_GET.ref_value);STACK_POP;
+				//cout<<"attempt to receive... s:"<<chan->Senders.size()<<",r:"<<chan->Receivers.size()<<endl;
+				if(chan->Senders.size()==0){
+					//送信者がいないので寝る
+					bool is_ready=false;
+					shared_ptr<condition_variable> cond=make_shared<condition_variable>();
+					chan->Receivers.push(pair<shared_ptr<condition_variable> ,bool*>(cond,&is_ready));
+					cond->wait(lock,[&]{return is_ready;});
+					//受け取る
+					v=chan->Senders.front().second; chan->Senders.pop();
+					STACK_PUSH(v);
+				}else{
+					//受け取る
+					v=chan->Senders.front().second;
+					//寝ているスレッド（送信者）を起こす
+					*(chan->Senders.front().first.second)=true;
+					chan->Senders.front().first.first->notify_one();
+					chan->Senders.pop();
+					STACK_PUSH(v);
+				}
 			}
 			break;
         default:

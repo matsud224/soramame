@@ -64,6 +64,19 @@ vector<int> ReturnStatementAST::FindChildFunction()
 	return result_list;
 }
 
+vector<int> AsyncStatementAST::FindChildFunction()
+{
+	vector<int> result_list;
+	vector<int> list_tmp;
+
+	if(Expression){
+		list_tmp=Expression->FindChildFunction();
+	}
+	result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
+
+	return result_list;
+}
+
 vector<int> VariableDefStatementAST::FindChildFunction()
 {
 	vector<int> result_list;
@@ -99,6 +112,12 @@ void ReturnStatementAST::Codegen(shared_ptr<vector<int> > bytecodes, shared_ptr<
 	}else{
         bytecodes->push_back(ret);
     }
+}
+
+void AsyncStatementAST::Codegen(shared_ptr<vector<int> > bytecodes, shared_ptr<CodegenInfo> geninfo)
+{
+	dynamic_pointer_cast<CallExprAST>(Expression)->IsAsync=true;
+	Expression->Codegen(bytecodes,geninfo);
 }
 
 
@@ -209,6 +228,20 @@ void ReturnStatementAST::CheckType(shared_ptr<vector<Environment> > env,shared_p
 	Expression->CheckType(env,geninfo,CurrentLocalVars);
 }
 
+void AsyncStatementAST::CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars){
+	if(Expression==nullptr){return;}
+	if(Expression->IsBuilt()==false){
+		Expression=dynamic_pointer_cast<UnBuiltExprAST >(Expression)->BuildAST(geninfo);
+	}
+	Expression->CheckType(env,geninfo,CurrentLocalVars);
+	if(typeid(*Expression)!=typeid(CallExprAST)){
+		error("asyncステートメントには関数呼び出しが必要です");
+	}
+	if(typeid(*(dynamic_pointer_cast<CallExprAST>(Expression)->callee->TypeInfo))==typeid(ContinuationAST)){
+		error("継続は別スレッドで再開できません");
+	}
+}
+
 void IfStatementAST::CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars){
 	if(Condition->IsBuilt()==false){
 		Condition=dynamic_pointer_cast<UnBuiltExprAST >(Condition)->BuildAST(geninfo);
@@ -257,6 +290,10 @@ bool ReturnStatementAST::IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_ind
 	return (Expression==nullptr?true:Expression->IsCTFEable(cgi,curr_fun_index));
 }
 
+bool AsyncStatementAST::IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){
+	return false;
+}
+
 bool VariableDefStatementAST::IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){
 	return InitialValue==nullptr?true:InitialValue->IsCTFEable(cgi,curr_fun_index);
 }
@@ -299,6 +336,18 @@ vector<shared_ptr<ExprAST> > WhileStatementAST::GetCallExprList()
 
 
 vector<shared_ptr<ExprAST> > ReturnStatementAST::GetCallExprList()
+{
+	vector<shared_ptr<ExprAST> > result;
+	vector<shared_ptr<ExprAST> > temp;
+
+	if(Expression!=nullptr){
+		temp=Expression->GetCallExprList();
+		result.insert(result.end(),temp.begin(),temp.end());
+	}
+	return result;
+}
+
+vector<shared_ptr<ExprAST> > AsyncStatementAST::GetCallExprList()
 {
 	vector<shared_ptr<ExprAST> > result;
 	vector<shared_ptr<ExprAST> > temp;

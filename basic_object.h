@@ -1,10 +1,12 @@
 #pragma once
 
+#include <thread>
 #include <memory>
 #include "ast_etc.h"
 #include "statement.h"
 #include "type.h"
 #include "expression.h"
+#include <condition_variable>
 
 class Flame;
 class FunctionObject;
@@ -23,6 +25,14 @@ public:
 	shared_ptr<Flame> StartFlame;
 
 	ContinuationObject(vector<pair<int,stack<VMValue> > > snapshot,shared_ptr<Flame> startflame):Snapshot(snapshot),StartFlame(startflame){};
+};
+
+class ChannelObject{
+public:
+	queue<pair<pair<shared_ptr<condition_variable>,bool*>,VMValue> > Senders;
+	queue<pair<shared_ptr<condition_variable>,bool*> > Receivers;
+
+	ChannelObject(){};
 };
 
 class DataObject{

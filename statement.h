@@ -67,6 +67,18 @@ public:
     virtual vector<shared_ptr<ExprAST> > GetCallExprList();
 };
 
+class AsyncStatementAST : public StatementAST{
+public:
+    shared_ptr<ExprAST> Expression;
+
+    AsyncStatementAST(shared_ptr<ExprAST> exp):Expression(exp){};
+    virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
+    virtual void CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars);
+    virtual vector<int> FindChildFunction();
+    virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int);
+    virtual vector<shared_ptr<ExprAST> > GetCallExprList();
+};
+
 class VariableDefStatementAST : public StatementAST{
 public:
     shared_ptr<pair<string,shared_ptr<TypeAST> > > Variable;

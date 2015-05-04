@@ -112,6 +112,10 @@ void UnaryExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<Codegen
         }else if(TypeInfo->GetName()=="double"){
 			bytecodes->push_back(dneg);
         }
+    }else if(Operator=="?"){
+        if(typeid(*Operand->TypeInfo)==typeid(ChannelTypeAST)){
+            bytecodes->push_back(channel_receive);
+        }
     }
     return;
 }
@@ -170,6 +174,8 @@ void BinaryExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<Codege
     }else if(Operator=="<<"){
         if(LHS->TypeInfo->GetName()=="int"){
             bytecodes->push_back(ilshift);
+        }else if(typeid(*LHS->TypeInfo)==typeid(ChannelTypeAST)){
+            bytecodes->push_back(channel_send);
         }
     }else if(Operator==">>"){
         if(LHS->TypeInfo->GetName()=="int"){
@@ -236,7 +242,7 @@ void CallExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenI
 	if(callee==nullptr){
 		//計算済み
 		bytecodes->push_back(ldc);
-		bytecodes->push_back(geninfo->PublicConstantPool.SetValue(CalculatedValue));
+		bytecodes->push_back(VM::PublicConstantPool.SetValue(CalculatedValue));
 		return;
 	}
     vector<shared_ptr<ExprAST> >::reverse_iterator iter;
@@ -251,6 +257,7 @@ void CallExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenI
     if(typeid(*(callee->TypeInfo))==typeid(FunctionTypeAST)){
 		bytecodes->push_back(invoke);
 		bytecodes->push_back(IsTail?1:0);
+		bytecodes->push_back(IsAsync?1:0);
     }else if(typeid(*(callee->TypeInfo))==typeid(ContinuationTypeAST)){
 		bytecodes->push_back(resume_continuation);
     }
@@ -574,6 +581,11 @@ shared_ptr<TypeAST>  UnaryExprAST::CheckType(shared_ptr<vector<Environment> > en
 			error("型に問題があります。単項演算子:"+Operator+" オペランド:"+oprandt->GetName());
 		}
 		TypeInfo=oprandt;
+	}else if(Operator=="?"){
+		if(!(typeid(*oprandt)==typeid(ChannelTypeAST))){
+			error("型に問題があります。単項演算子:"+Operator+" オペランド:"+oprandt->GetName());
+		}
+		TypeInfo=dynamic_pointer_cast<ChannelTypeAST>(oprandt)->Type;
 	}
 
 	if(TypeInfo==nullptr){
@@ -607,7 +619,9 @@ shared_ptr<TypeAST>  BinaryExprAST::CheckType(shared_ptr<vector<Environment> > e
 		TypeInfo=lhst; //オペランドの型を元に自らの型を決める
 	}else if(Operator=="%" || Operator=="<<" || Operator==">>"){
 		if(lhst->GetName() != rhst->GetName() || (lhst->GetName()!="int")){
-			error("型に問題があります。二項演算子 "+Operator+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
+			if(!(Operator=="<<" && typeid(ChannelTypeAST)==typeid(*lhst) && dynamic_pointer_cast<ChannelTypeAST>(lhst)->Type->GetName()==rhst->GetName())){
+				error("型に問題があります。二項演算子 "+Operator+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
+			}
 		}
 		TypeInfo=lhst;
 	}else if(Operator=="&&" || Operator=="||"){
@@ -1320,5 +1334,32 @@ vector<shared_ptr<ExprAST> > ContinuationAST::GetCallExprList()
 {
 	vector<shared_ptr<ExprAST> > result;
 	result=InternalClosure->GetCallExprList();
+	return result;
+}
+
+shared_ptr<TypeAST> NewObjectAST::CheckType(shared_ptr<vector<Environment> > env, shared_ptr<CodegenInfo> geninfo, shared_ptr<vector< pair<string, shared_ptr<TypeAST> > > > CurrentLocalVars)
+{
+	if(typeid(*TypeInfo)!=typeid(ChannelTypeAST)){
+		error("newを使用できない型です");
+	}
+	return TypeInfo;
+}
+
+vector<int> NewObjectAST::FindChildFunction()
+{
+    vector<int> result;
+    return result;
+}
+
+void NewObjectAST::Codegen(shared_ptr<vector<int> > bytecodes, shared_ptr<CodegenInfo> geninfo)
+{
+	if(typeid(*TypeInfo)==typeid(ChannelTypeAST)){
+		bytecodes->push_back(makechannel);
+	}
+}
+
+vector< shared_ptr<ExprAST> > NewObjectAST::GetCallExprList()
+{
+	vector<shared_ptr<ExprAST> > result;
 	return result;
 }

@@ -63,6 +63,20 @@ public:
 
 };
 
+//チャンネル型
+class ChannelTypeAST : public TypeAST{
+public:
+	ChannelTypeAST(shared_ptr<TypeAST> t):Type(t){}
+	shared_ptr<TypeAST> Type;
+	virtual string GetName(){
+		string s="channel(";
+		s+=Type->GetName();
+		s+=")";
+		return s;
+	}
+
+};
+
 //リスト型
 class ListTypeAST : public TypeAST{
 public:
