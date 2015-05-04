@@ -45,3 +45,4 @@ void math_atan(shared_ptr<Flame>);
 void math_sqrt(shared_ptr<Flame>);
 
 void sleep_msec(shared_ptr<Flame>);
+void hw_concurrency(shared_ptr<Flame>);

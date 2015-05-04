@@ -297,6 +297,7 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 					}
 					if(is_async){
 						//cout<<"thread started!"<<endl;
+						inv_flame->DynamicLink=nullptr;
 						thread t(VM::Run,inv_flame,true);
 						t.detach();
 
@@ -482,18 +483,9 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 				unique_lock<mutex> lock(mtx);
 				shared_ptr<ChannelObject> chan=static_pointer_cast<ChannelObject>(STACK_GET.ref_value); STACK_POP;
 				//cout<<"attempt to send... s:"<<chan->Senders.size()<<",r:"<<chan->Receivers.size()<<endl;
-				if(chan->Receivers.size()==0){
-					//受信者がいないので寝る
-					bool is_ready=false;
-					shared_ptr<condition_variable> cond=make_shared<condition_variable>();
-					auto tinfo=pair<shared_ptr<condition_variable> ,bool*>(cond,&is_ready);
-					chan->Senders.push(pair<pair<shared_ptr<condition_variable> ,bool*>,VMValue>(tinfo,STACK_GET));
-					STACK_POP;
-					cond->wait(lock,[&]{return is_ready;});
-				}else{
-					auto tinfo=pair<shared_ptr<condition_variable> ,bool*>(nullptr,NULL);
-					chan->Senders.push(pair<pair<shared_ptr<condition_variable> ,bool*>,VMValue>(tinfo,STACK_GET));
-
+				chan->SentValues.push(STACK_GET);
+				STACK_POP;
+				if(chan->Receivers.size()>0){
 					//寝ているスレッド（受信者）を起こす
 					*(chan->Receivers.front().second)=true;
 					chan->Receivers.front().first->notify_one();
@@ -506,22 +498,19 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 				unique_lock<mutex> lock(mtx);
 				shared_ptr<ChannelObject> chan=static_pointer_cast<ChannelObject>(STACK_GET.ref_value);STACK_POP;
 				//cout<<"attempt to receive... s:"<<chan->Senders.size()<<",r:"<<chan->Receivers.size()<<endl;
-				if(chan->Senders.size()==0){
+				if(chan->SentValues.size()==0){
 					//送信者がいないので寝る
 					bool is_ready=false;
 					shared_ptr<condition_variable> cond=make_shared<condition_variable>();
 					chan->Receivers.push(pair<shared_ptr<condition_variable> ,bool*>(cond,&is_ready));
 					cond->wait(lock,[&]{return is_ready;});
 					//受け取る
-					v=chan->Senders.front().second; chan->Senders.pop();
+					v=chan->SentValues.front(); chan->SentValues.pop();
 					STACK_PUSH(v);
 				}else{
 					//受け取る
-					v=chan->Senders.front().second;
-					//寝ているスレッド（送信者）を起こす
-					*(chan->Senders.front().first.second)=true;
-					chan->Senders.front().first.first->notify_one();
-					chan->Senders.pop();
+					v=chan->SentValues.front();
+					chan->SentValues.pop();
 					STACK_PUSH(v);
 				}
 			}

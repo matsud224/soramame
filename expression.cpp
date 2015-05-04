@@ -1328,6 +1328,7 @@ void ContinuationAST::Codegen(shared_ptr<vector<int> > bytecodes, shared_ptr<Cod
 	//---この時点でスタックトップに継続を欲しがっているクロージャが置かれている
 	bytecodes->push_back(invoke);
 	bytecodes->push_back(0);
+	bytecodes->push_back(0);
 }
 
 vector<shared_ptr<ExprAST> > ContinuationAST::GetCallExprList()

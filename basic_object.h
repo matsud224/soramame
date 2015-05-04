@@ -29,7 +29,7 @@ public:
 
 class ChannelObject{
 public:
-	queue<pair<pair<shared_ptr<condition_variable>,bool*>,VMValue> > Senders;
+	queue<VMValue> SentValues;
 	queue<pair<shared_ptr<condition_variable>,bool*> > Receivers;
 
 	ChannelObject(){};

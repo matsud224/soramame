@@ -43,6 +43,7 @@ void Compiler::ASTgen()
     vector< pair<string,shared_ptr<TypeAST> > > arglist;
 
 	RegisterBuiltinFunction("rand",rand_int,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("int"),false);
+	RegisterBuiltinFunction("hardware_concurrency",hw_concurrency,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("int"),false);
 
 	RegisterBuiltinFunction("glut_mainloop",glut_mainloop,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
 	RegisterBuiltinFunction("glut_clear",glut_clear,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
@@ -304,6 +305,7 @@ void Compiler::CTFE(int loop/*繰り返し回数*/){
 			preexec_code.push_back(0); //FlameBack
 			preexec_code.push_back(dynamic_cast<Variableshared_ptr<ExprAST> >((*iter)->callee)->LocalIndex);
 			preexec_code.push_back(invoke);
+			preexec_code.push_back(0);
 			preexec_code.push_back(0);
 			preexec_code.push_back(ret);
 

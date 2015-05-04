@@ -371,3 +371,9 @@ void sleep_msec(shared_ptr<Flame> curr_flame)
 	int sleeptime=VM_STACK_GET.int_value;VM_STACK_POP;
 	this_thread::sleep_for(chrono::milliseconds(sleeptime));
 }
+
+void hw_concurrency(shared_ptr<Flame> curr_flame)
+{
+	VMValue v;v.int_value=thread::hardware_concurrency();
+	VM_STACK_PUSH(v);
+}
