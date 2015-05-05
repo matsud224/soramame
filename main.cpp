@@ -23,37 +23,38 @@
 #include "exceptions.h"
 #include <thread>
 #include <chrono>
+#include <sstream>
 
 
 using namespace std;
 
 int comment_depth=0; //ブロックコメントのネストの深さ
-pair<Symbol,TokenValue> commentstart_lex(char *str,Lexer *lex){
+pair<Symbol,TokenValue> commentstart_lex(string str,Lexer *lex){
 	lex->curr_state=COMMENT;
 	comment_depth++;
 	return pair<Symbol,TokenValue>(INPUTEND ,Lexer::dummy);
 };
-pair<Symbol,TokenValue> commentend_lex(char *str,Lexer *lex){
+pair<Symbol,TokenValue> commentend_lex(string str,Lexer *lex){
 	comment_depth--;
 	if(comment_depth==0){
 		lex->curr_state=INITIAL;
 	}
 	return pair<Symbol,TokenValue>(INPUTEND ,Lexer::dummy);
 };
-pair<Symbol,TokenValue> var_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(VAR ,Lexer::dummy);};
-pair<Symbol,TokenValue> if_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(IF ,Lexer::dummy);};
-pair<Symbol,TokenValue> while_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(WHILE ,Lexer::dummy);};
-pair<Symbol,TokenValue> fun_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(FUN ,Lexer::dummy);};
-pair<Symbol,TokenValue> else_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(ELSE ,Lexer::dummy);};
-pair<Symbol,TokenValue> new_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(NEW ,Lexer::dummy);};
-pair<Symbol,TokenValue> return_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(RETURN_S ,Lexer::dummy);};
-pair<Symbol,TokenValue> data_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(DATA ,Lexer::dummy);};
-pair<Symbol,TokenValue> group_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(GROUP ,Lexer::dummy);};
-pair<Symbol,TokenValue> continuation_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(CONTINUATION ,Lexer::dummy);};
-pair<Symbol,TokenValue> channel_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(CHANNEL ,Lexer::dummy);};
-pair<Symbol,TokenValue> callcc_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(CALLCC ,Lexer::dummy);};
-pair<Symbol,TokenValue> async_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(ASYNC ,Lexer::dummy);};
-pair<Symbol,TokenValue> boolval_lex(char *str,Lexer *lex){
+pair<Symbol,TokenValue> var_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(VAR ,Lexer::dummy);};
+pair<Symbol,TokenValue> if_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(IF ,Lexer::dummy);};
+pair<Symbol,TokenValue> while_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(WHILE ,Lexer::dummy);};
+pair<Symbol,TokenValue> fun_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(FUN ,Lexer::dummy);};
+pair<Symbol,TokenValue> else_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(ELSE ,Lexer::dummy);};
+pair<Symbol,TokenValue> new_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(NEW ,Lexer::dummy);};
+pair<Symbol,TokenValue> return_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(RETURN_S ,Lexer::dummy);};
+pair<Symbol,TokenValue> data_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(DATA ,Lexer::dummy);};
+pair<Symbol,TokenValue> group_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(GROUP ,Lexer::dummy);};
+pair<Symbol,TokenValue> continuation_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(CONTINUATION ,Lexer::dummy);};
+pair<Symbol,TokenValue> channel_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(CHANNEL ,Lexer::dummy);};
+pair<Symbol,TokenValue> callcc_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(CALLCC ,Lexer::dummy);};
+pair<Symbol,TokenValue> async_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(ASYNC ,Lexer::dummy);};
+pair<Symbol,TokenValue> boolval_lex(string str,Lexer *lex){
 	TokenValue t;
 	string val(str);
 	if(val=="true"){
@@ -63,37 +64,39 @@ pair<Symbol,TokenValue> boolval_lex(char *str,Lexer *lex){
 	}
 	return pair<Symbol,TokenValue>(BOOLVAL , t);
 };
-pair<Symbol,TokenValue> semicolon_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(SEMICOLON ,Lexer::dummy);};
-pair<Symbol,TokenValue> colon_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(COLON ,Lexer::dummy);};
-pair<Symbol,TokenValue> dot_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(DOT ,Lexer::dummy);};
-pair<Symbol,TokenValue> comma_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(COMMA ,Lexer::dummy);};
-pair<Symbol,TokenValue> lparen_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(LPAREN ,Lexer::dummy);};
-pair<Symbol,TokenValue> rparen_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(RPAREN ,Lexer::dummy);};
-pair<Symbol,TokenValue> lbrace_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(LBRACE ,Lexer::dummy);};
-pair<Symbol,TokenValue> rbrace_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(RBRACE ,Lexer::dummy);};
-pair<Symbol,TokenValue> lbracket_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(LBRACKET ,Lexer::dummy);};
-pair<Symbol,TokenValue> rbracket_lex(char *str,Lexer *lex){return pair<Symbol,TokenValue>(RBRACKET ,Lexer::dummy);};
-pair<Symbol,TokenValue> ident_lex(char *str,Lexer *lex){
+pair<Symbol,TokenValue> semicolon_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(SEMICOLON ,Lexer::dummy);};
+pair<Symbol,TokenValue> colon_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(COLON ,Lexer::dummy);};
+pair<Symbol,TokenValue> dot_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(DOT ,Lexer::dummy);};
+pair<Symbol,TokenValue> comma_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(COMMA ,Lexer::dummy);};
+pair<Symbol,TokenValue> lparen_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(LPAREN ,Lexer::dummy);};
+pair<Symbol,TokenValue> rparen_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(RPAREN ,Lexer::dummy);};
+pair<Symbol,TokenValue> lbrace_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(LBRACE ,Lexer::dummy);};
+pair<Symbol,TokenValue> rbrace_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(RBRACE ,Lexer::dummy);};
+pair<Symbol,TokenValue> lbracket_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(LBRACKET ,Lexer::dummy);};
+pair<Symbol,TokenValue> rbracket_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(RBRACKET ,Lexer::dummy);};
+pair<Symbol,TokenValue> ident_lex(string str,Lexer *lex){
 	TokenValue t;
 	t.str=str;
 	return pair<Symbol,TokenValue>(IDENT ,t);
 };
-pair<Symbol,TokenValue> operator_lex(char *str,Lexer *lex){
+pair<Symbol,TokenValue> operator_lex(string str,Lexer *lex){
 	TokenValue t;
 	t.str=str;
 	return pair<Symbol,TokenValue>(OPERATOR ,t);
 };
-pair<Symbol,TokenValue> intval_lex(char *str,Lexer *lex){
+pair<Symbol,TokenValue> intval_lex(string str,Lexer *lex){
 	TokenValue t;
-	t.intval=atoi(str);
+	stringstream ss;
+	ss<<str; ss>>t.intval;
 	return pair<Symbol,TokenValue>(INTVAL ,t);
 };
-pair<Symbol,TokenValue> doubleval_lex(char *str,Lexer *lex){
+pair<Symbol,TokenValue> doubleval_lex(string str,Lexer *lex){
 	TokenValue t;
-	t.doubleval=atof(str);
+	stringstream ss;
+	ss<<str; ss>>t.doubleval;
 	return pair<Symbol,TokenValue>(DOUBLEVAL ,t);
 };
-pair<Symbol,TokenValue> asciival_lex(char *str,Lexer *lex){
+pair<Symbol,TokenValue> asciival_lex(string str,Lexer *lex){
 	TokenValue t;
 	string str_temp(str);
 	//ダブルクオーテーションを削除
@@ -103,33 +106,32 @@ pair<Symbol,TokenValue> asciival_lex(char *str,Lexer *lex){
 	t.intval=c;
 	return pair<Symbol,TokenValue>(INTVAL ,t);
 };
-pair<Symbol,TokenValue> stringval_lex(char *str,Lexer *lex){
+pair<Symbol,TokenValue> stringval_lex(string str,Lexer *lex){
 	TokenValue t;
-	string str_temp(str);
 	//ダブルクオーテーションを削除
-	str_temp.erase(str_temp.begin());
-	str_temp.erase(str_temp.end()-1);
-	char *str_a=new char[str_temp.length()+1];
-	for(int i=0;i<str_temp.length()+1;i++){
-		str_a[i]=str_temp[i];
+	str.erase(str.begin());
+	str.erase(str.end()-1);
+	string str_a=new char[str.length()+1];
+	for(int i=0;i<str.length()+1;i++){
+		str_a[i]=str[i];
 	}
 	string escaped=escape_str(str_a);
-	char *str_final=new char[escaped.length()+1];
+	string str_final=new char[escaped.length()+1];
 	for(int i=0;i<escaped.length()+1;i++){
 		str_final[i]=escaped[i];
 	}
 	t.str=str_final;
 	return pair<Symbol,TokenValue>(STRINGVAL ,t);
 };
-pair<Symbol,TokenValue> nextline_lex(char *str,Lexer *lex){
+pair<Symbol,TokenValue> nextline_lex(string str,Lexer *lex){
 	lex->curr_line++;
 	return pair<Symbol,TokenValue>(LINEEND ,Lexer::dummy);
 };
 
 TokenRule TOKENRULE[TOKENRULECOUNT]={
-	{"#\\{",INITIAL,false,commentstart_lex},
-	{"#.*[\\r\\n|\\n|\\r]",INITIAL,false,NULL},
-	{"[\\r\\n|\\n|\\r]",INITIAL,true,nextline_lex},
+	{R"(/\*)",INITIAL,false,commentstart_lex},
+	{R"(//.*[\r\n|\r|\n])",INITIAL,false,NULL},
+	{R"([\r\n|\n|\r])",INITIAL,true,nextline_lex},
 	{"var",INITIAL,true,var_lex},
 	{"fun",INITIAL,true,fun_lex},
 	{"new",INITIAL,true,new_lex},
@@ -155,18 +157,18 @@ TokenRule TOKENRULE[TOKENRULECOUNT]={
     {"\\}",INITIAL,true,rbrace_lex},
     {"\\[",INITIAL,true,lbracket_lex},
     {"\\]",INITIAL,true,rbracket_lex},
-    {"[a-zA-Z_][a-zA-Z0-9_]*",INITIAL,true,ident_lex},
-    {"[%=~\\|\\^\\+\\-\\*/<>&!\\?]{1,3}",INITIAL,true,operator_lex},
-    {"\\d+\\.\\d+",INITIAL,true,doubleval_lex},
-    {"\\d+",INITIAL,true,intval_lex},
-    {"\"(?>[^\\\\\"]|\\\\.)*?\"",INITIAL,true,stringval_lex},
-    {"\'[\x20-\x7E]\'",INITIAL,true,asciival_lex},
-    {"[\t\x20]+",INITIAL,false,NULL}, //空白は読み飛ばす（コールバック関数をNULLにしておく）
+    {R"([a-zA-Z_][a-zA-Z0-9_]*)",INITIAL,true,ident_lex},
+    {R"([%=~\|\^\+\-\*/<>&!\?]{1,3})",INITIAL,true,operator_lex},
+    {R"(\d+\.\d+)",INITIAL,true,doubleval_lex},
+    {R"(\d+)",INITIAL,true,intval_lex},
+    {R"x(\"(?>[^\\\\\"]|\\\\.)*?\")x",INITIAL,true,stringval_lex},
+    {R"('[\x20-\x7E]')",INITIAL,true,asciival_lex},
+    {R"([\t\x20]+)",INITIAL,false,NULL}, //空白は読み飛ばす（コールバック関数をNULLにしておく）
 
-	{"#\\{",COMMENT,false,commentstart_lex},
-    {"}#",COMMENT,false,commentend_lex},
-    {"[\\r\\n|\\n|\\r]",COMMENT,false,nextline_lex},
-    {".",COMMENT,false,NULL}
+	{R"(/\*)",COMMENT,false,commentstart_lex},
+    {R"(\*/)",COMMENT,false,commentend_lex},
+    {R"([\r\n|\n|\r])",COMMENT,false,nextline_lex},
+    {R"(\.)",COMMENT,false,NULL}
 };
 
 SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
@@ -338,8 +340,6 @@ int main()
         cerr<<"\b"<<RESET<<" \b"<<endl;
     }catch(NoMatchRule){
         cerr<<BG_RED<<"トークンを生成できません  line:"<<lexer->curr_line<<RESET<<endl;
-    }catch(OnigurumaException ex){
-    	cerr<<BG_RED"正規表現エンジン 鬼車で問題が発生しました："<<ex.Message<<RESET;
     }catch(ParserException){
 		cerr<<BG_RED"パーサで問題が発生しました"<<RESET<<endl;
     }catch(LexerException){

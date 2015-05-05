@@ -6,7 +6,7 @@
 #include <string.h>
 #include <iostream>
 #include "common.h"
-#include "oniguruma.h"
+#include <regex>
 #include <memory>
 #include "exceptions.h"
 
@@ -19,10 +19,10 @@ enum State{INITIAL,COMMENT};
 
 class TokenRule{
 public:
-    char *rule;
+    string rule;
     State state;
     bool hasValue;
-    pair<Symbol,TokenValue> (* callback)(char *str,Lexer* lexer);
+    pair<Symbol,TokenValue> (* callback)(string str,Lexer* lexer);
 };
 
 extern TokenRule TOKENRULE[];
@@ -32,7 +32,7 @@ extern TokenRule TOKENRULE[];
 class Lexer{
 private:
     const char *rawcode;
-    regex_t* regex_objs[TOKENRULECOUNT];
+    regex regex_objs[TOKENRULECOUNT];
 public:
 	static TokenValue dummy;
 
@@ -45,17 +45,9 @@ public:
         curr_line=1;
         curr_state=INITIAL;
 
-        int r;
-        OnigErrorInfo einfo;
         for(int i=0;i<TOKENRULECOUNT;i++){
-            r=onig_new(&regex_objs[i],reinterpret_cast<OnigUChar*>(TOKENRULE[i].rule),reinterpret_cast<OnigUChar*>(TOKENRULE[i].rule+strlen(TOKENRULE[i].rule)),
-                       ONIG_OPTION_DEFAULT,ONIG_ENCODING_ASCII,ONIG_SYNTAX_DEFAULT,&einfo);
-            if(r!=ONIG_NORMAL){
-                static unsigned char s[ONIG_MAX_ERROR_MESSAGE_LEN];
-                onig_error_code_to_str(s,r,&einfo);
-                throw OnigurumaException(s);
-                return;
-            }
+			cout<<i<<"番目の正規表現オブジェクトを生成します"<<endl;
+            regex_objs[i]=regex(TOKENRULE[i].rule,regex_constants::extended);
         }
     };
     pair<Symbol,TokenValue> Get();

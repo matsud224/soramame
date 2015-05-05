@@ -18,7 +18,6 @@
 				</Compiler>
 				<Linker>
 					<Add option="-lglut -lGLU -lGL" />
-					<Add library="/usr/local/lib/libonig.a" />
 				</Linker>
 			</Target>
 			<Target title="Debug(Parser)">
@@ -33,7 +32,6 @@
 				</Compiler>
 				<Linker>
 					<Add option="-lglut -lGLU -lGL" />
-					<Add library="/usr/local/lib/libonig.a" />
 				</Linker>
 			</Target>
 			<Target title="Release">
@@ -46,7 +44,6 @@
 				</Compiler>
 				<Linker>
 					<Add option="-lglut -lGLU -lGL" />
-					<Add library="/usr/local/lib/libonig.a" />
 				</Linker>
 			</Target>
 		</Build>
