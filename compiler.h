@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "color_text.h"
 #include "common.h"
 #include <iostream>

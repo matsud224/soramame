@@ -1,4 +1,4 @@
-#include <regex>
+﻿#include <regex>
 #include "lexer.h"
 #include "common.h"
 #include <iostream>
@@ -21,9 +21,9 @@ pair<Symbol,TokenValue> Lexer::Get()
         if(TOKENRULE[i].state!=curr_state){
             continue;
         }
-        if(regex_match(&(rawcode[curr_index]),match,regex_objs[i])){
+        if(regex_search(&(rawcode[curr_index]),match,regex_objs[i])){
             //現在の読み取り開始位置にマッチしたのか？
-            if(match.position(i)!=0){
+            if(match.position()!=0){
                 //離れた位置でマッチした
                 continue;
             }

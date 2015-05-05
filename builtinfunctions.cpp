@@ -1,4 +1,4 @@
-#include "builtinfunctions.h"
+﻿#include "builtinfunctions.h"
 #include <cmath>
 #include <string>
 #include <iostream>
@@ -10,7 +10,9 @@
 #include "statement.h"
 #include "type.h"
 #include "expression.h"
+#define FREEGLUT_STATIC
 #include <GL/glut.h>
+#include <GL/gl.h>
 #include <memory>
 #include <thread>
 #include <chrono>
@@ -212,7 +214,7 @@ void length_str(shared_ptr<Flame> curr_flame){
 }
 
 void glut_openwindow(shared_ptr<Flame> curr_flame){
-	int argc=0;char *argv[0];
+	int argc=0;char *argv[1];
 	glutInit(&argc,argv);
 	glutInitDisplayMode(GLUT_RGBA);
 	string str=*(static_pointer_cast<string>(VM_STACK_GET.ref_value)); VM_STACK_POP;

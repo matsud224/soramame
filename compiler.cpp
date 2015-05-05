@@ -1,4 +1,4 @@
-#include "compiler.h"
+﻿#include "compiler.h"
 #include "ast_etc.h"
 #include "statement.h"
 #include "type.h"
@@ -129,6 +129,7 @@ void Compiler::ASTgen()
 
 	while(!parser->IsAccepted()){
 		pair<Symbol,TokenValue> token=lexer->Get();
+		cout <<"token: "<<Parser::Symbol2Str(token.first)<<endl;
 		parser->Put(lexer,genInfo,token);
 	}
 

@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include "lexer.h"
 #include <string>
 #include <vector>
@@ -161,7 +161,7 @@ TokenRule TOKENRULE[TOKENRULECOUNT]={
     {R"([%=~\|\^\+\-\*/<>&!\?]{1,3})",INITIAL,true,operator_lex},
     {R"(\d+\.\d+)",INITIAL,true,doubleval_lex},
     {R"(\d+)",INITIAL,true,intval_lex},
-    {R"x(\"(?>[^\\\\\"]|\\\\.)*?\")x",INITIAL,true,stringval_lex},
+    {R"("([^\\"]|\\.)*")",INITIAL,true,stringval_lex},
     {R"('[\x20-\x7E]')",INITIAL,true,asciival_lex},
     {R"([\t\x20]+)",INITIAL,false,NULL}, //空白は読み飛ばす（コールバック関数をNULLにしておく）
 
@@ -317,6 +317,7 @@ int main()
 		string str="";
 		char c;
 		while((c=getchar())!=-1){
+			if (c == '\x1a'){ c = '\n'; }
 			str+=c;
 		}
 		lexer=make_shared<Lexer>(str.c_str());
@@ -348,6 +349,8 @@ int main()
 
 	//std::chrono::milliseconds dura( 5000 );
 	//std::this_thread::sleep_for( dura );
+
+	getchar();
 
     return 0;
 }

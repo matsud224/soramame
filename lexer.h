@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <vector>
 #include <string>
 #include <map>
@@ -40,15 +40,23 @@ public:
 	State curr_state;
 	int curr_line;
 
-    Lexer(const char *code):rawcode(code){
-        curr_index=0;
-        curr_line=1;
-        curr_state=INITIAL;
+	Lexer(const char *code) :rawcode(code){
+		curr_index = 0;
+		curr_line = 1;
+		curr_state = INITIAL;
 
-        for(int i=0;i<TOKENRULECOUNT;i++){
-			cout<<i<<"番目の正規表現オブジェクトを生成します"<<endl;
-            regex_objs[i]=regex(TOKENRULE[i].rule,regex_constants::extended);
-        }
+		for (int i = 0; i < TOKENRULECOUNT; i++){
+			//cout << i << "番目の正規表現オブジェクトを生成します" << endl;
+			try{
+				regex_objs[i] = regex(TOKENRULE[i].rule);
+			}
+			catch (const std::regex_error& rerr)
+			{
+				std::cout << "regex error: "
+					<< rerr.what()
+					<< std::endl;
+			}
+		}
     };
     pair<Symbol,TokenValue> Get();
 };
