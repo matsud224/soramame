@@ -111,16 +111,7 @@ pair<Symbol,TokenValue> stringval_lex(string str,Lexer *lex){
 	//ダブルクオーテーションを削除
 	str.erase(str.begin());
 	str.erase(str.end()-1);
-	string str_a=new char[str.length()+1];
-	for(int i=0;i<str.length()+1;i++){
-		str_a[i]=str[i];
-	}
-	string escaped=escape_str(str_a);
-	string str_final=new char[escaped.length()+1];
-	for(int i=0;i<escaped.length()+1;i++){
-		str_final[i]=escaped[i];
-	}
-	t.str=str_final;
+	t.str=escape_str(str);
 	return pair<Symbol,TokenValue>(STRINGVAL ,t);
 };
 pair<Symbol,TokenValue> nextline_lex(string str,Lexer *lex){
@@ -350,6 +341,7 @@ int main()
 	//std::chrono::milliseconds dura( 5000 );
 	//std::this_thread::sleep_for( dura );
 
+	cout << "finished." << endl;
 	getchar();
 
     return 0;

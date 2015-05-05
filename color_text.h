@@ -1,4 +1,37 @@
-﻿#define RESET   "\033[0m"
+﻿#pragma once
+
+#if (_WIN32 || _WIN64)
+
+#define RESET   ""
+#define BLACK   ""      /* Black */
+#define RED     ""      /* Red */
+#define GREEN   ""      /* Green */
+#define YELLOW  ""      /* Yellow */
+#define BLUE    ""      /* Blue */
+#define MAGENTA ""      /* Magenta */
+#define CYAN    ""      /* Cyan */
+#define WHITE   ""      /* White */
+#define BOLDBLACK   ""      /* Bold Black */
+#define BOLDRED     ""      /* Bold Red */
+#define BOLDGREEN   ""      /* Bold Green */
+#define BOLDYELLOW  ""      /* Bold Yellow */
+#define BOLDBLUE    ""      /* Bold Blue */
+#define BOLDMAGENTA ""      /* Bold Magenta */
+#define BOLDCYAN    ""      /* Bold Cyan */
+#define BOLDWHITE   ""      /* Bold White */
+
+#define BG_BLACK   ""      /* Black */
+#define BG_RED     ""      /* Red */
+#define BG_GREEN   ""      /* Green */
+#define BG_YELLOW  ""      /* Yellow */
+#define BG_BLUE    ""      /* Blue */
+#define BG_MAGENTA ""      /* Magenta */
+#define BG_CYAN    ""      /* Cyan */
+#define BG_WHITE   ""      /* White */
+
+#else
+
+#define RESET   "\033[0m"
 #define BLACK   "\033[30m"      /* Black */
 #define RED     "\033[31m"      /* Red */
 #define GREEN   "\033[32m"      /* Green */
@@ -24,3 +57,5 @@
 #define BG_MAGENTA "\033[45m"      /* Magenta */
 #define BG_CYAN    "\033[46m"      /* Cyan */
 #define BG_WHITE   "\033[47m"      /* White */
+
+#endif
