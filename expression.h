@@ -376,6 +376,7 @@ class BinaryExprAST : public ExprAST{
 public:
 	string Operator;
     shared_ptr<ExprAST> LHS,RHS;
+	int tofuncall_FlameBack, tofuncall_LocalIndex;
 
     BinaryExprAST(string opc,shared_ptr<ExprAST> lhs,shared_ptr<ExprAST> rhs):Operator(opc),LHS(lhs),RHS(rhs){TypeInfo=nullptr;}
     virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);

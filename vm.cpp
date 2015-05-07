@@ -305,18 +305,6 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
                 }
             }
             break;
-        case loadlocal:
-        	{
-				flameback=OPERAND_GET;
-				localindex=OPERAND_GET;
-				shared_ptr<Flame> fp=CurrentFlame;
-				for(i=0;i<flameback;i++){
-					fp=fp->StaticLink;
-				}
-				STACK_PUSH((*(fp->Variables))[localindex].second);
-
-        	}
-            break;
         case ret:
             CurrentFlame=CurrentFlame->DynamicLink;
             break;
@@ -381,6 +369,18 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 				shared_ptr<DataObject> newdata=make_shared<DataObject>(originalname,newmap);
 				VMValue v2;v2.ref_value=newdata;
 				STACK_PUSH(v2);
+			}
+			break;
+		case loadlocal:
+			{
+				flameback = OPERAND_GET;
+				localindex = OPERAND_GET;
+				shared_ptr<Flame> fp = CurrentFlame;
+				for (i = 0; i<flameback; i++){
+					fp = fp->StaticLink;
+				}
+				STACK_PUSH((*(fp->Variables))[localindex].second);
+
 			}
 			break;
 		case loadbyindex:

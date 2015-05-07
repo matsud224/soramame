@@ -46,3 +46,7 @@ void math_sqrt(shared_ptr<Flame>);
 
 void sleep_msec(shared_ptr<Flame>);
 void hw_concurrency(shared_ptr<Flame>);
+
+void append_str(shared_ptr<Flame>);
+void operator_append_list(shared_ptr<Flame>);
+void length_list(shared_ptr<Flame>);

@@ -370,3 +370,29 @@ void hw_concurrency(shared_ptr<Flame> curr_flame)
 	VMValue v;v.int_value=thread::hardware_concurrency();
 	VM_STACK_PUSH(v);
 }
+
+void append_str(shared_ptr<Flame> curr_flame)
+{
+	string str1 = *(static_pointer_cast<string>(VM_STACK_GET.ref_value)); VM_STACK_POP;
+	string str2 = *(static_pointer_cast<string>(VM_STACK_GET.ref_value)); VM_STACK_POP;
+	shared_ptr<string> str3=make_shared<string>(str1+str2);
+	VMValue v; v.ref_value = str3;
+	VM_STACK_PUSH(v);
+}
+
+void operator_append_list(shared_ptr<Flame> curr_flame)
+{
+	list<VMValue> list1 = *(static_pointer_cast<list<VMValue>>(VM_STACK_GET.ref_value)); VM_STACK_POP;
+	list<VMValue> list2 = *(static_pointer_cast<list<VMValue>>(VM_STACK_GET.ref_value)); VM_STACK_POP;
+	shared_ptr<list<VMValue>> list3 = make_shared<list<VMValue>>(list1);
+	list3->splice(list3->end(), list2);
+	VMValue v; v.ref_value = list3;
+	VM_STACK_PUSH(v);
+}
+
+void length_list(shared_ptr<Flame> curr_flame)
+{
+	list<VMValue> list1 = *(static_pointer_cast<list<VMValue>>(VM_STACK_GET.ref_value)); VM_STACK_POP;
+	VMValue v; v.int_value = list1.size();
+	VM_STACK_PUSH(v);
+}

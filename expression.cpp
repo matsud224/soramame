@@ -49,6 +49,31 @@ void UnaryExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<Codegen
     return;
 }
 
+//型情報を無視して、名前だけで変数を探します（リストなどを一括で扱うための暫定的なもの）
+pair<int, int> SearchVariable_IgnoreType(string Name, shared_ptr<vector<Environment> > env, shared_ptr<CodegenInfo> geninfo, shared_ptr<vector< pair<string, shared_ptr<TypeAST> >  > > CurrentLocalVars){
+	//名前が一致するものがあるか上位のフレームに遡りながら探す
+	int currentenv;
+	int i;
+	int FlameBack = 0,LocalIndex=0;
+	int candidate_count = 0;
+
+	for (currentenv = (static_cast<int>(env->size()) - 1); currentenv >= 0; currentenv--){
+		for (i = (*env)[currentenv].Items.size() - 1; i >= 0; i--){
+			if (Name == (*env)[currentenv].Items[i].VariableInfo.first){
+				//名前が一致
+				LocalIndex = (*env)[currentenv].Items[i].LocalIndex;
+				
+				return pair<int,int>(FlameBack,LocalIndex);
+			}
+		}
+		if ((*env)[currentenv].is_internalblock == false){
+			FlameBack++;
+		}
+	}
+
+	error(Name + "は存在しません：内部エラー");
+}
+
 void BinaryExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo)
 {
 	RHS->Codegen(bytecodes,geninfo);
@@ -81,7 +106,16 @@ void BinaryExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<Codege
             bytecodes->push_back(iadd);
         }else if(LHS->TypeInfo->GetName()=="double"){
 			bytecodes->push_back(dadd);
-        }
+		}
+		else if (LHS->TypeInfo->GetName() == "string" || typeid(*(LHS->TypeInfo)) == typeid(ListTypeAST)){
+			//関数へ転送
+			bytecodes->push_back(loadlocal);
+			bytecodes->push_back(tofuncall_FlameBack);
+			bytecodes->push_back(tofuncall_LocalIndex);
+			bytecodes->push_back(invoke);
+			bytecodes->push_back(0);
+			bytecodes->push_back(0);
+		}
     }else if(Operator=="-"){
         if(LHS->TypeInfo->GetName()=="int"){
             bytecodes->push_back(isub);
@@ -444,17 +478,34 @@ shared_ptr<TypeAST>  VariableExprAST::CheckType(shared_ptr<vector<Environment> >
 						}
 						vector<shared_ptr<TypeAST> > typelist=dynamic_pointer_cast<FunctionTypeAST >(TypeInfo)->TypeList;
 						vector<shared_ptr<TypeAST> > typelist2=dynamic_pointer_cast<FunctionTypeAST >((*env)[currentenv].Items[i].VariableInfo.second)->TypeList;
+						shared_ptr<TypeAST> UnknownListType; //[?]に何が埋まるか
 						if(typelist.size()!=typelist2.size()){continue;}
 						bool fail=false;
 
 						for(int i=0;i<typelist.size()-1;i++){
 							if(typelist[i]->GetName()!=typelist2[i]->GetName()){
+								if (typelist2[i]->GetName() == "[?]" && typeid(*typelist[i])==typeid(ListTypeAST)){
+									if (UnknownListType == nullptr){
+										UnknownListType = typelist[i];
+									}
+									else{
+										if (UnknownListType->GetName() != typelist[i]->GetName()){
+											fail = true;
+										}
+									}
+									continue;
+								}
 								fail=true;
 								break;
 							}
 						}
 						if(fail){
 							continue;
+						}
+
+						dynamic_pointer_cast<FunctionTypeAST>(TypeInfo)->TypeList.back() = typelist2.back();
+						if (dynamic_pointer_cast<FunctionTypeAST>(TypeInfo)->TypeList.back()->GetName() == "[?]"){
+							dynamic_pointer_cast<FunctionTypeAST>(TypeInfo)->TypeList.back() = UnknownListType;
 						}
 					}else if(typeid(ContinuationTypeAST)==typeid(*TypeInfo)){
 						if(typeid(*((*env)[currentenv].Items[i].VariableInfo.second))!=typeid(ContinuationTypeAST)){
@@ -469,10 +520,10 @@ shared_ptr<TypeAST>  VariableExprAST::CheckType(shared_ptr<vector<Environment> >
 							error("継続の型が一致しません");
 						}
 					}
+				}else{
+					TypeInfo = (*env)[currentenv].Items[i].VariableInfo.second;
 				}
 
-
-				TypeInfo=(*env)[currentenv].Items[i].VariableInfo.second;
 
 				LocalIndex=(*env)[currentenv].Items[i].LocalIndex;
 
@@ -543,8 +594,18 @@ shared_ptr<TypeAST>  BinaryExprAST::CheckType(shared_ptr<vector<Environment> > e
 
 	//組み込み型の型チェック
 	if(Operator=="+" || Operator=="-" || Operator=="*" || Operator=="/"){
-		if(lhst->GetName() != rhst->GetName() || (lhst->GetName()!="int" && lhst->GetName()!="double")){
+		if (lhst->GetName() != rhst->GetName() || (lhst->GetName() != "int" && lhst->GetName() != "double" && lhst->GetName() != "string" && typeid(*lhst) != typeid(ListTypeAST))){
 			error("型に問題があります。二項演算子 "+Operator+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
+		}
+		if (Operator == "+" && lhst->GetName() == "string"){
+			auto index = SearchVariable_IgnoreType("!operator_append_string",env,geninfo,CurrentLocalVars);
+			tofuncall_FlameBack = index.first;
+			tofuncall_LocalIndex = index.second;
+		}
+		if (Operator == "+" && typeid(*lhst) == typeid(ListTypeAST)){
+			auto index = SearchVariable_IgnoreType("!operator_append_list", env, geninfo, CurrentLocalVars);
+			tofuncall_FlameBack = index.first;
+			tofuncall_LocalIndex = index.second;
 		}
 
 		TypeInfo=lhst; //オペランドの型を元に自らの型を決める

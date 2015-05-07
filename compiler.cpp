@@ -116,6 +116,14 @@ void Compiler::ASTgen()
     arglist[0]=pair<string,shared_ptr<TypeAST> >("str",make_shared<BasicTypeAST>("string"));
     RegisterBuiltinFunction("length",length_str,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("int"),true);
 
+	arglist.push_back(pair<string, shared_ptr<TypeAST> >("str", make_shared<BasicTypeAST>("string")));
+	RegisterBuiltinFunction("append", append_str, make_shared<vector< pair<string, shared_ptr<TypeAST> > > >(arglist), make_shared<BasicTypeAST>("string"), true);
+	arglist.pop_back();
+
+	arglist[0] = pair<string, shared_ptr<TypeAST> >("lst", make_shared<BasicTypeAST>("[?]"));
+	RegisterBuiltinFunction("length", length_list, make_shared<vector< pair<string, shared_ptr<TypeAST> > > >(arglist), make_shared<BasicTypeAST>("int"), true);
+
+	
 	arglist[0]=pair<string,shared_ptr<TypeAST> >("val1",make_shared<BasicTypeAST>("int"));
 	arglist.push_back(pair<string,shared_ptr<TypeAST> >("val2",make_shared<BasicTypeAST>("int")));
     RegisterBuiltinFunction("pow",pow_int,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("int"),true);
@@ -126,6 +134,11 @@ void Compiler::ASTgen()
 	RegisterBuiltinFunction("glut_color3i",glut_color3i,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
 
 	RegisterBuiltinFunction("glut_char",glut_char,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
+
+	//演算子から関数呼び出しへの橋渡し（引数などの情報は無視される）
+	RegisterBuiltinFunction("!operator_append_list", operator_append_list, make_shared<vector< pair<string, shared_ptr<TypeAST> > > >(arglist), make_shared<BasicTypeAST>("!!called as an operator!!"), true);
+	RegisterBuiltinFunction("!operator_append_string", append_str, make_shared<vector< pair<string, shared_ptr<TypeAST> > > >(arglist), make_shared<BasicTypeAST>("string"), true);
+
 
 	while(!parser->IsAccepted()){
 		pair<Symbol,TokenValue> token=lexer->Get();
