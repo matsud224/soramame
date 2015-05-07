@@ -18,7 +18,7 @@
 #include <chrono>
 
 
-#define VM_STACK_POP curr_flame->OperandStack.pop()
+#define VM_STACK_POP curr_flame->OperandStack.pop();
 #define VM_STACK_PUSH(x) curr_flame->OperandStack.push((x))
 #define VM_STACK_GET curr_flame->OperandStack.top()
 #define VM_OPERAND_GET (*(curr_flame->CodePtr))[curr_flame->PC++]
@@ -54,10 +54,7 @@ void display(){
 			(*vars).push_back(pair<string,VMValue>(callee->LocalVariables->at(i).first,v)); //ローカル変数はすべて0に初期化される
 		}
 		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,glut_current_flame,cobj->ParentFlame);
-		for(unsigned int i=0;i<callee->ChildPoolIndex->size();i++){
-			//コンスタントプール内のクロージャに生成元のフレームを覚えさせる
-			static_pointer_cast<FunctionObject>(VM::PublicConstantPool.GetValue(callee->ChildPoolIndex->at(i)).ref_value)->ParentFlame=inv_flame;
-		}
+
 
 		VM::Run(inv_flame,true); //指定された関数のフレームを作成し、実行。そのフレームがポップされた時点で帰ってくる（trueを指定したので）
 	}
@@ -104,10 +101,7 @@ void mouse(int button, int state, int x, int y)
 			(*vars).push_back(pair<string,VMValue>(callee->LocalVariables->at(i).first,v)); //ローカル変数はすべて0に初期化される
 		}
 		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,glut_current_flame,cobj->ParentFlame);
-		for(unsigned int i=0;i<callee->ChildPoolIndex->size();i++){
-			//コンスタントプール内のクロージャに生成元のフレームを覚えさせる
-			static_pointer_cast<FunctionObject>(VM::PublicConstantPool.GetValue(callee->ChildPoolIndex->at(i)).ref_value)->ParentFlame=inv_flame;
-		}
+
 
 		VM::Run(inv_flame,true); //指定された関数のフレームを作成し、実行。そのフレームがポップされた時点で帰ってくる（trueを指定したので）
 	}
@@ -141,10 +135,7 @@ void keyboard(unsigned char key, int x, int y)
 			(*vars).push_back(pair<string,VMValue>(callee->LocalVariables->at(i).first,v)); //ローカル変数はすべて0に初期化される
 		}
 		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,glut_current_flame,cobj->ParentFlame);
-		for(unsigned int i=0;i<callee->ChildPoolIndex->size();i++){
-			//コンスタントプール内のクロージャに生成元のフレームを覚えさせる
-			static_pointer_cast<FunctionObject>(VM::PublicConstantPool.GetValue(callee->ChildPoolIndex->at(i)).ref_value)->ParentFlame=inv_flame;
-		}
+
 		VM::Run(inv_flame,true); //指定された関数のフレームを作成し、実行。そのフレームがポップされた時点で帰ってくる（trueを指定したので）
 	}
 
@@ -254,7 +245,7 @@ void glut_char(shared_ptr<Flame> curr_flame){
 	x=VM_STACK_GET.int_value;VM_STACK_POP;
 	y=VM_STACK_GET.int_value;VM_STACK_POP;
 	glRasterPos3i(x, y, 0);
-	glutBitmapCharacter(GLUT_BITMAP_TIMES_ROMAN_24,VM_STACK_GET.int_value);VM_STACK_POP;
+	glutBitmapCharacter(GLUT_BITMAP_9_BY_15,VM_STACK_GET.int_value);VM_STACK_POP;
 }
 
 void glut_begin_point(shared_ptr<Flame> curr_flame){

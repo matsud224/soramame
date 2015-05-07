@@ -4,6 +4,7 @@
 #include <map>
 #include <string>
 #include <memory>
+#include <time.h>
 #include "compiler.h"
 
 using namespace std;
@@ -44,6 +45,7 @@ public:
     shared_ptr<Flame> StaticLink;
     shared_ptr<Flame> DynamicLink;
     int PC;
+	int ID;
     Flame(shared_ptr< vector< pair<string,VMValue> > > vars,shared_ptr< vector<int> > codeptr,shared_ptr<Flame> dynamiclink,shared_ptr<Flame> staticlink):Variables(vars),CodePtr(codeptr),DynamicLink(dynamiclink),StaticLink(staticlink){
     	PC=0;
 	}

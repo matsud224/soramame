@@ -12,7 +12,7 @@
 #include <mutex>
 #include <condition_variable>
 
-#define STACK_POP CurrentFlame->OperandStack.pop()
+#define STACK_POP CurrentFlame->OperandStack.pop();
 #define STACK_PUSH(x) CurrentFlame->OperandStack.push((x))
 #define STACK_GET CurrentFlame->OperandStack.top()
 #define OPERAND_GET (*(CurrentFlame->CodePtr))[CurrentFlame->PC++]
@@ -38,9 +38,6 @@ shared_ptr<Flame> VM::GetInitialFlame(shared_ptr<Executable> execdata)
 		(*toplevel_vars).push_back(pair<string,VMValue>(execdata->LocalVariables->at(i).first,v)); //ローカル変数はのちに正しく初期化される
 	}
 
-    for(unsigned int i=0;i<execdata->ChildPoolIndex.size();i++){
-		static_pointer_cast<FunctionObject>(VM::PublicConstantPool.GetValue(execdata->ChildPoolIndex[i]).ref_value)->ParentFlame=tl_flame;
-	}
     return tl_flame;
 }
 
@@ -263,6 +260,7 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
             {
             	shared_ptr<ClosureObject> cobj=static_pointer_cast<ClosureObject>(STACK_GET.ref_value);STACK_POP;
                 shared_ptr<FunctionObject> callee=cobj->FunctionRef;
+				//cout<<callee->Name << endl;
 				bool is_tail=OPERAND_GET==0?false:true;
 				bool is_async=OPERAND_GET==0?false:true;
 
@@ -287,14 +285,14 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 					}
 					//ローカル変数の準備
 					for(int i=callee->LocalVariables->size()-1;i>=0;i--){
+						if (i < callee->Args->size()){
+							continue; //引数の重複登録をしない
+						}
 						VMValue v;v.int_value=0;
 						(*vars).push_back(pair<string,VMValue>(callee->LocalVariables->at(i).first,v)); //ローカル変数はすべて0に初期化される
 					}
 					shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,is_tail?CurrentFlame->DynamicLink:CurrentFlame,cobj->ParentFlame);
-					for(unsigned int i=0;i<callee->ChildPoolIndex->size();i++){
-						//コンスタントプール内のクロージャに生成元のフレームを覚えさせる
-						static_pointer_cast<FunctionObject>(VM::PublicConstantPool.GetValue(callee->ChildPoolIndex->at(i)).ref_value)->ParentFlame=inv_flame;
-					}
+
 					if(is_async){
 						//cout<<"thread started!"<<endl;
 						inv_flame->DynamicLink=nullptr;
@@ -337,7 +335,7 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 			{
 			//オペランドにpoolindexをとり、クロージャオブジェクトを生成
 			iopr1=OPERAND_GET; //poolindex
-			shared_ptr<ClosureObject> cobj=make_shared<ClosureObject>(static_pointer_cast<FunctionObject>(VM::PublicConstantPool.GetValue(iopr1).ref_value),static_pointer_cast<FunctionObject>(VM::PublicConstantPool.GetValue(iopr1).ref_value)->ParentFlame);
+			shared_ptr<ClosureObject> cobj=make_shared<ClosureObject>(static_pointer_cast<FunctionObject>(VM::PublicConstantPool.GetValue(iopr1).ref_value),CurrentFlame);
 			v.ref_value=cobj;
 			STACK_PUSH(v);
 			}
@@ -453,7 +451,7 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 				for(shared_ptr<Flame> f=CurrentFlame;f!=nullptr;f=f->DynamicLink){
 					snapshot.push_back(pair<int,stack<VMValue> >(f->PC,f->OperandStack));
 				}
-				snapshot.front().first+=4; //PCを適切な位置にする
+				snapshot.front().first+=5; //PCを適切な位置にする
 				v.ref_value=make_shared<ContinuationObject>(snapshot,CurrentFlame);
 				STACK_PUSH(v);
 			}
@@ -480,34 +478,55 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 			break;
 		case channel_send:
 			{
-				unique_lock<mutex> lock(mtx);
+				/*cout << "send-unlocked:" << CurrentFlame->OperandStack.size() << endl;
+				if (CurrentFlame->OperandStack.size() != 2){ 
+					int a = CurrentFlame.use_count();
+					error("");
+				}*/
 				shared_ptr<ChannelObject> chan=static_pointer_cast<ChannelObject>(STACK_GET.ref_value); STACK_POP;
-				//cout<<"attempt to send... s:"<<chan->Senders.size()<<",r:"<<chan->Receivers.size()<<endl;
+				//cout<<"attempt to send... s:"<<chan->SentValues.size()<<",r:"<<chan->Receivers.size()<<endl;
+				//cout << "send-locked:" << CurrentFlame->OperandStack.size() << endl;
+				//if (CurrentFlame->OperandStack.size() != 1){ error(""); }
+				lock_guard<mutex> lock(mtx);
+				//if (CurrentFlame->OperandStack.size() != 1){ error(""); }
+				//cout << "send:push." << endl;
 				chan->SentValues.push(STACK_GET);
 				STACK_POP;
+				
 				if(chan->Receivers.size()>0){
 					//寝ているスレッド（受信者）を起こす
-					*(chan->Receivers.front().second)=true;
-					chan->Receivers.front().first->notify_one();
+					//cout << "send:receiver unlocked." << endl;
+					auto rcv = chan->Receivers.front();
 					chan->Receivers.pop();
+					*(rcv.second)=true;
+					rcv.first->notify_one();
 				}
 			}
 			break;
 		case channel_receive:
 			{
-				unique_lock<mutex> lock(mtx);
+				//cout << "receive:stack->" << CurrentFlame->OperandStack.size() << endl;
 				shared_ptr<ChannelObject> chan=static_pointer_cast<ChannelObject>(STACK_GET.ref_value);STACK_POP;
-				//cout<<"attempt to receive... s:"<<chan->Senders.size()<<",r:"<<chan->Receivers.size()<<endl;
+				//cout<<"attempt to receive... s:"<<chan->SentValues.size()<<",r:"<<chan->Receivers.size()<<endl;
+				unique_lock<mutex> lock(mtx);
 				if(chan->SentValues.size()==0){
 					//送信者がいないので寝る
+					re_wait:
+					//cout << "receive:wait."<<endl;
 					bool is_ready=false;
 					shared_ptr<condition_variable> cond=make_shared<condition_variable>();
 					chan->Receivers.push(pair<shared_ptr<condition_variable> ,bool*>(cond,&is_ready));
 					cond->wait(lock,[&]{return is_ready;});
+					
 					//受け取る
+					if (chan->SentValues.size() == 0){
+						goto re_wait;
+					}
+					//cout << "receive:wake." << endl;
 					v=chan->SentValues.front(); chan->SentValues.pop();
 					STACK_PUSH(v);
 				}else{
+					//cout << "receive:get." << endl;
 					//受け取る
 					v=chan->SentValues.front();
 					chan->SentValues.pop();

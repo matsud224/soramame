@@ -19,77 +19,6 @@
 shared_ptr<ExprAST> GetInitValue(shared_ptr<TypeAST>  type,shared_ptr<CodegenInfo> cgi);
 
 
-vector<int> FunctionAST::FindChildFunction()
-{
-	vector<int> list_tmp;
-
-    //ChildPoolIndex=make_shared<vector<int> >();
-
-	list_tmp=Body->FindChildFunction();
-	ChildPoolIndex->insert(ChildPoolIndex->end(),list_tmp.begin(),list_tmp.end());
-
-    //自身のインデックスを返す
-    vector<int> result; result.push_back(PoolIndex);
-    return result;
-}
-
-vector<int> UnBuiltExprAST::FindChildFunction()
-{
-	vector<int> result_list;
-	vector<int> list_tmp;
-	vector<shared_ptr<ExprAST> >::iterator iter;
-
-	for(iter=ExprList->begin();iter!=ExprList->end();iter++){
-		list_tmp=(*iter)->FindChildFunction();
-		result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
-    }
-
-	return result_list;
-}
-
-vector<int> CallExprAST::FindChildFunction()
-{
-	vector<int> result_list;
-	vector<int> list_tmp;
-	vector<shared_ptr<ExprAST> >::iterator iter;
-
-	list_tmp=callee->FindChildFunction();
-	result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
-
-	for(iter=args->begin();iter!=args->end();iter++){
-		list_tmp=(*iter)->FindChildFunction();
-		result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
-    }
-
-	return result_list;
-}
-
-vector<int> ListRefExprAST::FindChildFunction()
-{
-	vector<int> result_list;
-	vector<int> list_tmp;
-
-	list_tmp=target->FindChildFunction();
-	result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
-
-	list_tmp=IndexExpression->FindChildFunction();
-	result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
-
-	return result_list;
-}
-
-vector<int> DataMemberRefExprAST::FindChildFunction()
-{
-	vector<int> result_list;
-	vector<int> list_tmp;
-	vector<shared_ptr<ExprAST> >::iterator iter;
-
-	list_tmp=target->FindChildFunction();
-	result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
-
-	return result_list;
-}
-
 
 void VariableExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo)
 {
@@ -399,6 +328,7 @@ shared_ptr<ExprAST> UnBuiltExprAST::BuildAST(shared_ptr<CodegenInfo> geninfo)
 				}
 				multimap<string,OperatorInfo>::iterator iter=geninfo->OperatorList.find(op1);
 				for(int i=0;i<2;i++){
+					//cout << unary_force << " : " << (*iter).second.UnaryOrBinary << endl;
 					if(unary_force && (*iter).second.UnaryOrBinary==Unary){
 						op1=(*iter).first;
 						dynamic_pointer_cast<OperatorAST>(ExprList->at(input_pos))->Info=(*iter).second;
@@ -408,6 +338,7 @@ shared_ptr<ExprAST> UnBuiltExprAST::BuildAST(shared_ptr<CodegenInfo> geninfo)
 						dynamic_pointer_cast<OperatorAST>(ExprList->at(input_pos))->Info=(*iter).second;
 						break;
 					}
+					iter++;
 				}
 			}else if(geninfo->OperatorList.count(op1)==1){
 				multimap<string,OperatorInfo>::iterator iter=geninfo->OperatorList.find(op1);
@@ -918,18 +849,6 @@ void DataValExprAST::Codegen(shared_ptr<vector<int> > bytecodes, shared_ptr<Code
 	bytecodes->push_back(InitValue->size());
 }
 
-vector<int> ListValExprAST::FindChildFunction()
-{
-	vector<int> result_list;
-	vector<int> list_tmp;
-
-    for(auto iter=Value->begin();iter!=Value->end();iter++){
-		list_tmp=(*iter)->FindChildFunction();
-		result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
-    }
-
-    return result_list;
-}
 
 shared_ptr<TypeAST>  ListValExprAST::CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars)
 {
@@ -963,18 +882,6 @@ shared_ptr<TypeAST>  ListValExprAST::CheckType(shared_ptr<vector<Environment> > 
     return TypeInfo;
 }
 
-vector<int> TupleValExprAST::FindChildFunction()
-{
-	vector<int> result_list;
-	vector<int> list_tmp;
-
-    for(auto iter=Value->begin();iter!=Value->end();iter++){
-		list_tmp=(*iter)->FindChildFunction();
-		result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
-    }
-
-    return result_list;
-}
 
 shared_ptr<TypeAST>  TupleValExprAST::CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars)
 {
@@ -1002,19 +909,7 @@ shared_ptr<TypeAST>  TupleValExprAST::CheckType(shared_ptr<vector<Environment> >
     return TypeInfo;
 }
 
-vector<int> DataValExprAST::FindChildFunction()
-{
-	vector<int> result_list;
-	vector<int> list_tmp;
 
-    vector< pair<string,shared_ptr<ExprAST> > >::iterator iter;
-    for(iter=InitValue->begin();iter!=InitValue->end();iter++){
-		list_tmp=(*iter).second->FindChildFunction();
-		result_list.insert(result_list.end(),list_tmp.begin(),list_tmp.end());
-    }
-
-    return result_list;
-}
 
 shared_ptr<TypeAST>  DataValExprAST::CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars)
 {
@@ -1313,13 +1208,6 @@ shared_ptr<TypeAST> ContinuationAST::CheckType(shared_ptr<vector<Environment> > 
 	return TypeInfo;
 }
 
-vector<int> ContinuationAST::FindChildFunction()
-{
-	InternalClosure->FindChildFunction();
-
-    vector<int> result;result.push_back(InternalClosure->PoolIndex);
-    return result;
-}
 
 void ContinuationAST::Codegen(shared_ptr<vector<int> > bytecodes, shared_ptr<CodegenInfo> geninfo)
 {
@@ -1346,11 +1234,7 @@ shared_ptr<TypeAST> NewObjectAST::CheckType(shared_ptr<vector<Environment> > env
 	return TypeInfo;
 }
 
-vector<int> NewObjectAST::FindChildFunction()
-{
-    vector<int> result;
-    return result;
-}
+
 
 void NewObjectAST::Codegen(shared_ptr<vector<int> > bytecodes, shared_ptr<CodegenInfo> geninfo)
 {

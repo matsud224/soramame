@@ -8,13 +8,12 @@
 #include "lexer.h"
 #include "vm.h"
 #include "color_text.h"
-#include "basic_object.h"
 #include <memory>
 
 using namespace std;
 
 class FunctionObject;
-class ContinuationObject;
+class ClosureObject;
 
 
 class ExprAST{
@@ -26,7 +25,6 @@ public:
     virtual bool IsConstant()=0; //定数か
     virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo)=0;
     virtual shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr< vector< pair<string,shared_ptr<TypeAST> > > > CurrentLocalVars)=0;
-    virtual vector<int> FindChildFunction()=0;
     virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index)=0;
 	virtual vector<shared_ptr<ExprAST> > GetCallExprList()=0;
 };
@@ -40,7 +38,6 @@ public:
     virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo){};
     virtual shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars){return TypeInfo;}
     shared_ptr<ExprAST> BuildAST(shared_ptr<CodegenInfo>);
-    virtual vector<int> FindChildFunction();
     virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){return false;}
 	virtual vector<shared_ptr<ExprAST> > GetCallExprList();
 };
@@ -52,7 +49,6 @@ public:
     virtual bool IsConstant(){return true;}
     virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
     virtual shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars){return TypeInfo;}
-    virtual vector<int> FindChildFunction(){return vector<int>();};
     virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){return true;};
     virtual vector<shared_ptr<ExprAST> > GetCallExprList();
 };
@@ -69,7 +65,6 @@ public:
     virtual bool IsConstant(){return true;}
     virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
     virtual shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars){return TypeInfo;}
-    virtual vector<int> FindChildFunction(){return vector<int>();};
     virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){return true;};
     virtual vector<shared_ptr<ExprAST> > GetCallExprList();
 };
@@ -81,7 +76,6 @@ public:
     virtual bool IsConstant(){return true;}
     virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
     virtual shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars){return TypeInfo;}
-    virtual vector<int> FindChildFunction(){return vector<int>();};
 	virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){return true;}
 	virtual vector<shared_ptr<ExprAST> > GetCallExprList();
 };
@@ -92,7 +86,6 @@ public:
     virtual bool IsConstant(){return true;}
     virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
     virtual shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars){return TypeInfo;}
-    virtual vector<int> FindChildFunction(){return vector<int>();};
 	virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){return true;}
 	virtual vector<shared_ptr<ExprAST> > GetCallExprList();
 };
@@ -112,7 +105,6 @@ public:
     virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
     virtual bool IsConstant(){return true;}
     virtual shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars){return TypeInfo;}
-    virtual vector<int> FindChildFunction(){return vector<int>();};
     virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){return true;};
     virtual vector<shared_ptr<ExprAST> > GetCallExprList();
 };
@@ -133,7 +125,6 @@ public:
     }
     virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
     virtual shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars);
-    virtual vector<int> FindChildFunction();
     virtual bool IsCTFEable(shared_ptr<CodegenInfo>,int);
     virtual vector<shared_ptr<ExprAST> > GetCallExprList();
 };
@@ -154,7 +145,6 @@ public:
     }
     virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
     virtual shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars);
-    virtual vector<int> FindChildFunction();
     virtual bool IsCTFEable(shared_ptr<CodegenInfo>,int);
     virtual vector<shared_ptr<ExprAST> > GetCallExprList();
 };
@@ -177,7 +167,6 @@ public:
     }
     virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
     virtual shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars);
-    virtual vector<int> FindChildFunction();
     virtual bool IsCTFEable(shared_ptr<CodegenInfo>,int);
     virtual vector<shared_ptr<ExprAST> > GetCallExprList();
 };
@@ -192,7 +181,6 @@ public:
     virtual bool IsConstant(){return true;}
     virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo){}
     virtual shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars){return nullptr;}
-    virtual vector<int> FindChildFunction(){return vector<int>();};
 	virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){return false;}
 	virtual vector<shared_ptr<ExprAST> > GetCallExprList();
 };
@@ -206,7 +194,6 @@ public:
     shared_ptr<vector< pair<string,shared_ptr<TypeAST> > > > Args;
 	shared_ptr<Flame> ParentFlame; //クロージャの場合、生成元のフレームを覚えておく（実行時にVMが使用）
     shared_ptr<vector<int> > bytecodes;
-    shared_ptr<vector<int> > ChildPoolIndex; //生成したクロージャのコンスタントプールのインデックス
 	shared_ptr<BlockAST> Body;
 	shared_ptr<vector< pair<string,shared_ptr<TypeAST> > > > LocalVariables; //Argsを含む
 
@@ -214,7 +201,6 @@ public:
 
     //自らの型を返すだけでなく、bodyについて型検査を実施する
     shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars);
-    vector<int> FindChildFunction(); //関数内で作られるクロージャを探し、ChildPoolIndexへ登録します。
 
     FunctionAST(shared_ptr<CodegenInfo> cgi,string n,shared_ptr<vector< pair<string,shared_ptr<TypeAST> > > > a,shared_ptr<TypeAST> rett,shared_ptr<BlockAST> bdy):Name(n),Args(a),Body(bdy){
 		vector<shared_ptr<TypeAST> > typelist;
@@ -225,13 +211,12 @@ public:
 		typelist.push_back(rett);
 
 		LocalVariables=make_shared<vector< pair<string,shared_ptr<TypeAST> > > >();
-		ChildPoolIndex=make_shared<vector<int> >();
 		bytecodes=make_shared<vector<int> >();
 
 		TypeInfo=make_shared<FunctionTypeAST>(typelist);
         isBuiltin=false;
-        VMValue v; v.ref_value=make_shared<FunctionObject>(Name,TypeInfo,isBuiltin,Args,LocalVariables,bytecodes,ChildPoolIndex);
-        PoolIndex=VM::PublicConstantPool.SetValue(v);
+        VMValue v; v.ref_value=make_shared<FunctionObject>(Name,TypeInfo,isBuiltin,Args,LocalVariables,bytecodes);
+		PoolIndex = VM::PublicConstantPool.SetValue(v);
     }
 
     //組み込み関数用のコンストラクタ
@@ -263,7 +248,6 @@ public:
 	virtual bool IsConstant(){return false;}
 
     shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars);
-    vector<int> FindChildFunction();
 
     ContinuationAST(shared_ptr<CodegenInfo> cgi,shared_ptr<TypeAST> t,string varname,shared_ptr<BlockAST> bdy):VarName(varname),Body(bdy){
         TypeInfo=t;
@@ -284,7 +268,6 @@ public:
 	virtual bool IsConstant(){return false;}
 
     shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars);
-    vector<int> FindChildFunction();
 
     NewObjectAST(shared_ptr<TypeAST> t){
         TypeInfo=t;
@@ -307,7 +290,6 @@ public:
     virtual bool IsConstant(){return false;}
     virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
     virtual shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars);
-    virtual vector<int> FindChildFunction(){return vector<int>();};
     virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){
     	if(FlameBack==0){return true;}
     	if(is_toplevel_func){
@@ -339,7 +321,6 @@ public:
     	return (callee==nullptr);
 	}
     virtual shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars);
-    virtual vector<int> FindChildFunction();
     virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index);
     virtual vector<shared_ptr<ExprAST> > GetCallExprList();
 };
@@ -356,7 +337,6 @@ public:
     	return false;
 	}
     virtual shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars);
-    virtual vector<int> FindChildFunction();
     virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index);
     virtual vector<shared_ptr<ExprAST> > GetCallExprList();
     void AssignmentCodegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
@@ -374,7 +354,6 @@ public:
     	return false;
 	}
     virtual shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars);
-    virtual vector<int> FindChildFunction();
     virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index);
     virtual vector<shared_ptr<ExprAST> > GetCallExprList();
     void AssignmentCodegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
@@ -389,7 +368,6 @@ public:
     virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
     virtual bool IsConstant(){return false;}
     virtual shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars);
-    virtual vector<int> FindChildFunction(){return vector<int>();}; //AST未構築なので呼び出されることはない。
 	virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){return Operand->IsCTFEable(cgi,curr_fun_index);}
 	virtual vector<shared_ptr<ExprAST> > GetCallExprList();
 };
@@ -403,7 +381,6 @@ public:
     virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
     virtual bool IsConstant(){return false;}
     virtual shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars);
-    virtual vector<int> FindChildFunction(){return vector<int>();}; //AST未構築なので呼び出されることはない。
     virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){return LHS->IsCTFEable(cgi,curr_fun_index)&&RHS->IsCTFEable(cgi,curr_fun_index);}
 	virtual vector<shared_ptr<ExprAST> > GetCallExprList();
 };

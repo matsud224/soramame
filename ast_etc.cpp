@@ -83,19 +83,6 @@ void BlockAST::CheckType(shared_ptr<vector<Environment> > env, shared_ptr<Codege
 	env->pop_back(); //最後尾のフレームを削除
 }
 
-vector<int> BlockAST::FindChildFunction()
-{
-	vector<int> list_tmp;
-	vector<int> result;
-    vector<shared_ptr<StatementAST> >::iterator iter;
-
-    for(iter=Body->begin();iter!=Body->end();iter++){
-		list_tmp=(*iter)->FindChildFunction();
-		result.insert(result.end(),list_tmp.begin(),list_tmp.end());
-    }
-
-    return result;
-}
 
 bool BlockAST::IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){
 	vector<shared_ptr<StatementAST> >::iterator iter;

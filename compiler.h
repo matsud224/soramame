@@ -59,7 +59,6 @@ public:
     vector<shared_ptr<GroupDefAST> > TopLevelGroupDef;
     shared_ptr<vector<int> > Bootstrap;
     int MainFuncPoolIndex; //main関数のコンスタントプール・インデックス
-	vector<int> ChildPoolIndex;
 	shared_ptr<vector< pair<string,shared_ptr<TypeAST> > > > LocalVariables;
 
 	CodegenInfo(){
@@ -72,14 +71,12 @@ class Executable{
 public:
 	shared_ptr<vector<int> > Bootstrap;
 	int MainFuncPoolIndex; //main関数のコンスタントプール・インデックス
-	vector<int> ChildPoolIndex;
 	shared_ptr<vector< pair<string,shared_ptr<TypeAST> > > > LocalVariables;
 };
 
 class Compiler{
 private:
 	void ASTgen();
-    void RegisterChildClosure();
     void TypeCheck();
     void CTFE(int);
     void Codegen();
@@ -96,7 +93,6 @@ public:
     shared_ptr<Executable> Compile(){
     	cout<<endl<<BG_GREEN<<"構文解析を行っています..."<<RESET<<endl;
 		ASTgen();
-		RegisterChildClosure();
 		cout<<BG_GREEN<<"型検査を行っています..."<<RESET<<endl;
 		TypeCheck();
 		cout<<BG_GREEN<<"コード生成を行っています..."<<RESET<<endl;
@@ -107,7 +103,6 @@ public:
 		shared_ptr<Executable> ret_executable=make_shared<Executable>();
 		ret_executable->Bootstrap=move(genInfo->Bootstrap);
 		ret_executable->MainFuncPoolIndex=genInfo->MainFuncPoolIndex;
-		ret_executable->ChildPoolIndex=genInfo->ChildPoolIndex;
 		ret_executable->LocalVariables=move(genInfo->LocalVariables);
 
 		return ret_executable;

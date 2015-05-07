@@ -172,26 +172,6 @@ void Compiler::TypeCheck()
     }
 }
 
-void Compiler::RegisterChildClosure()
-{
-	//関数の子クロージャの登録を行う
-	vector<shared_ptr<FunctionAST> >::iterator fun_iter;
-	vector<shared_ptr<VariableDefStatementAST> >::iterator var_iter;
-	vector<int> temp;
-
-	for(var_iter=genInfo->TopLevelVariableDef.begin();var_iter!=genInfo->TopLevelVariableDef.end();var_iter++){
-		temp=(*var_iter)->FindChildFunction();
-		genInfo->ChildPoolIndex.insert(genInfo->ChildPoolIndex.end(),temp.begin(),temp.end());
-    }
-
-	for(fun_iter=genInfo->TopLevelFunction.begin();fun_iter!=genInfo->TopLevelFunction.end();fun_iter++){
-		if((*fun_iter)->isBuiltin==false){
-			temp=(*fun_iter)->FindChildFunction();
-			genInfo->ChildPoolIndex.insert(genInfo->ChildPoolIndex.end(),temp.begin(),temp.end());
-		}
-    }
-}
-
 
 void Compiler::Codegen()
 {
