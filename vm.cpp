@@ -21,6 +21,7 @@
 using namespace std;
 
 
+
 mutex mtx;
 
 map<pair<string,string>, void (*)(shared_ptr<Flame>) > VM::BuiltinFunctionList; //関数名と型名から関数を引っ張ってくる
@@ -30,7 +31,7 @@ shared_ptr<Flame> VM::GetInitialFlame(shared_ptr<Executable> execdata)
 {
     //トップレベルのフレームを作成
     shared_ptr< vector< pair<string,VMValue> > > toplevel_vars=make_shared<vector< pair<string,VMValue> > >();
-	shared_ptr<Flame> tl_flame=make_shared<Flame>(toplevel_vars,execdata->Bootstrap,nullptr,nullptr);
+	shared_ptr<Flame> tl_flame=make_shared<Flame>(toplevel_vars,execdata->Bootstrap,nullptr,nullptr,nullptr);
 
     //ローカル変数の準備
 	for (int i = 0; i < execdata->LocalVariables->size(); i++){
@@ -297,7 +298,7 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 						VMValue v; v.int_value = 0;
 						(*vars).push_back(pair<string, VMValue>(Var2Str(callee->LocalVariables->at(i)), v)); //ローカル変数はすべて0に初期化される
 					}
-					shared_ptr<Flame> inv_flame = make_shared<Flame>(vars, callee->bytecodes, is_tail ? CurrentFlame->DynamicLink : CurrentFlame, cobj->ParentFlame);
+					shared_ptr<Flame> inv_flame = make_shared<Flame>(vars, callee->bytecodes, is_tail ? CurrentFlame->DynamicLink : CurrentFlame, cobj->ParentFlame,callee);
 
 					if (is_async){
 						//cout<<"thread started!"<<endl;
@@ -394,7 +395,7 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 			{
 				iopr1 = STACK_GET.int_value; STACK_POP;
 				shared_ptr<list<VMValue> > lst = static_pointer_cast<list<VMValue>>(STACK_GET.ref_value); STACK_POP;
-				if (lst->size() <= iopr1){ throw out_of_range("境界を超えてリスト/タプルへアクセスしました"); }
+				if (lst->size() <= iopr1){ throw out_of_range("Out of range"); }
 				list<VMValue>::iterator iter = lst->begin();
 				for (int i = 0; i < iopr1; i++){
 					iter++;
@@ -433,7 +434,7 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 			{
 				iopr1 = STACK_GET.int_value; STACK_POP;
 				auto lst = (static_pointer_cast<list<VMValue>>(STACK_GET.ref_value)); STACK_POP;
-				if (lst->size() <= iopr1){ throw out_of_range("境界を超えてリスト/タプルへアクセスしました"); }
+				if (lst->size() <= iopr1){ throw out_of_range("Out of range"); }
 				list<VMValue>::iterator iter = lst->begin();
 				for (int i = 0; i < iopr1; i++){
 					iter++;
@@ -558,13 +559,13 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 			{
 				cerr << x.first << " = " << x.second.int_value << endl;
 			}
-			
+			cerr << endl;
 		}
 		cerr << "------------------------------------" << endl<<endl;
 		
 		cerr << "------------------------------------" << endl;
-		for (auto df = CurrentFlame; df != nullptr; df = df->DynamicLink){
-			cerr << "PC = " << df->PC << endl;
+		for (auto df = CurrentFlame; df->FunctionInfo!=nullptr; df = df->DynamicLink){
+				cerr << df->FunctionInfo->Name << " : " << df->FunctionInfo->TypeInfo->GetName() << (df->FunctionInfo->isBuiltin ? "(builtin)" : "") << "  PC = " << df->PC << endl;
 		}
 		cerr << "------------------------------------" << endl;
 

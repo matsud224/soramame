@@ -1,0 +1,61 @@
+data Point{
+  x:int
+  y:int
+}
+
+fun main(){
+  glut_openwindow("dragon")
+  glut_setdisplayfunc(fun(){
+	glut_clear()
+	
+	paint()
+	
+	glut_flush()  
+  })
+  glut_mainloop()
+}
+
+fun paint(){
+
+  //出発点となる一対の点を指定します
+  var P=Point{x=170,y=140};
+  var Q=Point{x=400,y=350};
+
+  //対となる二点の間にドラゴン曲線を描きます
+  glut_color3i(0,0,255)
+  glut_begin_line()
+  drawDragon(P,Q,10)
+  glut_end()
+
+}
+
+//ドラゴン曲線を描くメソッド
+fun drawDragon(a:Point,b:Point,n:int){
+
+  var c=Point{};
+
+  var xx:int,yy:int;
+  xx=b.x-a.x;
+  yy=(b.y-a.y)*(1-2);
+  
+
+  c.x=a.x+(xx+yy)/2;
+  c.y=b.y+(xx+yy)/2;
+
+  //最後なので、実際に線を引きます
+  if(n<=0){
+     drawLine(a.x,a.y,c.x,c.y);   //点Aから点Cへ
+     drawLine(b.x,b.y,c.x,c.y);   //点Bから点Cへ
+  }
+  //最後ではないので、さらにメソッドを呼び出します（再帰処理）
+  else{
+     drawDragon(a,c,n-1);    //点Aから点Cへ
+     drawDragon(b,c,n-1);    //点Bから点Cへ
+  }
+} 
+
+fun drawLine(x1:int,y1:int,x2:int,y2:int){
+	glut_vertex2i(x1,y1)
+	glut_vertex2i(x2,y2)
+	//print(x1);print(",");print(y1);print("->");print(x2);print(",");print(y2);print("\n")
+}

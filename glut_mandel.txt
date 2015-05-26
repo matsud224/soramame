@@ -1,0 +1,65 @@
+fun main(){
+	var in=new(channel(int)),out=new(channel([(int,int,int)]))
+	for(0,hardware_concurrency(),fun(n:int){
+		async calc_server(in,out)
+	})
+	//ウィンドウを開く
+	glut_openwindow("Graphics Window!!!")
+	glut_setdisplayfunc(fun(){
+		print("draw\n")
+		glut_clear()
+		
+		for(0,256,fun(y:int){
+			in<<y
+		})
+		for(0,256,fun(n:int){
+			var result=out?
+			for(1,513,fun(t:int){
+				plot(result[t][0],result[t][1],(255%(result[t][2]+1)*4,(result[t][2]+1)*4,255%(result[t][2]+1)*4))
+			})
+		})
+		glut_flush()
+	})
+	glut_mainloop()
+}
+
+fun calc_server(in:channel(int),out:channel([(int,int,int)])){
+	var y=in?
+	var result=[(0,0,0)]
+	for(0,512,fun(x:int){
+		result=result+[(x,y,mandel_sub(x,y))]
+	})
+	print(y);print("\n")
+	out<<result
+	calc_server(in,out)
+}
+
+fun mandel_sub(nowx:int,nowy:int)=>int{
+	var zx=0.0,zy=0.0,nextx=0.0,nexty=0.0,a=(i2d(nowx)-128.0)/100.0,b=(i2d(nowy)-64.0)/100.0
+	
+	return callcc(break,int){
+		for(0,50,fun(i:int){
+			if(zx*zx+zy*zy>4.0){
+				break(i)
+			}
+			nextx=zx*zx-zy*zy+a
+			nexty=2.0*zx*zy+b
+			zx=nextx;zy=nexty
+		})
+		break(0)
+	}
+}
+
+fun for(begin:int,end:int,block:fun(int)=>void){
+	while(begin<end){
+		block(begin)
+		begin=begin+1
+	}
+}
+
+fun plot(x:int,y:int,color:(int,int,int)){
+	glut_color3i(color[0],color[1],color[2])
+	glut_begin_point()
+	glut_vertex2i(x,y)
+	glut_end()
+}

@@ -10,6 +10,8 @@ const int SYNTAXRULECOUNT=114;
 const int SYMBOLCOUNT=70; //SYNTAXEND,INPUTEND,EMPTYをのぞく
 
 
+class TypeAST;
+
 enum Symbol{
 	SYNTAXEND=-3,INPUTEND=-2,EMPTY=-1,LINEEND,S,VAR,FUN,IF,ELSE,RETURN_S,INTVAL,DOUBLEVAL,BOOLVAL,STRINGVAL,IDENT,OPERATOR,program,functiondef,parameter_list,parameter,
 	variabledef_list,variabledef,statement_list,statement,operator_n/*operatorはキーワードなので*/,expression,arg_list,intvalexpr,boolvalexpr,stringvalexpr,primary,
@@ -18,6 +20,7 @@ enum Symbol{
 	DATA,GROUP,datadef,groupdef,datamember_list,groupmember_list,dataexpr,initassign_list,listrefexpr,datamemberrefexpr,doublevalexpr,
 	CONTINUATION,CALLCC,callccexpr,NEW,newobjexpr,CHANNEL,ASYNC,asyncstatement
 };
+
 
 class VMValue{
 public:
