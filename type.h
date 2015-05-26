@@ -4,12 +4,7 @@
 #include <vector>
 #include <map>
 #include <list>
-#include "utility.h"
-#include "parser.h"
-#include "lexer.h"
-#include "vm.h"
-#include "color_text.h"
-#include "basic_object.h"
+//#include "utility.h"
 #include <memory>
 
 using namespace std;
@@ -83,6 +78,9 @@ public:
     ListTypeAST(shared_ptr<TypeAST> t):ContainType(t){}
     shared_ptr<TypeAST>  ContainType;
     virtual string GetName(){
+		if (ContainType == nullptr){
+			return "[]";
+		}
 		return "["+ContainType->GetName()+"]";
     }
 };
@@ -104,3 +102,6 @@ public:
 		return name;
     }
 };
+
+
+string Var2Str(pair<string, shared_ptr<TypeAST>> var);

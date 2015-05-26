@@ -7,14 +7,15 @@
 #include "parser.h"
 #include "lexer.h"
 #include "vm.h"
+#include "type.h"
 #include "color_text.h"
 #include <memory>
+
 
 using namespace std;
 
 class FunctionObject;
 class ClosureObject;
-
 
 class ExprAST{
 public:

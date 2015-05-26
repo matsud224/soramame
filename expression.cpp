@@ -487,8 +487,7 @@ shared_ptr<TypeAST>  VariableExprAST::CheckType(shared_ptr<vector<Environment> >
 								if (typelist2[i]->GetName() == "[?]" && typeid(*typelist[i])==typeid(ListTypeAST)){
 									if (UnknownListType == nullptr){
 										UnknownListType = typelist[i];
-									}
-									else{
+									}else{
 										if (UnknownListType->GetName() != typelist[i]->GetName()){
 											fail = true;
 										}

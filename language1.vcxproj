@@ -72,6 +72,8 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <BufferSecurityCheck>true</BufferSecurityCheck>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -90,6 +92,7 @@
     <ClCompile Include="parser.cpp" />
     <ClCompile Include="parser_actions.cpp" />
     <ClCompile Include="statement.cpp" />
+    <ClCompile Include="type.cpp" />
     <ClCompile Include="utility.cpp" />
     <ClCompile Include="vm.cpp" />
   </ItemGroup>
@@ -109,9 +112,6 @@
     <ClInclude Include="type.h" />
     <ClInclude Include="utility.h" />
     <ClInclude Include="vm.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="ClassDiagram.cd" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

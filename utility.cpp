@@ -6,6 +6,7 @@
 #include <sstream>
 using namespace std;
 
+
 void error(string msg)
 {
     cerr<<msg<<endl;
@@ -19,6 +20,8 @@ string IntToString(int number)
   ss << number;
   return ss.str();
 }
+
+
 
 string escape_str(string str){
 	string escaped=str;

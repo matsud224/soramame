@@ -8,8 +8,8 @@
 #include "basic_object.h"
 #include "ast_etc.h"
 #include "statement.h"
-#include "type.h"
 #include "expression.h"
+#include "utility.h"
 #define FREEGLUT_STATIC
 #include <GL/glut.h>
 #include <GL/gl.h>
@@ -49,9 +49,9 @@ void display(){
 		shared_ptr< vector< pair<string,VMValue> > > vars=make_shared<vector< pair<string,VMValue> > >();
 
 		//ローカル変数の準備
-		for(int i=callee->LocalVariables->size()-1;i>=0;i--){
+		for (int i = 0; i < callee->LocalVariables->size(); i++){
 			VMValue v;v.int_value=0;
-			(*vars).push_back(pair<string,VMValue>(callee->LocalVariables->at(i).first,v)); //ローカル変数はすべて0に初期化される
+			(*vars).push_back(pair<string,VMValue>(Var2Str(callee->LocalVariables->at(i)),v)); //ローカル変数はすべて0に初期化される
 		}
 		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,glut_current_flame,cobj->ParentFlame);
 
@@ -90,15 +90,15 @@ void mouse(int button, int state, int x, int y)
 		shared_ptr< vector< pair<string,VMValue> > > vars=make_shared<vector< pair<string,VMValue> > >();
 		//引数の準備
 		VMValue v;
-		v.int_value=y; (*vars).push_back(pair<string,VMValue>("y",v));
-		v.int_value=x; (*vars).push_back(pair<string,VMValue>("x",v));
-		v.int_value=state; (*vars).push_back(pair<string,VMValue>("state",v));
-		v.int_value=button; (*vars).push_back(pair<string,VMValue>("button",v));
+		v.int_value = y; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(3)), v));
+		v.int_value = x; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(2)), v));
+		v.int_value = state; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(1)), v));
+		v.int_value = button; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(0)), v));
 
 		//ローカル変数の準備
-		for(int i=callee->LocalVariables->size()-1;i>=0;i--){
+		for (int i = 0; i < callee->LocalVariables->size(); i++){
 			VMValue v;v.int_value=0;
-			(*vars).push_back(pair<string,VMValue>(callee->LocalVariables->at(i).first,v)); //ローカル変数はすべて0に初期化される
+			(*vars).push_back(pair<string,VMValue>(Var2Str(callee->LocalVariables->at(i)),v)); //ローカル変数はすべて0に初期化される
 		}
 		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,glut_current_flame,cobj->ParentFlame);
 
@@ -125,14 +125,14 @@ void keyboard(unsigned char key, int x, int y)
 		shared_ptr< vector< pair<string,VMValue> > > vars=make_shared<vector< pair<string,VMValue> > >();
 		//引数の準備
 		VMValue v;
-		v.int_value=y; (*vars).push_back(pair<string,VMValue>("y",v));
-		v.int_value=x; (*vars).push_back(pair<string,VMValue>("x",v));
-		v.int_value=key; (*vars).push_back(pair<string,VMValue>("key",v));
+		v.int_value = y; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(2)), v));
+		v.int_value = x; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(1)), v));
+		v.int_value = key; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(0)), v));
 
 		//ローカル変数の準備
-		for(int i=callee->LocalVariables->size()-1;i>=0;i--){
+		for (int i = 0; i < callee->LocalVariables->size(); i++){
 			VMValue v;v.int_value=0;
-			(*vars).push_back(pair<string,VMValue>(callee->LocalVariables->at(i).first,v)); //ローカル変数はすべて0に初期化される
+			(*vars).push_back(pair<string,VMValue>(Var2Str(callee->LocalVariables->at(i)),v)); //ローカル変数はすべて0に初期化される
 		}
 		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,glut_current_flame,cobj->ParentFlame);
 
@@ -206,6 +206,8 @@ void length_str(shared_ptr<Flame> curr_flame){
 
 void glut_openwindow(shared_ptr<Flame> curr_flame){
 	int argc=0;char *argv[1];
+	glutInitWindowPosition(10, 10);
+	glutInitWindowSize(2000, 1000);
 	glutInit(&argc,argv);
 	glutInitDisplayMode(GLUT_RGBA);
 	string str=*(static_pointer_cast<string>(VM_STACK_GET.ref_value)); VM_STACK_POP;
@@ -394,5 +396,41 @@ void length_list(shared_ptr<Flame> curr_flame)
 {
 	list<VMValue> list1 = *(static_pointer_cast<list<VMValue>>(VM_STACK_GET.ref_value)); VM_STACK_POP;
 	VMValue v; v.int_value = list1.size();
+	VM_STACK_PUSH(v);
+}
+
+void head_list(shared_ptr<Flame> curr_flame)
+{
+	list<VMValue> list1 = *(static_pointer_cast<list<VMValue>>(VM_STACK_GET.ref_value)); VM_STACK_POP;
+	shared_ptr<list<VMValue>> list3 = make_shared<list<VMValue>>();
+	list3->push_back(list1.front());
+	VMValue v; v.ref_value = list3;
+	VM_STACK_PUSH(v);
+}
+
+void last_list(shared_ptr<Flame> curr_flame)
+{
+	list<VMValue> list1 = *(static_pointer_cast<list<VMValue>>(VM_STACK_GET.ref_value)); VM_STACK_POP;
+	shared_ptr<list<VMValue>> list3 = make_shared<list<VMValue>>();
+	list3->push_back(list1.back());
+	VMValue v; v.ref_value = list3;
+	VM_STACK_PUSH(v);
+}
+
+void tail_list(shared_ptr<Flame> curr_flame)
+{
+	list<VMValue> list1 = *(static_pointer_cast<list<VMValue>>(VM_STACK_GET.ref_value)); VM_STACK_POP;
+	shared_ptr<list<VMValue>> list3 = make_shared<list<VMValue>>(list1);
+	list3->pop_front();
+	VMValue v; v.ref_value = list3;
+	VM_STACK_PUSH(v);
+}
+
+void init_list(shared_ptr<Flame> curr_flame)
+{
+	list<VMValue> list1 = *(static_pointer_cast<list<VMValue>>(VM_STACK_GET.ref_value)); VM_STACK_POP;
+	shared_ptr<list<VMValue>> list3 = make_shared<list<VMValue>>(list1);
+	list3->pop_back();
+	VMValue v; v.ref_value = list3;
 	VM_STACK_PUSH(v);
 }

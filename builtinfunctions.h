@@ -50,3 +50,7 @@ void hw_concurrency(shared_ptr<Flame>);
 void append_str(shared_ptr<Flame>);
 void operator_append_list(shared_ptr<Flame>);
 void length_list(shared_ptr<Flame>);
+void last_list(shared_ptr<Flame>);
+void tail_list(shared_ptr<Flame>);
+void head_list(shared_ptr<Flame>);
+void init_list(shared_ptr<Flame>);

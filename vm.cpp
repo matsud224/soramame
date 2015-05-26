@@ -33,9 +33,9 @@ shared_ptr<Flame> VM::GetInitialFlame(shared_ptr<Executable> execdata)
 	shared_ptr<Flame> tl_flame=make_shared<Flame>(toplevel_vars,execdata->Bootstrap,nullptr,nullptr);
 
     //ローカル変数の準備
-	for(int i=execdata->LocalVariables->size()-1;i>=0;i--){
+	for (int i = 0; i < execdata->LocalVariables->size(); i++){
 		VMValue v;
-		(*toplevel_vars).push_back(pair<string,VMValue>(execdata->LocalVariables->at(i).first,v)); //ローカル変数はのちに正しく初期化される
+		(*toplevel_vars).push_back(pair<string,VMValue>(Var2Str(execdata->LocalVariables->at(i)),v)); //ローカル変数はのちに正しく初期化される
 	}
 
     return tl_flame;
@@ -51,439 +51,448 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 	int i;int bytecode;
 	shared_ptr<Flame> initial_flame=CurrentFlame; //呼び出し時のフレーム
 
-    while(true){
-		v=VMValue();
-        if(CurrentFlame==nullptr){
-			v.int_value=0;
-			return v;
-        }
-        if(currflame_only && CurrentFlame==initial_flame->DynamicLink){
-			v.int_value=0;
-			return v;
-        }
-        bytecode=OPERAND_GET;
-        switch(bytecode){
-        case ipush:
-            v.int_value=OPERAND_GET;
-            STACK_PUSH(v);
-            break;
-		case bpush:
-			v.bool_value=OPERAND_GET==0?false:true;
-			STACK_PUSH(v);
-			break;
-		case pushnull:
-			v.ref_value=nullptr;
-			STACK_PUSH(v);
-			break;
-		case ldc:
-			v=GET_CONSTANT(OPERAND_GET);
-			STACK_PUSH(v);
-			break;
-        case iadd:
-            iopr1=STACK_GET.int_value; STACK_POP;
-            iopr2=STACK_GET.int_value; STACK_POP;
-            v.int_value=iopr1+iopr2;
-            STACK_PUSH(v);
-            break;
-		case dadd:
-            dopr1=STACK_GET.double_value; STACK_POP;
-            dopr2=STACK_GET.double_value; STACK_POP;
-            v.double_value=dopr1+dopr2;
-            STACK_PUSH(v);
-            break;
-        case bor:
-            bopr1=STACK_GET.bool_value;  STACK_POP;
-            bopr2=STACK_GET.bool_value;  STACK_POP;
-            v.bool_value=bopr1 || bopr2;
-            STACK_PUSH(v);
-            break;
-        case isub:
-            iopr1=STACK_GET.int_value; STACK_POP;
-            iopr2=STACK_GET.int_value; STACK_POP;
-            v.int_value=iopr1-iopr2;
-            STACK_PUSH(v);
-			break;
-		case dsub:
-            dopr1=STACK_GET.double_value; STACK_POP;
-            dopr2=STACK_GET.double_value; STACK_POP;
-            v.double_value=dopr1-dopr2;
-            STACK_PUSH(v);
-			break;
-        case imul:
-            iopr1=STACK_GET.int_value; STACK_POP;
-            iopr2=STACK_GET.int_value; STACK_POP;
-            v.int_value=iopr1*iopr2;
-            STACK_PUSH(v);
-            break;
-		case dmul:
-            dopr1=STACK_GET.double_value; STACK_POP;
-			dopr2=STACK_GET.double_value; STACK_POP;
-            v.double_value=dopr1*dopr2;
-            STACK_PUSH(v);
-            break;
-        case band:
-            bopr1=STACK_GET.bool_value; STACK_POP;
-            bopr2=STACK_GET.bool_value; STACK_POP;
-            v.bool_value=bopr1 && bopr2;
-            STACK_PUSH(v);
-            break;
-        case idiv:
-            iopr1=STACK_GET.int_value; STACK_POP;
-            iopr2=STACK_GET.int_value; STACK_POP;
-            v.int_value=iopr1/iopr2;
-            STACK_PUSH(v);
-            break;
-		case ddiv:
-            dopr1=STACK_GET.double_value; STACK_POP;
-			dopr2=STACK_GET.double_value; STACK_POP;
-            v.double_value=dopr1/dopr2;
-            STACK_PUSH(v);
-            break;
-        case imod:
-            iopr1=STACK_GET.int_value; STACK_POP;
-            iopr2=STACK_GET.int_value; STACK_POP;
-            v.int_value=iopr1%iopr2;
-            STACK_PUSH(v);
-            break;
-        case ineg:
-            iopr1=STACK_GET.int_value; STACK_POP;
-            v.int_value=iopr1*(-1);
-            STACK_PUSH(v);
-            break;
-		case dneg:
-            dopr1=STACK_GET.double_value; STACK_POP;
-            v.double_value=dopr1*(-1.0);
-            STACK_PUSH(v);
-            break;
-        case bnot:
-            bopr1=STACK_GET.bool_value; STACK_POP;
-            v.bool_value=!bopr1;
-            STACK_PUSH(v);
-            break;
-        case ilshift:
-            iopr1=STACK_GET.int_value; STACK_POP;
-            iopr2=STACK_GET.int_value; STACK_POP;
-            v.int_value=iopr1<<iopr2;
-            STACK_PUSH(v);
-            break;
-        case irshift:
-            iopr1=STACK_GET.int_value; STACK_POP;
-            iopr2=STACK_GET.int_value; STACK_POP;
-            v.int_value=iopr1>>iopr2;
-            STACK_PUSH(v);
-            break;
-		case icmpeq:
-			iopr1=STACK_GET.int_value; STACK_POP;
-            iopr2=STACK_GET.int_value; STACK_POP;
-            v.bool_value=iopr1==iopr2;
-            STACK_PUSH(v);
-			break;
-		case icmpne:
-			iopr1=STACK_GET.int_value; STACK_POP;
-            iopr2=STACK_GET.int_value; STACK_POP;
-            v.bool_value=iopr1!=iopr2;
-            STACK_PUSH(v);
-			break;
-		case icmplt:
-			iopr1=STACK_GET.int_value; STACK_POP;
-            iopr2=STACK_GET.int_value; STACK_POP;
-            v.bool_value=iopr1<iopr2;
-            STACK_PUSH(v);
-			break;
-		case icmple:
-			iopr1=STACK_GET.int_value; STACK_POP;
-            iopr2=STACK_GET.int_value; STACK_POP;
-            v.bool_value=iopr1<=iopr2;
-            STACK_PUSH(v);
-			break;
-		case icmpgt:
-			iopr1=STACK_GET.int_value; STACK_POP;
-            iopr2=STACK_GET.int_value; STACK_POP;
-            v.bool_value=iopr1>iopr2;
-            STACK_PUSH(v);
-			break;
-		case icmpge:
-			iopr1=STACK_GET.int_value; STACK_POP;
-            iopr2=STACK_GET.int_value; STACK_POP;
-            v.bool_value=iopr1>=iopr2;
-            STACK_PUSH(v);
-			break;
-		case dcmpeq:
-			dopr1=STACK_GET.double_value; STACK_POP;
-            dopr2=STACK_GET.double_value; STACK_POP;
-            v.bool_value=dopr1==dopr2;
-            STACK_PUSH(v);
-			break;
-		case dcmpne:
-			dopr1=STACK_GET.double_value; STACK_POP;
-            dopr2=STACK_GET.double_value; STACK_POP;
-            v.bool_value=dopr1!=dopr2;
-            STACK_PUSH(v);
-			break;
-		case dcmplt:
-			dopr1=STACK_GET.double_value; STACK_POP;
-            dopr2=STACK_GET.double_value; STACK_POP;
-            v.bool_value=dopr1<dopr2;
-            STACK_PUSH(v);
-			break;
-		case dcmple:
-			dopr1=STACK_GET.double_value; STACK_POP;
-            dopr2=STACK_GET.double_value; STACK_POP;
-            v.bool_value=dopr1<=dopr2;
-            STACK_PUSH(v);
-			break;
-		case dcmpgt:
-			dopr1=STACK_GET.double_value; STACK_POP;
-            dopr2=STACK_GET.double_value; STACK_POP;
-            v.bool_value=dopr1>dopr2;
-            STACK_PUSH(v);
-			break;
-		case dcmpge:
-			dopr1=STACK_GET.double_value; STACK_POP;
-            dopr2=STACK_GET.double_value; STACK_POP;
-            v.bool_value=dopr1>=dopr2;
-            STACK_PUSH(v);
-			break;
-		case bcmpeq:
-			bopr1=STACK_GET.bool_value; STACK_POP;
-            bopr2=STACK_GET.bool_value; STACK_POP;
-            v.bool_value=bopr1==bopr2;
-            STACK_PUSH(v);
-			break;
-		case bcmpne:
-			bopr1=STACK_GET.bool_value; STACK_POP;
-            bopr2=STACK_GET.bool_value; STACK_POP;
-            v.bool_value=bopr1!=bopr2;
-            STACK_PUSH(v);
-			break;
-        case invoke:
-            {
-            	shared_ptr<ClosureObject> cobj=static_pointer_cast<ClosureObject>(STACK_GET.ref_value);STACK_POP;
-                shared_ptr<FunctionObject> callee=cobj->FunctionRef;
+	try{
+		while (true){
+			v = VMValue();
+			if (CurrentFlame == nullptr){
+				v.int_value = 0;
+				return v;
+			}
+			if (currflame_only && CurrentFlame == initial_flame->DynamicLink){
+				v.int_value = 0;
+				return v;
+			}
+			bytecode = OPERAND_GET;
+			switch (bytecode){
+			case ipush:
+				v.int_value = OPERAND_GET;
+				STACK_PUSH(v);
+				break;
+			case bpush:
+				v.bool_value = OPERAND_GET == 0 ? false : true;
+				STACK_PUSH(v);
+				break;
+			case pushnull:
+				v.ref_value = nullptr;
+				STACK_PUSH(v);
+				break;
+			case ldc:
+				v = GET_CONSTANT(OPERAND_GET);
+				STACK_PUSH(v);
+				break;
+			case iadd:
+				iopr1 = STACK_GET.int_value; STACK_POP;
+				iopr2 = STACK_GET.int_value; STACK_POP;
+				v.int_value = iopr1 + iopr2;
+				STACK_PUSH(v);
+				break;
+			case dadd:
+				dopr1 = STACK_GET.double_value; STACK_POP;
+				dopr2 = STACK_GET.double_value; STACK_POP;
+				v.double_value = dopr1 + dopr2;
+				STACK_PUSH(v);
+				break;
+			case bor:
+				bopr1 = STACK_GET.bool_value;  STACK_POP;
+				bopr2 = STACK_GET.bool_value;  STACK_POP;
+				v.bool_value = bopr1 || bopr2;
+				STACK_PUSH(v);
+				break;
+			case isub:
+				iopr1 = STACK_GET.int_value; STACK_POP;
+				iopr2 = STACK_GET.int_value; STACK_POP;
+				v.int_value = iopr1 - iopr2;
+				STACK_PUSH(v);
+				break;
+			case dsub:
+				dopr1 = STACK_GET.double_value; STACK_POP;
+				dopr2 = STACK_GET.double_value; STACK_POP;
+				v.double_value = dopr1 - dopr2;
+				STACK_PUSH(v);
+				break;
+			case imul:
+				iopr1 = STACK_GET.int_value; STACK_POP;
+				iopr2 = STACK_GET.int_value; STACK_POP;
+				v.int_value = iopr1*iopr2;
+				STACK_PUSH(v);
+				break;
+			case dmul:
+				dopr1 = STACK_GET.double_value; STACK_POP;
+				dopr2 = STACK_GET.double_value; STACK_POP;
+				v.double_value = dopr1*dopr2;
+				STACK_PUSH(v);
+				break;
+			case band:
+				bopr1 = STACK_GET.bool_value; STACK_POP;
+				bopr2 = STACK_GET.bool_value; STACK_POP;
+				v.bool_value = bopr1 && bopr2;
+				STACK_PUSH(v);
+				break;
+			case idiv:
+				iopr1 = STACK_GET.int_value; STACK_POP;
+				iopr2 = STACK_GET.int_value; STACK_POP;
+				if (iopr2 == 0){ throw range_error("0除算"); }
+				v.int_value = iopr1 / iopr2;
+				STACK_PUSH(v);
+				break;
+			case ddiv:
+				dopr1 = STACK_GET.double_value; STACK_POP;
+				dopr2 = STACK_GET.double_value; STACK_POP;
+				if (iopr2 == 0){ throw range_error("0除算"); }
+				v.double_value = dopr1 / dopr2;
+				STACK_PUSH(v);
+				break;
+			case imod:
+				iopr1 = STACK_GET.int_value; STACK_POP;
+				iopr2 = STACK_GET.int_value; STACK_POP;
+				if (iopr2 == 0){ throw range_error("0除算"); }
+				v.int_value = iopr1%iopr2;
+				STACK_PUSH(v);
+				break;
+			case ineg:
+				iopr1 = STACK_GET.int_value; STACK_POP;
+				v.int_value = iopr1*(-1);
+				STACK_PUSH(v);
+				break;
+			case dneg:
+				dopr1 = STACK_GET.double_value; STACK_POP;
+				v.double_value = dopr1*(-1.0);
+				STACK_PUSH(v);
+				break;
+			case bnot:
+				bopr1 = STACK_GET.bool_value; STACK_POP;
+				v.bool_value = !bopr1;
+				STACK_PUSH(v);
+				break;
+			case ilshift:
+				iopr1 = STACK_GET.int_value; STACK_POP;
+				iopr2 = STACK_GET.int_value; STACK_POP;
+				v.int_value = iopr1 << iopr2;
+				STACK_PUSH(v);
+				break;
+			case irshift:
+				iopr1 = STACK_GET.int_value; STACK_POP;
+				iopr2 = STACK_GET.int_value; STACK_POP;
+				v.int_value = iopr1 >> iopr2;
+				STACK_PUSH(v);
+				break;
+			case icmpeq:
+				iopr1 = STACK_GET.int_value; STACK_POP;
+				iopr2 = STACK_GET.int_value; STACK_POP;
+				v.bool_value = iopr1 == iopr2;
+				STACK_PUSH(v);
+				break;
+			case icmpne:
+				iopr1 = STACK_GET.int_value; STACK_POP;
+				iopr2 = STACK_GET.int_value; STACK_POP;
+				v.bool_value = iopr1 != iopr2;
+				STACK_PUSH(v);
+				break;
+			case icmplt:
+				iopr1 = STACK_GET.int_value; STACK_POP;
+				iopr2 = STACK_GET.int_value; STACK_POP;
+				v.bool_value = iopr1 < iopr2;
+				STACK_PUSH(v);
+				break;
+			case icmple:
+				iopr1 = STACK_GET.int_value; STACK_POP;
+				iopr2 = STACK_GET.int_value; STACK_POP;
+				v.bool_value = iopr1 <= iopr2;
+				STACK_PUSH(v);
+				break;
+			case icmpgt:
+				iopr1 = STACK_GET.int_value; STACK_POP;
+				iopr2 = STACK_GET.int_value; STACK_POP;
+				v.bool_value = iopr1 > iopr2;
+				STACK_PUSH(v);
+				break;
+			case icmpge:
+				iopr1 = STACK_GET.int_value; STACK_POP;
+				iopr2 = STACK_GET.int_value; STACK_POP;
+				v.bool_value = iopr1 >= iopr2;
+				STACK_PUSH(v);
+				break;
+			case dcmpeq:
+				dopr1 = STACK_GET.double_value; STACK_POP;
+				dopr2 = STACK_GET.double_value; STACK_POP;
+				v.bool_value = dopr1 == dopr2;
+				STACK_PUSH(v);
+				break;
+			case dcmpne:
+				dopr1 = STACK_GET.double_value; STACK_POP;
+				dopr2 = STACK_GET.double_value; STACK_POP;
+				v.bool_value = dopr1 != dopr2;
+				STACK_PUSH(v);
+				break;
+			case dcmplt:
+				dopr1 = STACK_GET.double_value; STACK_POP;
+				dopr2 = STACK_GET.double_value; STACK_POP;
+				v.bool_value = dopr1 < dopr2;
+				STACK_PUSH(v);
+				break;
+			case dcmple:
+				dopr1 = STACK_GET.double_value; STACK_POP;
+				dopr2 = STACK_GET.double_value; STACK_POP;
+				v.bool_value = dopr1 <= dopr2;
+				STACK_PUSH(v);
+				break;
+			case dcmpgt:
+				dopr1 = STACK_GET.double_value; STACK_POP;
+				dopr2 = STACK_GET.double_value; STACK_POP;
+				v.bool_value = dopr1 > dopr2;
+				STACK_PUSH(v);
+				break;
+			case dcmpge:
+				dopr1 = STACK_GET.double_value; STACK_POP;
+				dopr2 = STACK_GET.double_value; STACK_POP;
+				v.bool_value = dopr1 >= dopr2;
+				STACK_PUSH(v);
+				break;
+			case bcmpeq:
+				bopr1 = STACK_GET.bool_value; STACK_POP;
+				bopr2 = STACK_GET.bool_value; STACK_POP;
+				v.bool_value = bopr1 == bopr2;
+				STACK_PUSH(v);
+				break;
+			case bcmpne:
+				bopr1 = STACK_GET.bool_value; STACK_POP;
+				bopr2 = STACK_GET.bool_value; STACK_POP;
+				v.bool_value = bopr1 != bopr2;
+				STACK_PUSH(v);
+				break;
+			case invoke:
+			{
+				shared_ptr<ClosureObject> cobj = static_pointer_cast<ClosureObject>(STACK_GET.ref_value); STACK_POP;
+				shared_ptr<FunctionObject> callee = cobj->FunctionRef;
 				//cout<<callee->Name << endl;
-				bool is_tail=OPERAND_GET==0?false:true;
-				bool is_async=OPERAND_GET==0?false:true;
+				bool is_tail = OPERAND_GET == 0 ? false : true;
+				bool is_async = OPERAND_GET == 0 ? false : true;
 
-                if(callee->isBuiltin){
+				if (callee->isBuiltin){
 					//ビルトイン関数の場合は、フレームを作らず、直に値をスタックに置く
-					string builtin_name=callee->Name;
-					string typestr=callee->TypeInfo->GetName();
+					string builtin_name = callee->Name;
+					string typestr = callee->TypeInfo->GetName();
 
-					if(is_async){
-						thread t(VM::BuiltinFunctionList[pair<string,string>(builtin_name,typestr)],CurrentFlame);
+					if (is_async){
+						thread t(VM::BuiltinFunctionList[pair<string, string>(builtin_name, typestr)], CurrentFlame);
 						t.detach();
-					}else{
-						VM::BuiltinFunctionList[pair<string,string>(builtin_name,typestr)](CurrentFlame);
 					}
-                }else{
+					else{
+						VM::BuiltinFunctionList[pair<string, string>(builtin_name, typestr)](CurrentFlame);
+					}
+				}
+				else{
 					//フレームを作成
-					shared_ptr< vector< pair<string,VMValue> > > vars=make_shared<vector< pair<string,VMValue> > >();
+					shared_ptr< vector< pair<string, VMValue> > > vars = make_shared<vector< pair<string, VMValue> > >();
 					//引数の準備
-					for(int i=callee->Args->size()-1;i>=0;i--){
-						(*vars).push_back(pair<string,VMValue>(callee->Args->at(i).first,STACK_GET));
+					for (int i = callee->Args->size() - 1; i >= 0; i--){
+						(*vars).push_back(pair<string, VMValue>(Var2Str(callee->Args->at(i)), STACK_GET));
 						STACK_POP;
 					}
 					//ローカル変数の準備
-					for(int i=callee->LocalVariables->size()-1;i>=0;i--){
+					for (int i = 0; i < callee->LocalVariables->size(); i++){
 						if (i < callee->Args->size()){
 							continue; //引数の重複登録をしない
 						}
-						VMValue v;v.int_value=0;
-						(*vars).push_back(pair<string,VMValue>(callee->LocalVariables->at(i).first,v)); //ローカル変数はすべて0に初期化される
+						VMValue v; v.int_value = 0;
+						(*vars).push_back(pair<string, VMValue>(Var2Str(callee->LocalVariables->at(i)), v)); //ローカル変数はすべて0に初期化される
 					}
-					shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,is_tail?CurrentFlame->DynamicLink:CurrentFlame,cobj->ParentFlame);
+					shared_ptr<Flame> inv_flame = make_shared<Flame>(vars, callee->bytecodes, is_tail ? CurrentFlame->DynamicLink : CurrentFlame, cobj->ParentFlame);
 
-					if(is_async){
+					if (is_async){
 						//cout<<"thread started!"<<endl;
-						inv_flame->DynamicLink=nullptr;
-						thread t(VM::Run,inv_flame,true);
+						inv_flame->DynamicLink = nullptr;
+						thread t(VM::Run, inv_flame, true);
 						t.detach();
 
-					}else{
-						CurrentFlame=inv_flame;
 					}
-                }
-            }
-            break;
-        case ret:
-            CurrentFlame=CurrentFlame->DynamicLink;
-            break;
-        case ret_withvalue:
-            v=STACK_GET; STACK_POP;
-            if(CurrentFlame->DynamicLink->DynamicLink==nullptr){
-				//ブートストラップコードへのreturn...
-				return v;
-            }
-            CurrentFlame=CurrentFlame->DynamicLink;
-            if(!(CurrentFlame==nullptr)){
-                STACK_PUSH(v);
-            }
-            break;
-		case makeclosure:
-			{
-			//オペランドにpoolindexをとり、クロージャオブジェクトを生成
-			iopr1=OPERAND_GET; //poolindex
-			shared_ptr<ClosureObject> cobj=make_shared<ClosureObject>(static_pointer_cast<FunctionObject>(VM::PublicConstantPool.GetValue(iopr1).ref_value),CurrentFlame);
-			v.ref_value=cobj;
-			STACK_PUSH(v);
+					else{
+						CurrentFlame = inv_flame;
+					}
+				}
 			}
 			break;
-		case skip:
-			iopr1=OPERAND_GET;
-			CurrentFlame->PC+=iopr1;
-			break;
-		case iffalse_skip:
-			iopr1=OPERAND_GET;
-			bopr1=STACK_GET.bool_value;  STACK_POP;
-			if(!bopr1){
-				CurrentFlame->PC+=iopr1;
+			case ret:
+				CurrentFlame = CurrentFlame->DynamicLink;
+				break;
+			case ret_withvalue:
+				v = STACK_GET; STACK_POP;
+				if (CurrentFlame->DynamicLink->DynamicLink == nullptr){
+					//ブートストラップコードへのreturn...
+					return v;
+				}
+				CurrentFlame = CurrentFlame->DynamicLink;
+				if (!(CurrentFlame == nullptr)){
+					STACK_PUSH(v);
+				}
+				break;
+			case makeclosure:
+			{
+				//オペランドにpoolindexをとり、クロージャオブジェクトを生成
+				iopr1 = OPERAND_GET; //poolindex
+				shared_ptr<ClosureObject> cobj = make_shared<ClosureObject>(static_pointer_cast<FunctionObject>(VM::PublicConstantPool.GetValue(iopr1).ref_value), CurrentFlame);
+				v.ref_value = cobj;
+				STACK_PUSH(v);
 			}
 			break;
-		case back:
-			iopr1=OPERAND_GET;
-			CurrentFlame->PC-=iopr1;
-			break;
-		case makelist:
+			case skip:
+				iopr1 = OPERAND_GET;
+				CurrentFlame->PC += iopr1;
+				break;
+			case iffalse_skip:
+				iopr1 = OPERAND_GET;
+				bopr1 = STACK_GET.bool_value;  STACK_POP;
+				if (!bopr1){
+					CurrentFlame->PC += iopr1;
+				}
+				break;
+			case back:
+				iopr1 = OPERAND_GET;
+				CurrentFlame->PC -= iopr1;
+				break;
+			case makelist:
 			{
-				auto newlist=make_shared< list<VMValue> >();
-				iopr1=OPERAND_GET; //リストサイズ
-				for(int i=0;i<iopr1;i++){
+				auto newlist = make_shared< list<VMValue> >();
+				iopr1 = OPERAND_GET; //リストサイズ
+				for (int i = 0; i < iopr1; i++){
 					VMValue lv;
-					lv=STACK_GET; STACK_POP; //リストの要素
+					lv = STACK_GET; STACK_POP; //リストの要素
 					newlist->push_back(lv);
 				}
-				VMValue v2;v2.ref_value=newlist;
+				VMValue v2; v2.ref_value = newlist;
 				STACK_PUSH(v2);
 			}
 			break;
-		case makedata:
+			case makedata:
 			{
-				shared_ptr<map<string,VMValue> > newmap=make_shared< map<string,VMValue> >();
-				string originalname=*(static_pointer_cast<string>(GET_CONSTANT(OPERAND_GET).ref_value));
-				iopr1=OPERAND_GET; //メンバ数
-				for(int i=0;i<iopr1;i++){
-					string membername=*(static_pointer_cast<string>(GET_CONSTANT(STACK_GET.int_value).ref_value)); STACK_POP;
-					VMValue vtemp=STACK_GET; STACK_POP; //リストの要素
-					(*newmap)[membername]=vtemp;
+				shared_ptr<map<string, VMValue> > newmap = make_shared< map<string, VMValue> >();
+				string originalname = *(static_pointer_cast<string>(GET_CONSTANT(OPERAND_GET).ref_value));
+				iopr1 = OPERAND_GET; //メンバ数
+				for (int i = 0; i < iopr1; i++){
+					string membername = *(static_pointer_cast<string>(GET_CONSTANT(STACK_GET.int_value).ref_value)); STACK_POP;
+					VMValue vtemp = STACK_GET; STACK_POP; //リストの要素
+					(*newmap)[membername] = vtemp;
 				}
-				shared_ptr<DataObject> newdata=make_shared<DataObject>(originalname,newmap);
-				VMValue v2;v2.ref_value=newdata;
+				shared_ptr<DataObject> newdata = make_shared<DataObject>(originalname, newmap);
+				VMValue v2; v2.ref_value = newdata;
 				STACK_PUSH(v2);
 			}
 			break;
-		case loadlocal:
+			case loadlocal:
 			{
 				flameback = OPERAND_GET;
 				localindex = OPERAND_GET;
 				shared_ptr<Flame> fp = CurrentFlame;
-				for (i = 0; i<flameback; i++){
+				for (i = 0; i < flameback; i++){
 					fp = fp->StaticLink;
 				}
 				STACK_PUSH((*(fp->Variables))[localindex].second);
 
 			}
 			break;
-		case loadbyindex:
+			case loadbyindex:
 			{
-				iopr1=STACK_GET.int_value; STACK_POP;
-				shared_ptr<list<VMValue> > lst=static_pointer_cast<list<VMValue> >(STACK_GET.ref_value); STACK_POP;
-				list<VMValue>::iterator iter=lst->begin();
-				for(int i=0;i<iopr1;i++){
+				iopr1 = STACK_GET.int_value; STACK_POP;
+				shared_ptr<list<VMValue> > lst = static_pointer_cast<list<VMValue>>(STACK_GET.ref_value); STACK_POP;
+				if (lst->size() <= iopr1){ throw out_of_range("境界を超えてリスト/タプルへアクセスしました"); }
+				list<VMValue>::iterator iter = lst->begin();
+				for (int i = 0; i < iopr1; i++){
 					iter++;
 				}
 				STACK_PUSH(*iter);
 			}
 			break;
-		case loadfield:
+			case loadfield:
 			{
-				string name=*(static_pointer_cast<string>(VM::PublicConstantPool.GetValue(OPERAND_GET).ref_value));
-				shared_ptr<DataObject> obj=(static_pointer_cast<DataObject>(STACK_GET.ref_value)); STACK_POP;
-				map<string,VMValue>::iterator iter;
-				for(iter=obj->MemberMap->begin();iter!=obj->MemberMap->end();iter++){
-					if(iter->first==name){
+				string name = *(static_pointer_cast<string>(VM::PublicConstantPool.GetValue(OPERAND_GET).ref_value));
+				shared_ptr<DataObject> obj = (static_pointer_cast<DataObject>(STACK_GET.ref_value)); STACK_POP;
+				map<string, VMValue>::iterator iter;
+				for (iter = obj->MemberMap->begin(); iter != obj->MemberMap->end(); iter++){
+					if (iter->first == name){
 						STACK_PUSH(iter->second);
 						break;
 					}
 				}
 			}
 			break;
-		case storelocal:
+			case storelocal:
 			{
-				flameback=OPERAND_GET;
-				localindex=OPERAND_GET; //localindex
-				v=STACK_GET; STACK_POP; //値
+				flameback = OPERAND_GET;
+				localindex = OPERAND_GET; //localindex
+				v = STACK_GET; STACK_POP; //値
 				//cout<<"localindex:"<<localindex<<endl;
-				shared_ptr<Flame> fp=CurrentFlame;
-				for(i=0;i<flameback;i++){
-					fp=fp->StaticLink;
+				shared_ptr<Flame> fp = CurrentFlame;
+				for (i = 0; i < flameback; i++){
+					fp = fp->StaticLink;
 				}
-				(*(fp->Variables))[localindex].second=v;
+				(*(fp->Variables))[localindex].second = v;
 
 			}
-            break;
-		case storebyindex:
+			break;
+			case storebyindex:
 			{
-				iopr1=STACK_GET.int_value; STACK_POP;
-				auto lst=(static_pointer_cast<list<VMValue> >(STACK_GET.ref_value)); STACK_POP;
-				list<VMValue>::iterator iter=lst->begin();
-				for(int i=0;i<iopr1;i++){
+				iopr1 = STACK_GET.int_value; STACK_POP;
+				auto lst = (static_pointer_cast<list<VMValue>>(STACK_GET.ref_value)); STACK_POP;
+				if (lst->size() <= iopr1){ throw out_of_range("境界を超えてリスト/タプルへアクセスしました"); }
+				list<VMValue>::iterator iter = lst->begin();
+				for (int i = 0; i < iopr1; i++){
 					iter++;
 				}
-				(*iter)=STACK_GET; STACK_POP;
+				(*iter) = STACK_GET; STACK_POP;
 			}
 			break;
-		case storefield:
+			case storefield:
 			{
-				string name=*(static_pointer_cast<string>(VM::PublicConstantPool.GetValue(OPERAND_GET).ref_value));
-				shared_ptr<DataObject> obj=(static_pointer_cast<DataObject>(STACK_GET.ref_value)); STACK_POP;
-				map<string,VMValue>::iterator iter;
-				for(iter=obj->MemberMap->begin();iter!=obj->MemberMap->end();iter++){
-					if(iter->first==name){
-						iter->second=STACK_GET;
+				string name = *(static_pointer_cast<string>(VM::PublicConstantPool.GetValue(OPERAND_GET).ref_value));
+				shared_ptr<DataObject> obj = (static_pointer_cast<DataObject>(STACK_GET.ref_value)); STACK_POP;
+				map<string, VMValue>::iterator iter;
+				for (iter = obj->MemberMap->begin(); iter != obj->MemberMap->end(); iter++){
+					if (iter->first == name){
+						iter->second = STACK_GET;
 						break;
 					}
 				}
 			}
 			break;
-		case makecontinuation:
+			case makecontinuation:
 			{
-				vector<pair<int,stack<VMValue> > > snapshot;
-				for(shared_ptr<Flame> f=CurrentFlame;f!=nullptr;f=f->DynamicLink){
-					snapshot.push_back(pair<int,stack<VMValue> >(f->PC,f->OperandStack));
+				vector<pair<int, stack<VMValue> > > snapshot;
+				for (shared_ptr<Flame> f = CurrentFlame; f != nullptr; f = f->DynamicLink){
+					snapshot.push_back(pair<int, stack<VMValue> >(f->PC, f->OperandStack));
 				}
-				snapshot.front().first+=5; //PCを適切な位置にする
-				v.ref_value=make_shared<ContinuationObject>(snapshot,CurrentFlame);
+				snapshot.front().first += 5; //PCを適切な位置にする
+				v.ref_value = make_shared<ContinuationObject>(snapshot, CurrentFlame);
 				STACK_PUSH(v);
 			}
 			break;
-		case resume_continuation:
+			case resume_continuation:
 			{
-				shared_ptr<ContinuationObject> contobj=(static_pointer_cast<ContinuationObject>(STACK_GET.ref_value));STACK_POP;
-				VMValue arg=STACK_GET;STACK_POP;
-				CurrentFlame=contobj->StartFlame;
-				int index=0;
-				for(shared_ptr<Flame> f=CurrentFlame;f!=nullptr;f=f->DynamicLink,index++){
-					auto item=contobj->Snapshot[index];
-					f->PC=item.first;
-					f->OperandStack=item.second;
+				shared_ptr<ContinuationObject> contobj = (static_pointer_cast<ContinuationObject>(STACK_GET.ref_value)); STACK_POP;
+				VMValue arg = STACK_GET; STACK_POP;
+				CurrentFlame = contobj->StartFlame;
+				int index = 0;
+				for (shared_ptr<Flame> f = CurrentFlame; f != nullptr; f = f->DynamicLink, index++){
+					auto item = contobj->Snapshot[index];
+					f->PC = item.first;
+					f->OperandStack = item.second;
 				}
 				CurrentFlame->OperandStack.push(arg);
 			}
 			break;
-		case makechannel:
+			case makechannel:
 			{
-				v.ref_value=make_shared<ChannelObject>();
+				v.ref_value = make_shared<ChannelObject>();
 				STACK_PUSH(v);
 			}
 			break;
-		case channel_send:
+			case channel_send:
 			{
 				/*cout << "send-unlocked:" << CurrentFlame->OperandStack.size() << endl;
-				if (CurrentFlame->OperandStack.size() != 2){ 
-					int a = CurrentFlame.use_count();
-					error("");
+				if (CurrentFlame->OperandStack.size() != 2){
+				int a = CurrentFlame.use_count();
+				error("");
 				}*/
-				shared_ptr<ChannelObject> chan=static_pointer_cast<ChannelObject>(STACK_GET.ref_value); STACK_POP;
+				shared_ptr<ChannelObject> chan = static_pointer_cast<ChannelObject>(STACK_GET.ref_value); STACK_POP;
 				//cout<<"attempt to send... s:"<<chan->SentValues.size()<<",r:"<<chan->Receivers.size()<<endl;
 				//cout << "send-locked:" << CurrentFlame->OperandStack.size() << endl;
 				//if (CurrentFlame->OperandStack.size() != 1){ error(""); }
@@ -492,53 +501,75 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 				//cout << "send:push." << endl;
 				chan->SentValues.push(STACK_GET);
 				STACK_POP;
-				
-				if(chan->Receivers.size()>0){
+
+				if (chan->Receivers.size() > 0){
 					//寝ているスレッド（受信者）を起こす
 					//cout << "send:receiver unlocked." << endl;
 					auto rcv = chan->Receivers.front();
 					chan->Receivers.pop();
-					*(rcv.second)=true;
+					*(rcv.second) = true;
 					rcv.first->notify_one();
 				}
 			}
 			break;
-		case channel_receive:
+			case channel_receive:
 			{
 				//cout << "receive:stack->" << CurrentFlame->OperandStack.size() << endl;
-				shared_ptr<ChannelObject> chan=static_pointer_cast<ChannelObject>(STACK_GET.ref_value);STACK_POP;
+				shared_ptr<ChannelObject> chan = static_pointer_cast<ChannelObject>(STACK_GET.ref_value); STACK_POP;
 				//cout<<"attempt to receive... s:"<<chan->SentValues.size()<<",r:"<<chan->Receivers.size()<<endl;
 				unique_lock<mutex> lock(mtx);
-				if(chan->SentValues.size()==0){
+				if (chan->SentValues.size() == 0){
 					//送信者がいないので寝る
-					re_wait:
+				re_wait:
 					//cout << "receive:wait."<<endl;
-					bool is_ready=false;
-					shared_ptr<condition_variable> cond=make_shared<condition_variable>();
-					chan->Receivers.push(pair<shared_ptr<condition_variable> ,bool*>(cond,&is_ready));
-					cond->wait(lock,[&]{return is_ready;});
-					
+					bool is_ready = false;
+					shared_ptr<condition_variable> cond = make_shared<condition_variable>();
+					chan->Receivers.push(pair<shared_ptr<condition_variable>, bool*>(cond, &is_ready));
+					cond->wait(lock, [&]{return is_ready; });
+
 					//受け取る
 					if (chan->SentValues.size() == 0){
 						goto re_wait;
 					}
 					//cout << "receive:wake." << endl;
-					v=chan->SentValues.front(); chan->SentValues.pop();
+					v = chan->SentValues.front(); chan->SentValues.pop();
 					STACK_PUSH(v);
-				}else{
+				}
+				else{
 					//cout << "receive:get." << endl;
 					//受け取る
-					v=chan->SentValues.front();
+					v = chan->SentValues.front();
 					chan->SentValues.pop();
 					STACK_PUSH(v);
 				}
 			}
 			break;
-        default:
-            error("不正な命令です("+IntToString(bytecode)+")");
-            break;
-        }
-    }
+			default:
+				error("不正な命令です(" + IntToString(bytecode) + ")");
+				break;
+			}
+		}
+	}
+	catch (exception& ex){
+		cerr << endl << "Runtime Error!  " << ex.what() << endl;
+		cerr << "------------------------------------" << endl;
+		for (auto sf = CurrentFlame; sf != nullptr;sf=sf->StaticLink){
+			for each (auto x in *(sf->Variables))
+			{
+				cerr << x.first << " = " << x.second.int_value << endl;
+			}
+			
+		}
+		cerr << "------------------------------------" << endl<<endl;
+		
+		cerr << "------------------------------------" << endl;
+		for (auto df = CurrentFlame; df != nullptr; df = df->DynamicLink){
+			cerr << "PC = " << df->PC << endl;
+		}
+		cerr << "------------------------------------" << endl;
+
+		error("");
+	}
 
 }
 

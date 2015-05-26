@@ -1,6 +1,11 @@
 ﻿#pragma once
 #include <string>
+#include <map>
+#include <memory>
 
-void error(std::string);
-std::string escape_str(std::string);
-std::string IntToString(int number);
+using namespace std;
+
+
+void error(string);
+string escape_str(string);
+string IntToString(int number);

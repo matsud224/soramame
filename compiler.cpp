@@ -122,7 +122,6 @@ void Compiler::ASTgen()
 
 	arglist[0] = pair<string, shared_ptr<TypeAST> >("lst", make_shared<BasicTypeAST>("[?]"));
 	RegisterBuiltinFunction("length", length_list, make_shared<vector< pair<string, shared_ptr<TypeAST> > > >(arglist), make_shared<BasicTypeAST>("int"), true);
-
 	
 	arglist[0]=pair<string,shared_ptr<TypeAST> >("val1",make_shared<BasicTypeAST>("int"));
 	arglist.push_back(pair<string,shared_ptr<TypeAST> >("val2",make_shared<BasicTypeAST>("int")));
@@ -181,7 +180,7 @@ void Compiler::TypeCheck()
     }
     for(var_iter=genInfo->TopLevelVariableDef.begin();var_iter!=genInfo->TopLevelVariableDef.end();var_iter++){
         (*var_iter)->CheckType(environment,genInfo,genInfo->LocalVariables);
-        rootflame.LocalVariablesPtr->push_back(*((*var_iter)->Variable));
+        //rootflame.LocalVariablesPtr->push_back(*((*var_iter)->Variable));
     }
 }
 
