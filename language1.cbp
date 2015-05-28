@@ -18,6 +18,7 @@
 				</Compiler>
 				<Linker>
 					<Add option="-lglut -lGLU -lGL" />
+					<Add option="-pthread" />
 				</Linker>
 			</Target>
 			<Target title="Debug(Parser)">
@@ -32,6 +33,7 @@
 				</Compiler>
 				<Linker>
 					<Add option="-lglut -lGLU -lGL" />
+					<Add option="-pthread" />
 				</Linker>
 			</Target>
 			<Target title="Release">
@@ -44,6 +46,7 @@
 				</Compiler>
 				<Linker>
 					<Add option="-lglut -lGLU -lGL" />
+					<Add option="-pthread" />
 				</Linker>
 			</Target>
 		</Build>
@@ -73,6 +76,7 @@
 		<Unit filename="parser_actions.h" />
 		<Unit filename="statement.cpp" />
 		<Unit filename="statement.h" />
+		<Unit filename="type.cpp" />
 		<Unit filename="type.h" />
 		<Unit filename="utility.cpp" />
 		<Unit filename="utility.h" />

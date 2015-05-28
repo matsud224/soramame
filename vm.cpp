@@ -555,14 +555,14 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 		cerr << endl << "Runtime Error!  " << ex.what() << endl;
 		cerr << "------------------------------------" << endl;
 		for (auto sf = CurrentFlame; sf != nullptr;sf=sf->StaticLink){
-			for each (auto x in *(sf->Variables))
+			for(auto x=sf->Variables->begin();x!=sf->Variables->end();x++)
 			{
-				cerr << x.first << " = " << x.second.int_value << endl;
+				cerr << (*x).first << " = " << (*x).second.int_value << endl;
 			}
 			cerr << endl;
 		}
 		cerr << "------------------------------------" << endl<<endl;
-		
+
 		cerr << "------------------------------------" << endl;
 		for (auto df = CurrentFlame; df->FunctionInfo!=nullptr; df = df->DynamicLink){
 				cerr << df->FunctionInfo->Name << " : " << df->FunctionInfo->TypeInfo->GetName() << (df->FunctionInfo->isBuiltin ? "(builtin)" : "") << "  PC = " << df->PC << endl;
