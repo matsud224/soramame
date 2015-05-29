@@ -422,11 +422,69 @@ shared_ptr<ExprAST> UnBuiltExprAST::BuildAST(shared_ptr<CodegenInfo> geninfo)
             if(op->Info.UnaryOrBinary==Binary){
                 operand2=calcstack.top(); calcstack.pop();
                 operand1=calcstack.top(); calcstack.pop();
-                calcstack.push(make_shared<BinaryExprAST>(op->Operator,operand1,operand2)); //マージ
+
+				if (typeid(*operand1) == typeid(IntValExprAST) && typeid(*operand2) == typeid(IntValExprAST)){
+					if (op->Operator == "+"){
+						calcstack.push(make_shared<IntValExprAST>(dynamic_pointer_cast<IntValExprAST>(operand1)->Value + dynamic_pointer_cast<IntValExprAST>(operand2)->Value));
+					}
+					else if (op->Operator == "-"){
+						calcstack.push(make_shared<IntValExprAST>(dynamic_pointer_cast<IntValExprAST>(operand1)->Value - dynamic_pointer_cast<IntValExprAST>(operand2)->Value));
+					}
+					else if (op->Operator == "*"){
+						calcstack.push(make_shared<IntValExprAST>(dynamic_pointer_cast<IntValExprAST>(operand1)->Value * dynamic_pointer_cast<IntValExprAST>(operand2)->Value));
+					}
+					else if (op->Operator == "/"){
+						if (dynamic_pointer_cast<IntValExprAST>(operand2)->Value == 0){
+							error("ゼロ除算を見つけました。");
+						}
+						calcstack.push(make_shared<IntValExprAST>(dynamic_pointer_cast<IntValExprAST>(operand1)->Value / dynamic_pointer_cast<IntValExprAST>(operand2)->Value));
+					}
+					else if (op->Operator == "%"){
+						if (dynamic_pointer_cast<IntValExprAST>(operand2)->Value == 0){
+							error("ゼロ除算を見つけました。");
+						}
+						calcstack.push(make_shared<IntValExprAST>(dynamic_pointer_cast<IntValExprAST>(operand1)->Value % dynamic_pointer_cast<IntValExprAST>(operand2)->Value));
+					}
+					else if (op->Operator == ">>"){
+						calcstack.push(make_shared<IntValExprAST>(dynamic_pointer_cast<IntValExprAST>(operand1)->Value >> dynamic_pointer_cast<IntValExprAST>(operand2)->Value));
+					}
+					else if (op->Operator == "<<"){
+						calcstack.push(make_shared<IntValExprAST>(dynamic_pointer_cast<IntValExprAST>(operand1)->Value << dynamic_pointer_cast<IntValExprAST>(operand2)->Value));
+					}
+				}
+				else if (typeid(*operand1) == typeid(DoubleValExprAST) && typeid(*operand2) == typeid(DoubleValExprAST)){
+					if (op->Operator == "+"){
+						calcstack.push(make_shared<DoubleValExprAST>(geninfo,dynamic_pointer_cast<DoubleValExprAST>(operand1)->Value + dynamic_pointer_cast<DoubleValExprAST>(operand2)->Value));
+					}
+					else if (op->Operator == "-"){
+						calcstack.push(make_shared<DoubleValExprAST>(geninfo,dynamic_pointer_cast<DoubleValExprAST>(operand1)->Value - dynamic_pointer_cast<DoubleValExprAST>(operand2)->Value));
+					}
+					else if (op->Operator == "*"){
+						calcstack.push(make_shared<DoubleValExprAST>(geninfo,dynamic_pointer_cast<DoubleValExprAST>(operand1)->Value * dynamic_pointer_cast<DoubleValExprAST>(operand2)->Value));
+					}
+					else if (op->Operator == "/"){
+						if (dynamic_pointer_cast<DoubleValExprAST>(operand2)->Value == 0){
+							error("ゼロ除算を見つけました。");
+						}
+						calcstack.push(make_shared<DoubleValExprAST>(geninfo,dynamic_pointer_cast<DoubleValExprAST>(operand1)->Value / dynamic_pointer_cast<DoubleValExprAST>(operand2)->Value));
+					}
+				}
+				else{
+					calcstack.push(make_shared<BinaryExprAST>(op->Operator,operand1,operand2)); //マージ
+				}
+                
             }else if(op->Info.UnaryOrBinary==Unary){
                 operand1=calcstack.top(); calcstack.pop();
-                calcstack.push(make_shared<UnaryExprAST>(op->Operator,operand1)); //マージ
-            }else{
+
+				if (typeid(*operand1) == typeid(IntValExprAST)){
+					if (op->Operator == "-"){
+						calcstack.push(make_shared<IntValExprAST>(dynamic_pointer_cast<IntValExprAST>(operand1)->Value*(-1)));
+					}
+				}
+				else{
+					calcstack.push(make_shared<UnaryExprAST>(op->Operator, operand1)); //マージ
+				}
+				}else{
 				error("unknown error.");
             }
         }
