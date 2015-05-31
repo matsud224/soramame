@@ -84,9 +84,33 @@ void VariableDefStatementAST::Codegen(shared_ptr<vector<int> > bytecodes, shared
 {
 	if(InitialValue!=nullptr){
 		InitialValue->Codegen(bytecodes,geninfo);
-		bytecodes->push_back(storelocal);
-		bytecodes->push_back(FlameBack);
-		bytecodes->push_back(LocalIndex);
+		if (FlameBack == 0 && LocalIndex <= 5){
+			switch (LocalIndex){
+			case 0:
+				bytecodes->push_back(storelocal00);
+				break;
+			case 1:
+				bytecodes->push_back(storelocal01);
+				break;
+			case 2:
+				bytecodes->push_back(storelocal02);
+				break;
+			case 3:
+				bytecodes->push_back(storelocal03);
+				break;
+			case 4:
+				bytecodes->push_back(storelocal04);
+				break;
+			case 5:
+				bytecodes->push_back(storelocal05);
+				break;
+			}
+		}
+		else{
+			bytecodes->push_back(storelocal);
+			bytecodes->push_back(FlameBack);
+			bytecodes->push_back(LocalIndex);
+		}
 	}
 }
 

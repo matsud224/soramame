@@ -14,7 +14,7 @@ class Executable;
 class FunctionObject;
 
 enum{
-    ipush,bpush,pushnull,
+    ipush,bpush,pushnull,pushim1,pushi0,pushi1,pushi2,pushi3,pushi4,pushi5,
     ldc,
     iadd,dadd,
     isub,dsub,
@@ -26,9 +26,11 @@ enum{
     ilshift,irshift,
     invoke,
     loadlocal,loadbyindex,loadfield,
+	loadlocal00,loadlocal01,loadlocal02,loadlocal03,loadlocal04,loadlocal05,
 	ret,ret_withvalue,
     storelocal,storefield,storebyindex,
-    makeclosure,
+	storelocal00, storelocal01, storelocal02, storelocal03, storelocal04, storelocal05,
+	makeclosure,
     skip,iffalse_skip,back,
     icmpeq,icmpne,icmplt,icmple,icmpgt,icmpge,
     dcmpeq,dcmpne,dcmplt,dcmple,dcmpgt,dcmpge,
@@ -41,7 +43,7 @@ enum{
 class Flame{
 public:
     shared_ptr< vector< pair<string,VMValue> > > Variables; //型検査には通ってるので型情報は保管しない（変数名と値のペア）
-    stack< VMValue > OperandStack; //ここで計算を行う
+    vector< VMValue > OperandStack; //ここで計算を行う
     shared_ptr<vector<int> > CodePtr; //バイトコードへのポインタ
     shared_ptr<Flame> StaticLink;
     shared_ptr<Flame> DynamicLink;

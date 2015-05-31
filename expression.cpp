@@ -22,10 +22,34 @@ shared_ptr<ExprAST> GetInitValue(shared_ptr<TypeAST>  type,shared_ptr<CodegenInf
 
 void VariableExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo)
 {
-	bytecodes->push_back(loadlocal);
-	bytecodes->push_back(FlameBack);
-	bytecodes->push_back(LocalIndex);
-    return;
+	if (FlameBack == 0 && LocalIndex<=5){
+		switch (LocalIndex){
+		case 0:
+			bytecodes->push_back(loadlocal00);
+			break;
+		case 1:
+			bytecodes->push_back(loadlocal01);
+			break;
+		case 2:
+			bytecodes->push_back(loadlocal02);
+			break;
+		case 3:
+			bytecodes->push_back(loadlocal03);
+			break;
+		case 4:
+			bytecodes->push_back(loadlocal04);
+			break;
+		case 5:
+			bytecodes->push_back(loadlocal05);
+			break;
+		}
+	}
+	else{
+		bytecodes->push_back(loadlocal);
+		bytecodes->push_back(FlameBack);
+		bytecodes->push_back(LocalIndex);
+	}
+	return;
 }
 
 void UnaryExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo)
@@ -88,9 +112,34 @@ void BinaryExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<Codege
 			shared_ptr<DataMemberRefExprAST> lhs_cast=dynamic_pointer_cast<DataMemberRefExprAST>(LHS);
 			lhs_cast->AssignmentCodegen(bytecodes,geninfo);
 		}else if(typeid(*LHS)==typeid(VariableExprAST)){
-			bytecodes->push_back(storelocal);
-			bytecodes->push_back(dynamic_pointer_cast<VariableExprAST>(LHS)->FlameBack);
-			bytecodes->push_back(dynamic_pointer_cast<VariableExprAST>(LHS)->LocalIndex);
+			auto v_lhs = dynamic_pointer_cast<VariableExprAST>(LHS);
+			if (v_lhs->FlameBack == 0 && v_lhs->LocalIndex <= 5){
+				switch (v_lhs->LocalIndex){
+				case 0:
+					bytecodes->push_back(storelocal00);
+					break;
+				case 1:
+					bytecodes->push_back(storelocal01);
+					break;
+				case 2:
+					bytecodes->push_back(storelocal02);
+					break;
+				case 3:
+					bytecodes->push_back(storelocal03);
+					break;
+				case 4:
+					bytecodes->push_back(storelocal04);
+					break;
+				case 5:
+					bytecodes->push_back(storelocal05);
+					break;
+				}
+			}
+			else{
+				bytecodes->push_back(storelocal);
+				bytecodes->push_back(v_lhs->FlameBack);
+				bytecodes->push_back(v_lhs->LocalIndex);
+			}
 		}else{
 			error("代入式の左辺が不正です");
 		}
@@ -292,8 +341,36 @@ void FunctionAST::Codegen(shared_ptr<vector<int> > bytecodes_given,shared_ptr<Co
 }
 
 void IntValExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo){
-    bytecodes->push_back(ipush);
-    bytecodes->push_back(Value);
+	if (Value >=-1 && Value <= 5){
+		switch (Value){
+		case -1:
+			bytecodes->push_back(pushim1);
+			break;
+		case 0:
+			bytecodes->push_back(pushi0);
+			break;
+		case 1:
+			bytecodes->push_back(pushi1);
+			break;
+		case 2:
+			bytecodes->push_back(pushi2);
+			break;
+		case 3:
+			bytecodes->push_back(pushi3);
+			break;
+		case 4:
+			bytecodes->push_back(pushi4);
+			break;
+		case 5:
+			bytecodes->push_back(pushi5);
+			break;
+		}
+	}
+	else{
+		bytecodes->push_back(ipush);
+		bytecodes->push_back(Value);
+	}
+    
     return;
 }
 

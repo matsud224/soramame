@@ -18,9 +18,9 @@
 #include <chrono>
 
 
-#define VM_STACK_POP curr_flame->OperandStack.pop();
-#define VM_STACK_PUSH(x) curr_flame->OperandStack.push((x))
-#define VM_STACK_GET curr_flame->OperandStack.top()
+#define VM_STACK_POP curr_flame->OperandStack.pop_back();
+#define VM_STACK_PUSH(x) curr_flame->OperandStack.push_back((x))
+#define VM_STACK_GET curr_flame->OperandStack.back()
 #define VM_OPERAND_GET (*(curr_flame->CodePtr))[curr_flame->PC++]
 
 using namespace std;

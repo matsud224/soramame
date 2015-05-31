@@ -21,10 +21,10 @@ public:
 
 class ContinuationObject{
 public:
-	vector<pair<int,stack<VMValue> > > Snapshot;
+	vector<pair<int,vector<VMValue> > > Snapshot;
 	shared_ptr<Flame> StartFlame;
 
-	ContinuationObject(vector<pair<int,stack<VMValue> > > snapshot,shared_ptr<Flame> startflame):Snapshot(snapshot),StartFlame(startflame){};
+	ContinuationObject(vector<pair<int,vector<VMValue> > > snapshot,shared_ptr<Flame> startflame):Snapshot(snapshot),StartFlame(startflame){};
 };
 
 class ChannelObject{

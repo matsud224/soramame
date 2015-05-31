@@ -12,9 +12,9 @@
 #include <mutex>
 #include <condition_variable>
 
-#define STACK_POP CurrentFlame->OperandStack.pop();
-#define STACK_PUSH(x) CurrentFlame->OperandStack.push((x))
-#define STACK_GET CurrentFlame->OperandStack.top()
+#define STACK_POP CurrentFlame->OperandStack.pop_back();
+#define STACK_PUSH(x) CurrentFlame->OperandStack.push_back((x))
+#define STACK_GET CurrentFlame->OperandStack.back()
 #define OPERAND_GET (*(CurrentFlame->CodePtr))[CurrentFlame->PC++]
 #define GET_CONSTANT(x) VM::PublicConstantPool.GetValue((x))
 
@@ -67,6 +67,34 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 			switch (bytecode){
 			case ipush:
 				v.int_value = OPERAND_GET;
+				STACK_PUSH(v);
+				break;
+			case pushim1:
+				v.int_value = -1;
+				STACK_PUSH(v);
+				break;
+			case pushi0:
+				v.int_value = 0;
+				STACK_PUSH(v);
+				break;
+			case pushi1:
+				v.int_value = 1;
+				STACK_PUSH(v);
+				break;
+			case pushi2:
+				v.int_value = 2;
+				STACK_PUSH(v);
+				break;
+			case pushi3:
+				v.int_value = 3;
+				STACK_PUSH(v);
+				break;
+			case pushi4:
+				v.int_value = 4;
+				STACK_PUSH(v);
+				break;
+			case pushi5:
+				v.int_value = 5;
 				STACK_PUSH(v);
 				break;
 			case bpush:
@@ -391,6 +419,36 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 
 			}
 			break;
+			case loadlocal00:
+			{
+				STACK_PUSH((*(CurrentFlame->Variables))[0].second);
+			}
+			break;
+			case loadlocal01:
+			{
+				STACK_PUSH((*(CurrentFlame->Variables))[1].second);
+			}
+			break;
+			case loadlocal02:
+			{
+				STACK_PUSH((*(CurrentFlame->Variables))[2].second);
+			}
+			break;
+			case loadlocal03:
+			{
+				STACK_PUSH((*(CurrentFlame->Variables))[3].second);
+			}
+			break;
+			case loadlocal04:
+			{
+				STACK_PUSH((*(CurrentFlame->Variables))[4].second);
+			}
+			break;
+			case loadlocal05:
+			{
+				STACK_PUSH((*(CurrentFlame->Variables))[5].second);
+			}
+			break;
 			case loadbyindex:
 			{
 				iopr1 = STACK_GET.int_value; STACK_POP;
@@ -430,6 +488,42 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 
 			}
 			break;
+			case storelocal00:
+			{
+				v = STACK_GET; STACK_POP; //値
+				(*(CurrentFlame->Variables))[0].second = v;
+			}
+			break;
+			case storelocal01:
+			{
+				v = STACK_GET; STACK_POP; //値
+				(*(CurrentFlame->Variables))[1].second = v;
+			}
+			break;
+			case storelocal02:
+			{
+				v = STACK_GET; STACK_POP; //値
+				(*(CurrentFlame->Variables))[2].second = v;
+			}
+			break;
+			case storelocal03:
+			{
+				v = STACK_GET; STACK_POP; //値
+				(*(CurrentFlame->Variables))[3].second = v;
+			}
+			break;
+			case storelocal04:
+			{
+				v = STACK_GET; STACK_POP; //値
+				(*(CurrentFlame->Variables))[4].second = v;
+			}
+			break;
+			case storelocal05:
+			{
+				v = STACK_GET; STACK_POP; //値
+				(*(CurrentFlame->Variables))[5].second = v;
+			}
+			break;
 			case storebyindex:
 			{
 				iopr1 = STACK_GET.int_value; STACK_POP;
@@ -457,9 +551,9 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 			break;
 			case makecontinuation:
 			{
-				vector<pair<int, stack<VMValue> > > snapshot;
+				vector<pair<int, vector<VMValue> > > snapshot;
 				for (shared_ptr<Flame> f = CurrentFlame; f != nullptr; f = f->DynamicLink){
-					snapshot.push_back(pair<int, stack<VMValue> >(f->PC, f->OperandStack));
+					snapshot.push_back(pair<int, vector<VMValue> >(f->PC, f->OperandStack));
 				}
 				snapshot.front().first += 5; //PCを適切な位置にする
 				v.ref_value = make_shared<ContinuationObject>(snapshot, CurrentFlame);
@@ -477,7 +571,7 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 					f->PC = item.first;
 					f->OperandStack = item.second;
 				}
-				CurrentFlame->OperandStack.push(arg);
+				CurrentFlame->OperandStack.push_back(arg);
 			}
 			break;
 			case makechannel:
