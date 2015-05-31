@@ -27,6 +27,7 @@
 
 
 using namespace std;
+using namespace std::chrono;
 
 int comment_depth=0; //ブロックコメントのネストの深さ
 pair<Symbol,TokenValue> commentstart_lex(string str,Lexer *lex){
@@ -320,8 +321,15 @@ int main()
 		parser.reset();
 		compiler.reset();
 		cout<<BG_BLUE<<"VMを起動します..."<<RESET<<endl;
+		
+		auto start = system_clock::now();
+		
 		VM::Run(VM::GetInitialFlame(executable),false);
-		cout<<endl;
+		
+		auto end = system_clock::now();
+		auto dur = end - start;
+		auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
+		std::cout << endl<<endl<< msec << " msec" << endl;
     }catch(SyntaxError){
         cerr<<BG_RED"Syntax error  line:";
         set<int>::iterator iter;
