@@ -35,7 +35,7 @@ fun calc_server(in:channel(int),out:channel([(int,int,int)])){
 }
 
 fun mandel_sub(nowx:int,nowy:int)=>int{
-	var zx=0.0,zy=0.0,nextx=0.0,nexty=0.0,a=(i2d(nowx)-128.0)/100.0,b=(i2d(nowy)-64.0)/100.0
+	var zx=0.0,zy=0.0,nextx=0.0,nexty=0.0,a=(i2d(nowx)-256.0)/100.0,b=(i2d(nowy)-128.0)/100.0
 	
 	return callcc(break,int){
 		for(0,50,fun(i:int){
