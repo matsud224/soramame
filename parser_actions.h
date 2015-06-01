@@ -54,6 +54,7 @@ TokenValue closureexpr_rettypeinfer_reduce(shared_ptr<CodegenInfo>,vector<TokenV
 TokenValue arg_list_empty_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue arg_list_expression_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue arg_list_addexpression_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
+TokenValue tuple_list_expression_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values);
 TokenValue ifstatement_noelse_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue ifstatement_withelse_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue block_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values);

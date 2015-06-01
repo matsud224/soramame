@@ -6,8 +6,8 @@
 using namespace std;
 
 const int TOKENRULECOUNT=39;
-const int SYNTAXRULECOUNT=114;
-const int SYMBOLCOUNT=70; //SYNTAXEND,INPUTEND,EMPTYをのぞく
+const int SYNTAXRULECOUNT=116;
+const int SYMBOLCOUNT=71; //SYNTAXEND,INPUTEND,EMPTYをのぞく
 
 
 class TypeAST;
@@ -18,7 +18,7 @@ enum Symbol{
 	variableexpr, parenexpr, funcallexpr, closureexpr, returnstatement,type,type_list,ifstatement,
 	SEMICOLON,LPAREN,RPAREN,LBRACE,RBRACE,LBRACKET,RBRACKET,COMMA,COLON,DOT,block,WHILE,whilestatement,listvalexpr,tuplevalexpr,
 	DATA,GROUP,datadef,groupdef,datamember_list,groupmember_list,dataexpr,initassign_list,listrefexpr,datamemberrefexpr,doublevalexpr,
-	CONTINUATION,CALLCC,callccexpr,NEW,newobjexpr,CHANNEL,ASYNC,asyncstatement
+	CONTINUATION,CALLCC,callccexpr,NEW,newobjexpr,CHANNEL,ASYNC,asyncstatement,tuple_list
 };
 
 

@@ -359,6 +359,15 @@ TokenValue arg_list_expression_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenVa
 	return t;
 }
 
+TokenValue tuple_list_expression_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values)
+{
+	TokenValue t;
+	t.arg_exp_list = make_shared<vector<shared_ptr<ExprAST> > >();
+	t.arg_exp_list->push_back(make_shared<UnBuiltExprAST>(values[0].expression_list));
+	t.arg_exp_list->push_back(make_shared<UnBuiltExprAST>(values[2].expression_list));
+	return t;
+}
+
 TokenValue arg_list_addexpression_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values)
 {
 	TokenValue t;
