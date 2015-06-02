@@ -15,7 +15,7 @@ fun main(){
 		for(0,256,fun(n:int){
 			var result=out?
 			for(1,513,fun(t:int){
-				plot(result[t][0],result[t][1],(255%(result[t][2]+1)*4,(result[t][2]+1)*4,255%(result[t][2]+1)*4))
+				plot(result[t][0],result[t][1],make_color(i2d(result[t][2])))
 			})
 		})
 		glut_flush()
@@ -38,7 +38,7 @@ fun mandel_sub(nowx:int,nowy:int)=>int{
 	var zx=0.0,zy=0.0,nextx=0.0,nexty=0.0,a=(i2d(nowx)-256.0)/100.0,b=(i2d(nowy)-128.0)/100.0
 	
 	return callcc(break,int){
-		for(0,50,fun(i:int){
+		for(0,60,fun(i:int){
 			if(zx*zx+zy*zy>4.0){
 				break(i)
 			}
@@ -57,9 +57,36 @@ fun for(begin:int,end:int,block:fun(int)=>void){
 	}
 }
 
+fun make_color(h:double)=> (int,int,int){
+	var s=95.0,v=210.0,max=v,min=max-((s/255.0)*max)
+	h=h*6.0
+	var temp:(double,double,double)=callcc(break,(double,double,double)){
+		if(h<60.0){
+			break((max,(h/60.0)*(max-min)+min,min))
+		}
+		if(h<120.0){
+			break((((120.0-h)/60.0)*(max-min)+min,max,min))
+		}
+		if(h<180.0){
+			break((min,max,((h-120.0)/60.0)*(max-min)+min))
+		}
+		if(h<240.0){
+			break((min,((240.0-h)/60.0)*(max-min)+min,max))
+		}
+		if(h<300.0){
+			break((((h-240.0)/60.0)*(max-min)+min,min,max))
+		}
+		if(h<=360.0){
+			break((max,min,((360.0-h)/60.0)*(max-min)+min))
+		}
+	}
+	return (d2i(temp[0]),d2i(temp[1]),d2i(temp[2]))
+}
+
 fun plot(x:int,y:int,color:(int,int,int)){
 	glut_color3i(color[0],color[1],color[2])
 	glut_begin_point()
 	glut_vertex2i(x,y)
 	glut_end()
+	//print(color[0]);print(color[1]);print(color[2]);print("\n")
 }
