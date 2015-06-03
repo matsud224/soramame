@@ -311,7 +311,8 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 					}
 				}
 				else{
-					shared_ptr< vector< pair<string, VMValue> > > vars = make_shared<vector< pair<string, VMValue> > >(callee->LocalVariables->size());
+					shared_ptr< vector< pair<string, VMValue> > > vars = make_shared<vector< pair<string, VMValue> > >();
+					vars->reserve(callee->LocalVariables->size());
 					//引数の準備
 					for (auto iter = callee->Args->rbegin(); iter != callee->Args->rend(); iter++){
 						(*vars).push_back(pair<string, VMValue>(Var2Str(*iter), STACK_GET));

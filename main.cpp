@@ -1,4 +1,5 @@
 ﻿#include <iostream>
+#include <fstream>
 #include "lexer.h"
 #include <string>
 #include <vector>
@@ -121,7 +122,7 @@ pair<Symbol,TokenValue> nextline_lex(string str,Lexer *lex){
 };
 
 TokenRule TOKENRULE[TOKENRULECOUNT]={
-	{R"(/\*)",INITIAL,false,commentstart_lex},
+	{"/\\*",INITIAL,false,commentstart_lex},
 	{R"(//.*[\r\n|\r|\n])",INITIAL,false,NULL},
 	{R"([\r\n|\n|\r])",INITIAL,true,nextline_lex},
 	{"var",INITIAL,true,var_lex},
@@ -160,7 +161,7 @@ TokenRule TOKENRULE[TOKENRULECOUNT]={
 	{R"(/\*)",COMMENT,false,commentstart_lex},
     {R"(\*/)",COMMENT,false,commentend_lex},
     {R"([\r\n|\n|\r])",COMMENT,false,nextline_lex},
-    {R"(\.)",COMMENT,false,NULL}
+    {R"(.)",COMMENT,false,NULL}
 };
 
 SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
@@ -301,19 +302,20 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
 
 
 
-int main()
+int main(int argc,char *argv[])
 {
 	srand((unsigned int)time(NULL));
 
 	shared_ptr<Lexer> lexer;
 	shared_ptr<Parser> parser;
+	if (argc != 2){ error("コマンドライン引数が不正です"); }
 	try{
-		string str="";
-		char c;
-		while((c=getchar())!=-1){
-			if (c == '\x1a'){ c = '\n'; }
-			str+=c;
+		ifstream ifs(argv[1]);
+		string str="",line;
+		while (std::getline(ifs, line)) {
+			str += line+"\n";
 		}
+		
 		lexer=make_shared<Lexer>(str.c_str());
 		parser=make_shared<Parser>();
 

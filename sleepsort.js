@@ -1,4 +1,3 @@
-//スリープソート
 fun main(){
 	var list=[4,2,2,1,9,7,5,6,0,3,4]
 	var in:channel(int)=new(channel(int))

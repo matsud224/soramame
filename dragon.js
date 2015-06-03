@@ -4,6 +4,7 @@ data Point{
 }
 
 fun main(){
+  //�E�B���h�E���J��
   glut_openwindow("dragon")
   glut_setdisplayfunc(fun(){
 	glut_clear()
@@ -17,11 +18,10 @@ fun main(){
 
 fun paint(){
 
-  //出発点となる一対の点を指定します
   var P=Point{x=170,y=140};
   var Q=Point{x=400,y=350};
 
-  //対となる二点の間にドラゴン曲線を描きます
+
   glut_color3i(0,0,255)
   glut_begin_line()
   drawDragon(P,Q,10)
@@ -29,7 +29,7 @@ fun paint(){
 
 }
 
-//ドラゴン曲線を描くメソッド
+
 fun drawDragon(a:Point,b:Point,n:int){
 
   var c=Point{};
@@ -42,15 +42,14 @@ fun drawDragon(a:Point,b:Point,n:int){
   c.x=a.x+(xx+yy)/2;
   c.y=b.y+(xx+yy)/2;
 
-  //最後なので、実際に線を引きます
+
   if(n<=0){
-     drawLine(a.x,a.y,c.x,c.y);   //点Aから点Cへ
-     drawLine(b.x,b.y,c.x,c.y);   //点Bから点Cへ
+     drawLine(a.x,a.y,c.x,c.y);
+     drawLine(b.x,b.y,c.x,c.y);
   }
-  //最後ではないので、さらにメソッドを呼び出します（再帰処理）
   else{
-     drawDragon(a,c,n-1);    //点Aから点Cへ
-     drawDragon(b,c,n-1);    //点Bから点Cへ
+     drawDragon(a,c,n-1);
+     drawDragon(b,c,n-1);
   }
 } 
 

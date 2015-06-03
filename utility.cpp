@@ -10,7 +10,8 @@ using namespace std;
 void error(string msg)
 {
     cerr<<msg<<endl;
-    abort();
+	getchar();
+	exit(-1);
     return;
 }
 

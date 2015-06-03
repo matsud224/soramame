@@ -47,9 +47,9 @@ void display(){
 	}else{
 		//フレームを作成
 		shared_ptr< vector< pair<string,VMValue> > > vars=make_shared<vector< pair<string,VMValue> > >();
-
+		vars->reserve(callee->LocalVariables->size());
 		//ローカル変数の準備
-		for (int i = 0; i < callee->LocalVariables->size(); i++){
+		for (int i = callee->Args->size(); i < callee->LocalVariables->size(); i++){
 			VMValue v;v.int_value=0;
 			(*vars).push_back(pair<string,VMValue>(Var2Str(callee->LocalVariables->at(i)),v)); //ローカル変数はすべて0に初期化される
 		}
@@ -88,6 +88,7 @@ void mouse(int button, int state, int x, int y)
 	}else{
 		//フレームを作成
 		shared_ptr< vector< pair<string,VMValue> > > vars=make_shared<vector< pair<string,VMValue> > >();
+		vars->reserve(callee->LocalVariables->size());
 		//引数の準備
 		VMValue v;
 		v.int_value = y; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(3)), v));
@@ -96,7 +97,7 @@ void mouse(int button, int state, int x, int y)
 		v.int_value = button; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(0)), v));
 
 		//ローカル変数の準備
-		for (int i = 0; i < callee->LocalVariables->size(); i++){
+		for (int i = callee->Args->size(); i < callee->LocalVariables->size(); i++){
 			VMValue v;v.int_value=0;
 			(*vars).push_back(pair<string,VMValue>(Var2Str(callee->LocalVariables->at(i)),v)); //ローカル変数はすべて0に初期化される
 		}
@@ -123,6 +124,7 @@ void keyboard(unsigned char key, int x, int y)
 	}else{
 		//フレームを作成
 		shared_ptr< vector< pair<string,VMValue> > > vars=make_shared<vector< pair<string,VMValue> > >();
+		vars->reserve(callee->LocalVariables->size());
 		//引数の準備
 		VMValue v;
 		v.int_value = y; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(2)), v));
@@ -130,7 +132,7 @@ void keyboard(unsigned char key, int x, int y)
 		v.int_value = key; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(0)), v));
 
 		//ローカル変数の準備
-		for (int i = 0; i < callee->LocalVariables->size(); i++){
+		for (int i = callee->Args->size(); i < callee->LocalVariables->size(); i++){
 			VMValue v;v.int_value=0;
 			(*vars).push_back(pair<string,VMValue>(Var2Str(callee->LocalVariables->at(i)),v)); //ローカル変数はすべて0に初期化される
 		}
