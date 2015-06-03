@@ -346,10 +346,10 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 				break;
 			case ret_withvalue:
 				v = STACK_GET; STACK_POP;
-				if (CurrentFlame->DynamicLink->DynamicLink == nullptr){
+				/*if (CurrentFlame->DynamicLink->DynamicLink == nullptr){
 					//ブートストラップコードへのreturn...
 					return v;
-				}
+				}*/
 				CurrentFlame = CurrentFlame->DynamicLink;
 				if (!(CurrentFlame == nullptr)){
 					STACK_PUSH(v);

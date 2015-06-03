@@ -1,23 +1,34 @@
 fun main(){
 	var in=new(channel(int)),out=new(channel([(int,int,int)]))
-	for(0,hardware_concurrency(),fun(n:int){
-		async calc_server(in,out)
-	})
+	
+	async calc_server(in,out)
+	async calc_server(in,out)
+	async calc_server(in,out)
+	async calc_server(in,out)
+	
 	//ウィンドウを開く
-	glut_openwindow("Graphics Window!!!")
+	glut_openwindow("mandelbrot")
 	glut_setdisplayfunc(fun(){
 		print("draw\n")
 		glut_clear()
-		
-		for(0,256,fun(y:int){
+		glut_begin_point()
+		var y=0,n=0
+		while(y<512){
 			in<<y
-		})
-		for(0,256,fun(n:int){
+			y=y+1
+		}
+		while(n<512){
 			var result=out?
-			for(1,513,fun(t:int){
-				plot(result[t][0],result[t][1],make_color(i2d(result[t][2])))
-			})
-		})
+			var t=1
+			while(t<1025){
+				var color=make_color(i2d(result[t][2]))
+				glut_color3i(color[0],color[1],color[2])
+				glut_vertex2i(result[t][0],result[t][1])
+				t=t+1
+			}
+			n=n+1
+		}
+		glut_end()
 		glut_flush()
 	})
 	glut_mainloop()
@@ -26,34 +37,32 @@ fun main(){
 fun calc_server(in:channel(int),out:channel([(int,int,int)])){
 	var y=in?
 	var result=[(0,0,0)]
-	for(0,512,fun(x:int){
-		result=result+[(x,y,mandel_sub(x,y))]
-	})
+	var x=0
+	while(x<1024){
+		var temp=mandel_sub(x,y)
+		result=result+[(x,y,temp)]
+		x=x+1
+	}
 	print(y);print("\n")
 	out<<result
 	calc_server(in,out)
 }
 
 fun mandel_sub(nowx:int,nowy:int)=>int{
-	var zx=0.0,zy=0.0,nextx=0.0,nexty=0.0,a=(i2d(nowx)-256.0)/100.0,b=(i2d(nowy)-128.0)/100.0
+	var zx=0.0,zy=0.0,nextx=0.0,nexty=0.0,a=(i2d(nowx)-512.0)/200.0,b=(i2d(nowy)-256.0)/200.0
 	
 	return callcc(break,int){
-		for(0,60,fun(i:int){
+		var i=0
+		while(i<60){
 			if(zx*zx+zy*zy>4.0){
 				break(i)
 			}
 			nextx=zx*zx-zy*zy+a
 			nexty=2.0*zx*zy+b
 			zx=nextx;zy=nexty
-		})
+			i=i+1
+		}
 		break(0)
-	}
-}
-
-fun for(begin:int,end:int,block:fun(int)=>void){
-	while(begin<end){
-		block(begin)
-		begin=begin+1
 	}
 }
 
@@ -81,12 +90,4 @@ fun make_color(h:double)=> (int,int,int){
 		}
 	}
 	return (d2i(temp[0]),d2i(temp[1]),d2i(temp[2]))
-}
-
-fun plot(x:int,y:int,color:(int,int,int)){
-	glut_color3i(color[0],color[1],color[2])
-	glut_begin_point()
-	glut_vertex2i(x,y)
-	glut_end()
-	//print(color[0]);print(color[1]);print(color[2]);print("\n")
 }
