@@ -311,21 +311,19 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 					}
 				}
 				else{
-					//フレームを作成
-					shared_ptr< vector< pair<string, VMValue> > > vars = make_shared<vector< pair<string, VMValue> > >();
+					shared_ptr< vector< pair<string, VMValue> > > vars = make_shared<vector< pair<string, VMValue> > >(callee->LocalVariables->size());
 					//引数の準備
-					for (int i = callee->Args->size() - 1; i >= 0; i--){
-						(*vars).push_back(pair<string, VMValue>(Var2Str(callee->Args->at(i)), STACK_GET));
+					for (auto iter = callee->Args->rbegin(); iter != callee->Args->rend(); iter++){
+						(*vars).push_back(pair<string, VMValue>(Var2Str(*iter), STACK_GET));
 						STACK_POP;
 					}
 					//ローカル変数の準備
-					for (int i = 0; i < callee->LocalVariables->size(); i++){
-						if (i < callee->Args->size()){
-							continue; //引数の重複登録をしない
-						}
+					for (int i = callee->Args->size(); i < callee->LocalVariables->size(); i++){
 						VMValue v; v.int_value = 0;
 						(*vars).push_back(pair<string, VMValue>(Var2Str(callee->LocalVariables->at(i)), v)); //ローカル変数はすべて0に初期化される
 					}
+					
+					//フレームを作成
 					shared_ptr<Flame> inv_flame = make_shared<Flame>(vars, callee->bytecodes, is_tail ? CurrentFlame->DynamicLink : CurrentFlame, cobj->ParentFlame,callee);
 
 					if (is_async){
