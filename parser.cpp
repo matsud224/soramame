@@ -262,9 +262,10 @@ void Parser::BuildStateTable(){
         }
     }
 
+	#ifdef PARSER_DEBUG
     cout<<endl<<"shift/reduce conflict: "<<sr_conflict<<endl<<"reduce/reduce conflict: "<<rr_conflict<<endl<<endl;
 
-	#ifdef PARSER_DEBUG
+	
     if(sr_conflict+rr_conflict>0){
 		cout<<"次の状態でコンフリクトが発生しています： ";
 		for(set<int>::iterator iter=conflict_state.begin();iter!=conflict_state.end();iter++){

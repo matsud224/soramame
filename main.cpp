@@ -123,7 +123,7 @@ pair<Symbol,TokenValue> nextline_lex(string str,Lexer *lex){
 
 TokenRule TOKENRULE[TOKENRULECOUNT]={
 	{"/\\*",INITIAL,false,commentstart_lex},
-	{R"(//.*[\r\n|\r|\n])",INITIAL,false,NULL},
+	{R"(//.*[\r\n|\r|\n])",INITIAL,true,nextline_lex},
 	{R"([\r\n|\n|\r])",INITIAL,true,nextline_lex},
 	{"var",INITIAL,true,var_lex},
 	{"fun",INITIAL,true,fun_lex},
