@@ -292,7 +292,9 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 			case invoke:
 			{
 				shared_ptr<ClosureObject> cobj = static_pointer_cast<ClosureObject>(STACK_GET.ref_value); STACK_POP;
+				if (cobj == nullptr){ throw exception("NullPointerException"); }
 				shared_ptr<FunctionObject> callee = cobj->FunctionRef;
+				
 				//cout<<callee->Name << endl;
 				bool is_tail = OPERAND_GET == 0 ? false : true;
 				bool is_async = OPERAND_GET == 0 ? false : true;
@@ -562,6 +564,7 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 			case resume_continuation:
 			{
 				shared_ptr<ContinuationObject> contobj = (static_pointer_cast<ContinuationObject>(STACK_GET.ref_value)); STACK_POP;
+				if (contobj == nullptr){ throw exception("NullPointerException"); }
 				VMValue arg = STACK_GET; STACK_POP;
 				CurrentFlame = contobj->StartFlame;
 				int index = 0;
@@ -587,6 +590,7 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 				error("");
 				}*/
 				shared_ptr<ChannelObject> chan = static_pointer_cast<ChannelObject>(STACK_GET.ref_value); STACK_POP;
+				if (chan == nullptr){ throw exception("NullPointerException"); }
 				//cout<<"attempt to send... s:"<<chan->SentValues.size()<<",r:"<<chan->Receivers.size()<<endl;
 				//cout << "send-locked:" << CurrentFlame->OperandStack.size() << endl;
 				//if (CurrentFlame->OperandStack.size() != 1){ error(""); }
@@ -610,6 +614,7 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 			{
 				//cout << "receive:stack->" << CurrentFlame->OperandStack.size() << endl;
 				shared_ptr<ChannelObject> chan = static_pointer_cast<ChannelObject>(STACK_GET.ref_value); STACK_POP;
+				if (chan == nullptr){ throw exception("NullPointerException"); }
 				//cout<<"attempt to receive... s:"<<chan->SentValues.size()<<",r:"<<chan->Receivers.size()<<endl;
 				unique_lock<mutex> lock(mtx);
 				if (chan->SentValues.size() == 0){
