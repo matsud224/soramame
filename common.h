@@ -5,6 +5,8 @@
 
 using namespace std;
 
+extern bool SHOW_BYTECODE;
+
 const int TOKENRULECOUNT=39;
 const int SYNTAXRULECOUNT=116;
 const int SYMBOLCOUNT=71; //SYNTAXEND,INPUTEND,EMPTYをのぞく

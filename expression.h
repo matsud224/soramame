@@ -17,6 +17,8 @@ using namespace std;
 class FunctionObject;
 class ClosureObject;
 
+void ShowBytecode(shared_ptr<vector<int>> bc);
+
 class ExprAST{
 public:
 	shared_ptr<TypeAST> TypeInfo;

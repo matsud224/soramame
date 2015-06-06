@@ -311,32 +311,12 @@ void FunctionAST::Codegen(shared_ptr<vector<int> > bytecodes_given,shared_ptr<Co
         bytecodes_given->push_back(makeclosure);
         bytecodes_given->push_back(PoolIndex);
     }
-/*
-    string bytecode_names[]={
-		"ipush",
-		"iadd",
-		"isub",
-		"imul",
-		"idiv",
-		"band","bor",
-		"imod",
-		"ineg","bnot",
-		"ilshift","irshift",
-		"invoke",
-		"iloadlocal", //localという名前だが、結局はフレームを遡っていくのでグローバル変数に行き着くかもしれない
-		"ret","iret",
-		"istorelocal",
-		"makeclosure",
-		"skip",
-		"iffalse_skip",
-		"back",
-		"makelist"
-	};
-    cout<<endl<<"関数:"<<Name<<"のコード"<<endl;
-    for(unsigned int i=0;i<bytecodes.size();i++){
-        cout<<bytecodes[i]<<" ("<< ((bytecodes[i]>=0 && bytecodes[i]<= 21)?bytecode_names[bytecodes[i]]:"undefined") <<")"<<endl;
-    }
-    cout<<endl;*/
+
+	if (SHOW_BYTECODE){
+		cout << endl << "---" << Name << "---" << endl;
+		ShowBytecode(bytecodes);
+		cout << endl;
+	}
     return;
 }
 
@@ -1442,4 +1422,306 @@ vector< shared_ptr<ExprAST> > NewObjectAST::GetCallExprList()
 {
 	vector<shared_ptr<ExprAST> > result;
 	return result;
+}
+
+
+void ShowBytecode(shared_ptr<vector<int>> bc){
+	for (auto i = 0; i<bc->size(); i++){
+		cout << i << " : ";
+		switch (bc->at(i)){
+		case ipush:
+			cout << "ipush" << endl;
+			i++; cout << i << " : " << bc->at(i) << endl;
+			break;
+		case pushim1:
+			cout << "pushim1" << endl;
+			break;
+		case pushi0:
+			cout << "pushi0" << endl;
+			break;
+		case pushi1:
+			cout << "pushi1" << endl;
+			break;
+		case pushi2:
+			cout << "pushi2" << endl;
+			break;
+		case pushi3:
+			cout << "pushi3" << endl;
+			break;
+		case pushi4:
+			cout << "pushi4" << endl;
+			break;
+		case pushi5:
+			cout << "pushi5" << endl;
+			break;
+		case bpush:
+			cout << "bpush" << endl;
+			i++; cout << i << " : " << bc->at(i) << endl;
+			break;
+		case pushnull:
+			cout << "pushnull" << endl;
+			break;
+		case ldc:
+			cout << "ldc" << endl;
+			i++; cout << i << " : " << bc->at(i) << endl;
+			break;
+		case iadd:
+			cout << "iadd" << endl;
+			break;
+		case dadd:
+			cout << "dadd" << endl;
+			break;
+		case bor:
+			cout << "bor" << endl;
+			break;
+		case isub:
+			cout << "isub" << endl;
+			break;
+		case dsub:
+			cout << "dsub" << endl;
+			break;
+		case imul:
+			cout << "imul" << endl;
+			break;
+		case dmul:
+			cout << "dmul" << endl;
+			break;
+		case band:
+			cout << "band" << endl;
+			break;
+		case idiv:
+			cout << "idiv" << endl;
+			break;
+		case ddiv:
+			cout << "ddiv" << endl;
+			break;
+		case imod:
+			cout << "imod" << endl;
+			break;
+		case ineg:
+			cout << "ineg" << endl;
+			break;
+		case dneg:
+			cout << "dneg" << endl;
+			break;
+		case bnot:
+			cout << "bnot" << endl;
+			break;
+		case ilshift:
+			cout << "ilshift" << endl;
+			break;
+		case irshift:
+			cout << "irshift" << endl;
+			break;
+		case icmpeq:
+			cout << "icmpeq" << endl;
+			break;
+		case icmpne:
+			cout << "icmpne" << endl;
+			break;
+		case icmplt:
+			cout << "icmplt" << endl;
+			break;
+		case icmple:
+			cout << "icmple" << endl;
+			break;
+		case icmpgt:
+			cout << "icmpgt" << endl;
+			break;
+		case icmpge:
+			cout << "icmpge" << endl;
+			break;
+		case dcmpeq:
+			cout << "dcmpeq" << endl;
+			break;
+		case dcmpne:
+			cout << "dcmpne" << endl;
+			break;
+		case dcmplt:
+			cout << "dcmplt" << endl;
+			break;
+		case dcmple:
+			cout << "dcmple" << endl;
+			break;
+		case dcmpgt:
+			cout << "dcmpgt" << endl;
+			break;
+		case dcmpge:
+			cout << "dcmpge" << endl;
+			break;
+		case bcmpeq:
+			cout << "bcmpeq" << endl;
+			break;
+		case bcmpne:
+			cout << "bcmpne" << endl;
+			break;
+		case invoke:
+			cout << "invoke" << endl;
+			i++; cout << i << " : " << bc->at(i) << endl;
+			i++; cout << i << " : " << bc->at(i) << endl;
+			break;
+		case ret:
+			cout << "ret" << endl;
+			break;
+		case ret_withvalue:
+			cout << "ret_withvalue" << endl;
+			break;
+		case makeclosure:
+		{
+			cout << "makeclosure" <<endl;
+			i++; cout << i << " : " << bc->at(i) << endl;
+		}
+		break;
+		case skip:
+			cout << "skip" << endl;
+			i++; cout << i << " : " << bc->at(i) << endl;
+			break;
+		case iffalse_skip:
+			cout << "iffalse_skip" << endl;
+			i++; cout << i << " : " << bc->at(i) << endl;
+			break;
+		case back:
+			cout << "back" << endl;
+			i++; cout << i << " : " << bc->at(i) << endl;
+			break;
+		case makelist:
+		{
+			cout << "makelist" << endl;
+			i++; cout << i << " : " << bc->at(i) << endl;
+		}
+		break;
+		case makedata:
+		{
+			cout << "makedata" << endl;
+			i++; cout << i << " : " << bc->at(i) << endl;
+			i++; cout << i << " : " << bc->at(i) << endl;
+		}
+		break;
+		case loadlocal:
+		{
+			cout << "loadlocal" << endl;
+			i++; cout << i << " : " << bc->at(i) << endl;
+			i++; cout << i << " : " << bc->at(i) << endl;
+		}
+		break;
+		case loadlocal00:
+		{
+			cout << "loadlocal00" << endl;
+		}
+		break;
+		case loadlocal01:
+		{
+			cout << "loadlocal01" << endl;
+		}
+		break;
+		case loadlocal02:
+		{
+			cout << "loadlocal02" << endl;
+		}
+		break;
+		case loadlocal03:
+		{
+			cout << "loadlocal03" << endl;
+		}
+		break;
+		case loadlocal04:
+		{
+			cout << "loadlocal04" << endl;
+		}
+		break;
+		case loadlocal05:
+		{
+			cout << "loadlocal05" << endl;
+		}
+		break;
+		case loadbyindex:
+		{
+			cout << "loadbyindex" << endl;
+		}
+		break;
+		case loadfield:
+		{
+			cout << "loadfield" << endl;
+			i++; cout << i << " : " << bc->at(i) << endl;
+		}
+		break;
+		case storelocal:
+		{
+			cout << "storelocal" << endl;
+			i++; cout << i << " : " << bc->at(i) << endl;
+			i++; cout << i << " : " << bc->at(i) << endl;
+		}
+		break;
+		case storelocal00:
+		{
+			cout << "storelocal00" << endl;
+		}
+		break;
+		case storelocal01:
+		{
+			cout << "storelocal01" << endl;
+		}
+		break;
+		case storelocal02:
+		{
+			cout << "storelocal02" << endl;
+		}
+		break;
+		case storelocal03:
+		{
+			cout << "storelocal03" << endl;
+		}
+		break;
+		case storelocal04:
+		{
+			cout << "storelocal04" << endl;
+		}
+		break;
+		case storelocal05:
+		{
+			cout << "storelocal05" << endl;
+		}
+		break;
+		case storebyindex:
+		{
+			cout << "storebyindex" << endl;
+		}
+		break;
+		case storefield:
+		{
+			cout << "storelfield" << endl;
+			i++; cout << i << " : " << bc->at(i) << endl;
+		}
+		break;
+		case makecontinuation:
+		{
+			cout << "makecontinuation" << endl;
+		}
+		break;
+		case resume_continuation:
+		{
+			cout << "resume_continuation" << endl;
+		}
+		break;
+		case makechannel:
+		{
+			cout << "makechannel" << endl;
+		}
+		break;
+		case channel_send:
+		{
+			cout << "channel_send" << endl;
+		}
+		break;
+		case channel_receive:
+		{
+			cout << "channel_receive" << endl;
+		}
+		break;
+		default:
+			error("UNDEFINED(" + IntToString(bc->at(i)) + ")");
+			break;
+		}
+	}
+
 }

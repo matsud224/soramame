@@ -300,17 +300,31 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
 };
 
 
+bool SHOW_BYTECODE;
 
-
-int main(int argc,char *argv[])
+int main(int argc,char* argv[])
 {
 	srand((unsigned int)time(NULL));
 
 	shared_ptr<Lexer> lexer;
 	shared_ptr<Parser> parser;
-	if (argc != 2){ error("コマンドライン引数が不正です"); }
+
+	SHOW_BYTECODE = false;
+
+	char* path=argv[1];
+	if (argc == 3){
+		if (strcmp(argv[1], "-b") == 0){
+			SHOW_BYTECODE = true;
+			path = argv[2];
+		}
+		else{
+			error("コマンドライン引数1が不正です");
+		}
+	}else if(argc!=2){
+		error("コマンドライン引数が不正です"); 
+	}
 	try{
-		ifstream ifs(argv[1]);
+		ifstream ifs(path);
 		string str="",line;
 		while (std::getline(ifs, line)) {
 			str += line+"\n";
@@ -324,7 +338,10 @@ int main(int argc,char *argv[])
 		lexer.reset();
 		parser.reset();
 		compiler.reset();
-		cout<<BG_BLUE<<"VMを起動します..."<<RESET<<endl;
+
+		if (SHOW_BYTECODE){ getchar(); return 0; }
+
+		cout<<BG_BLUE<<"~~~~~~~~~~~~~~~~~~~~~~~~"<<RESET<<endl;
 		
 		auto start = system_clock::now();
 		
