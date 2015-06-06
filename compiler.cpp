@@ -29,6 +29,12 @@ void Compiler::ASTgen()
 
 	genInfo->OperatorList.insert(pair<string,OperatorInfo >("-",OperatorInfo(Unary,Right,70)));
 
+	genInfo->OperatorList.insert(pair<string, OperatorInfo >("@+", OperatorInfo(Binary, Left, 20)));
+
+	genInfo->OperatorList.insert(pair<string, OperatorInfo >("@?", OperatorInfo(Unary, Right, 70)));
+	genInfo->OperatorList.insert(pair<string, OperatorInfo >("@>", OperatorInfo(Unary, Right, 70)));
+	genInfo->OperatorList.insert(pair<string, OperatorInfo >("@<", OperatorInfo(Unary, Right, 70)));
+
     genInfo->OperatorList.insert(pair<string,OperatorInfo >(">",OperatorInfo(Binary,Left,8)));
     genInfo->OperatorList.insert(pair<string,OperatorInfo >(">=",OperatorInfo(Binary,Left,8)));
     genInfo->OperatorList.insert(pair<string,OperatorInfo >("<",OperatorInfo(Binary,Left,8)));
@@ -81,15 +87,15 @@ void Compiler::ASTgen()
 	arglist.clear();
 
     arglist.push_back(pair<string,shared_ptr<TypeAST> >("val",make_shared<BasicTypeAST>("int")));
-    RegisterBuiltinFunction("print",print_int,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
+    RegisterBuiltinFunction("print_int",print_int,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
 
     RegisterBuiltinFunction("sleep",sleep_msec,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
 
     arglist[0]=pair<string,shared_ptr<TypeAST> >("val",make_shared<BasicTypeAST>("double"));
-    RegisterBuiltinFunction("print",print_double,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
+    RegisterBuiltinFunction("print_double",print_double,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
 
     arglist[0]=pair<string,shared_ptr<TypeAST> >("val",make_shared<BasicTypeAST>("bool"));
-    RegisterBuiltinFunction("print",print_bool,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
+    RegisterBuiltinFunction("print_bool",print_bool,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
 
     arglist[0]=pair<string,shared_ptr<TypeAST> >("str",make_shared<BasicTypeAST>("string"));
     RegisterBuiltinFunction("print",print_str,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
@@ -113,16 +119,6 @@ void Compiler::ASTgen()
 	RegisterBuiltinFunction("atan",math_atan,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("double"),true);
 	RegisterBuiltinFunction("sqrt",math_sqrt,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("double"),true);
 
-    arglist[0]=pair<string,shared_ptr<TypeAST> >("str",make_shared<BasicTypeAST>("string"));
-    RegisterBuiltinFunction("length",length_str,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("int"),true);
-
-	arglist.push_back(pair<string, shared_ptr<TypeAST> >("str", make_shared<BasicTypeAST>("string")));
-	RegisterBuiltinFunction("append", append_str, make_shared<vector< pair<string, shared_ptr<TypeAST> > > >(arglist), make_shared<BasicTypeAST>("string"), true);
-	arglist.pop_back();
-
-	arglist[0] = pair<string, shared_ptr<TypeAST> >("lst", make_shared<BasicTypeAST>("[?]"));
-	RegisterBuiltinFunction("length", length_list, make_shared<vector< pair<string, shared_ptr<TypeAST> > > >(arglist), make_shared<BasicTypeAST>("int"), true);
-	
 	arglist[0]=pair<string,shared_ptr<TypeAST> >("val1",make_shared<BasicTypeAST>("int"));
 	arglist.push_back(pair<string,shared_ptr<TypeAST> >("val2",make_shared<BasicTypeAST>("int")));
     RegisterBuiltinFunction("pow",pow_int,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("int"),true);
@@ -135,8 +131,13 @@ void Compiler::ASTgen()
 	RegisterBuiltinFunction("glut_char",glut_char,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
 
 	//演算子から関数呼び出しへの橋渡し（引数などの情報は無視される）
-	RegisterBuiltinFunction("!operator_append_list", operator_append_list, make_shared<vector< pair<string, shared_ptr<TypeAST> > > >(arglist), make_shared<BasicTypeAST>("!!called as an operator!!"), true);
-	RegisterBuiltinFunction("!operator_append_string", append_str, make_shared<vector< pair<string, shared_ptr<TypeAST> > > >(arglist), make_shared<BasicTypeAST>("string"), true);
+	RegisterBuiltinFunction("!op_append_list", op_append_list, make_shared<vector< pair<string, shared_ptr<TypeAST> > > >(), make_shared<BasicTypeAST>("<...>"), true);
+	RegisterBuiltinFunction("!op_append_str", op_append_str, make_shared<vector< pair<string, shared_ptr<TypeAST> > > >(), make_shared<BasicTypeAST>("<...>"), true);
+	RegisterBuiltinFunction("!op_cdr", op_cdr, make_shared<vector< pair<string, shared_ptr<TypeAST> > > >(), make_shared<BasicTypeAST>("<...>"), true);
+	RegisterBuiltinFunction("!op_car", op_car, make_shared<vector< pair<string, shared_ptr<TypeAST> > > >(), make_shared<BasicTypeAST>("<...>"), true);
+	RegisterBuiltinFunction("!op_cons", op_cons, make_shared<vector< pair<string, shared_ptr<TypeAST> > > >(), make_shared<BasicTypeAST>("<...>"), true);
+	RegisterBuiltinFunction("!op_length_list", op_length_list, make_shared<vector< pair<string, shared_ptr<TypeAST> > > >(), make_shared<BasicTypeAST>("<...>"), true);
+	RegisterBuiltinFunction("!op_length_str", op_length_str, make_shared<vector< pair<string, shared_ptr<TypeAST> > > >(), make_shared<BasicTypeAST>("<...>"), true);
 
 
 	while(!parser->IsAccepted()){

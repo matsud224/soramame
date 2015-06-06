@@ -203,7 +203,7 @@ public:
 	virtual bool IsConstant(){return false;}
 
     //自らの型を返すだけでなく、bodyについて型検査を実施する
-    shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars);
+	virtual shared_ptr<TypeAST> CheckType( shared_ptr<vector<Environment> > env, shared_ptr<CodegenInfo> geninfo, shared_ptr<vector< pair<string, shared_ptr<TypeAST> >  > > CurrentLocalVars);
 
     FunctionAST(shared_ptr<CodegenInfo> cgi,string n,shared_ptr<vector< pair<string,shared_ptr<TypeAST> > > > a,shared_ptr<TypeAST> rett,shared_ptr<BlockAST> bdy):Name(n),Args(a),Body(bdy){
 		vector<shared_ptr<TypeAST> > typelist;
@@ -250,7 +250,7 @@ public:
 
 	virtual bool IsConstant(){return false;}
 
-    shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars);
+    virtual shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars);
 
     ContinuationAST(shared_ptr<CodegenInfo> cgi,shared_ptr<TypeAST> t,string varname,shared_ptr<BlockAST> bdy):VarName(varname),Body(bdy){
         TypeInfo=t;
@@ -287,7 +287,7 @@ public:
     string Name;
     int LocalIndex;//ローカル変数のインデックス番号（フレーム配列のインデックス）
     int FlameBack; //フレームを何回遡るか
-    bool is_toplevel_func; //トップレベル関数または組み込み関数かどうか(CheckTypeで分かる)
+    bool is_toplevel_func; //トップレベル関数または組み込み関数かどうかで分かる)
 
     VariableExprAST(const string &name):Name(name){TypeInfo=nullptr;}
     virtual bool IsConstant(){return false;}
@@ -366,11 +366,12 @@ class UnaryExprAST : public ExprAST{
 public:
     string Operator;
     shared_ptr<ExprAST> Operand;
+	int tofuncall_FlameBack, tofuncall_LocalIndex;
 
     UnaryExprAST(string opc,shared_ptr<ExprAST> oprnd):Operator(opc),Operand(oprnd){TypeInfo=nullptr;}
     virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
     virtual bool IsConstant(){return false;}
-    virtual shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars);
+	virtual shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env, shared_ptr<CodegenInfo> geninfo, shared_ptr<vector< pair<string, shared_ptr<TypeAST> >  > > CurrentLocalVars);
 	virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){return Operand->IsCTFEable(cgi,curr_fun_index);}
 	virtual vector<shared_ptr<ExprAST> > GetCallExprList();
 };
@@ -384,7 +385,7 @@ public:
     BinaryExprAST(string opc,shared_ptr<ExprAST> lhs,shared_ptr<ExprAST> rhs):Operator(opc),LHS(lhs),RHS(rhs){TypeInfo=nullptr;}
     virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
     virtual bool IsConstant(){return false;}
-    virtual shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars);
+	virtual shared_ptr<TypeAST> CheckType( shared_ptr<vector<Environment> > env, shared_ptr<CodegenInfo> geninfo, shared_ptr<vector< pair<string, shared_ptr<TypeAST> >  > > CurrentLocalVars);
     virtual bool IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){return LHS->IsCTFEable(cgi,curr_fun_index)&&RHS->IsCTFEable(cgi,curr_fun_index);}
 	virtual vector<shared_ptr<ExprAST> > GetCallExprList();
 };

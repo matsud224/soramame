@@ -69,7 +69,16 @@ void UnaryExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<Codegen
         if(typeid(*Operand->TypeInfo)==typeid(ChannelTypeAST)){
             bytecodes->push_back(channel_receive);
         }
-    }
+	}
+	else if (Operator == "@?" || Operator == "@<" || Operator == "@>"){
+		//関数へ転送
+		bytecodes->push_back(loadlocal);
+		bytecodes->push_back(tofuncall_FlameBack);
+		bytecodes->push_back(tofuncall_LocalIndex);
+		bytecodes->push_back(invoke);
+		bytecodes->push_back(0);
+		bytecodes->push_back(0);
+	}
     return;
 }
 
@@ -245,7 +254,16 @@ void BinaryExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<Codege
         }else if(LHS->TypeInfo->GetName()=="double"){
 			bytecodes->push_back(dcmpge);
         }
-    }
+	}
+	else if (Operator == "@+"){
+		//関数へ転送
+		bytecodes->push_back(loadlocal);
+		bytecodes->push_back(tofuncall_FlameBack);
+		bytecodes->push_back(tofuncall_LocalIndex);
+		bytecodes->push_back(invoke);
+		bytecodes->push_back(0);
+		bytecodes->push_back(0);
+	}
     return;
 }
 
@@ -562,83 +580,13 @@ shared_ptr<TypeAST>  VariableExprAST::CheckType(shared_ptr<vector<Environment> >
 	int currentenv;
 	int i;
 	FlameBack=0;
-	int candidate_count=0;
-
-	if(TypeInfo==nullptr){
-		//オーバーロードの数を調べる(トップレベルの関数について)
-		vector<shared_ptr<FunctionAST> >::iterator iter;
-		for(iter=geninfo->TopLevelFunction.begin();iter!=geninfo->TopLevelFunction.end();iter++){
-			if(Name==(*iter)->Name){
-				//名前が一致
-				candidate_count++;
-			}
-		}
-		if(candidate_count>1){
-			//オーバーロードを解決できなかった...(型情報を与えてもらって、再度呼んでもらう)
-			TypeInfo=nullptr;
-			return nullptr;
-		}
-	}
 
 	for(currentenv=(static_cast<int>(env->size())-1);currentenv>=0;currentenv--){
 		for(i=(*env)[currentenv].Items.size()-1;i>=0;i--){
 			if(Name==(*env)[currentenv].Items[i].VariableInfo.first){
 				//名前が一致
-
-				if(TypeInfo!=nullptr){
-					//オーバーロード・指定された型との一致を調べる(返り値については調べない)
-					if(typeid(FunctionTypeAST)==typeid(*TypeInfo)){
-						if(typeid(*((*env)[currentenv].Items[i].VariableInfo.second))!=typeid(FunctionTypeAST)){
-							error("定義重複：関数ではありません");
-						}
-						vector<shared_ptr<TypeAST> > typelist=dynamic_pointer_cast<FunctionTypeAST >(TypeInfo)->TypeList;
-						vector<shared_ptr<TypeAST> > typelist2=dynamic_pointer_cast<FunctionTypeAST >((*env)[currentenv].Items[i].VariableInfo.second)->TypeList;
-						shared_ptr<TypeAST> UnknownListType; //[?]に何が埋まるか
-						if(typelist.size()!=typelist2.size()){continue;}
-						bool fail=false;
-
-						for(int i=0;i<typelist.size()-1;i++){
-							if(typelist[i]->GetName()!=typelist2[i]->GetName()){
-								if (typelist2[i]->GetName() == "[?]" && typeid(*typelist[i])==typeid(ListTypeAST)){
-									if (UnknownListType == nullptr){
-										UnknownListType = typelist[i];
-									}else{
-										if (UnknownListType->GetName() != typelist[i]->GetName()){
-											fail = true;
-										}
-									}
-									continue;
-								}
-								fail=true;
-								break;
-							}
-						}
-						if(fail){
-							continue;
-						}
-
-						dynamic_pointer_cast<FunctionTypeAST>(TypeInfo)->TypeList.back() = typelist2.back();
-						if (dynamic_pointer_cast<FunctionTypeAST>(TypeInfo)->TypeList.back()->GetName() == "[?]"){
-							dynamic_pointer_cast<FunctionTypeAST>(TypeInfo)->TypeList.back() = UnknownListType;
-						}
-					}else if(typeid(ContinuationTypeAST)==typeid(*TypeInfo)){
-						if(typeid(*((*env)[currentenv].Items[i].VariableInfo.second))!=typeid(ContinuationTypeAST)){
-							error("継続ではありません");
-						}
-						shared_ptr<TypeAST> type1=dynamic_pointer_cast<ContinuationTypeAST >(TypeInfo)->Type;
-						shared_ptr<TypeAST> type2=dynamic_pointer_cast<ContinuationTypeAST >((*env)[currentenv].Items[i].VariableInfo.second)->Type;
-
-						bool fail=false;
-
-						if(type1->GetName()!=type2->GetName()){
-							error("継続の型が一致しません");
-						}
-					}
-				}else{
-					TypeInfo = (*env)[currentenv].Items[i].VariableInfo.second;
-				}
-
-
+				TypeInfo = (*env)[currentenv].Items[i].VariableInfo.second;
+		
 				LocalIndex=(*env)[currentenv].Items[i].LocalIndex;
 
 				if(currentenv==0 && geninfo->TopLevelFunction.size()>LocalIndex){
@@ -660,13 +608,15 @@ shared_ptr<TypeAST>  VariableExprAST::CheckType(shared_ptr<vector<Environment> >
 	return TypeInfo;
 }
 
-shared_ptr<TypeAST>  UnaryExprAST::CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars){
+shared_ptr<TypeAST>  UnaryExprAST::CheckType(shared_ptr<vector<Environment> > env, shared_ptr<CodegenInfo> geninfo, shared_ptr<vector< pair<string, shared_ptr<TypeAST> >  > > CurrentLocalVars){
 	//循環防止の為
 	if(TypeInfo!=nullptr){
 		return TypeInfo;
 	}
-
+	
 	shared_ptr<TypeAST> oprandt=Operand->CheckType(env,geninfo,CurrentLocalVars);
+	if (oprandt == nullptr){ error("型を決定できません"); }
+
 	if(Operator=="!"){
 		if(oprandt->GetName()!="bool"){
 			error("型に問題があります。単項演算子:"+Operator+" オペランド:"+oprandt->GetName());
@@ -682,6 +632,37 @@ shared_ptr<TypeAST>  UnaryExprAST::CheckType(shared_ptr<vector<Environment> > en
 			error("型に問題があります。単項演算子:"+Operator+" オペランド:"+oprandt->GetName());
 		}
 		TypeInfo=dynamic_pointer_cast<ChannelTypeAST>(oprandt)->Type;
+	}else if (Operator == "@?"){
+		if (!(typeid(*oprandt) == typeid(ListTypeAST)) && oprandt->GetName() != "string"){
+			error("型に問題があります。単項演算子:" + Operator + " オペランド:" + oprandt->GetName());
+		}
+		if (oprandt->GetName() == "string"){
+			auto index = SearchVariable_IgnoreType("!op_length_str", env, geninfo, CurrentLocalVars);
+			tofuncall_FlameBack = index.first;
+			tofuncall_LocalIndex = index.second;
+		}
+		else{
+			auto index = SearchVariable_IgnoreType("!op_length_list", env, geninfo, CurrentLocalVars);
+			tofuncall_FlameBack = index.first;
+			tofuncall_LocalIndex = index.second;
+		}
+		TypeInfo = make_shared<BasicTypeAST>("int");
+	}else if (Operator == "@<"){
+		if (!(typeid(*oprandt) == typeid(ListTypeAST))){
+			error("型に問題があります。単項演算子:" + Operator + " オペランド:" + oprandt->GetName());
+		}
+		auto index = SearchVariable_IgnoreType("!op_car", env, geninfo, CurrentLocalVars);
+		tofuncall_FlameBack = index.first;
+		tofuncall_LocalIndex = index.second;
+		TypeInfo = dynamic_pointer_cast<ListTypeAST>(oprandt)->ContainType;
+	}else if (Operator == "@>"){
+		if (!(typeid(*oprandt) == typeid(ListTypeAST))){
+			error("型に問題があります。単項演算子:" + Operator + " オペランド:" + oprandt->GetName());
+		}
+		auto index = SearchVariable_IgnoreType("!op_cdr", env, geninfo, CurrentLocalVars);
+		tofuncall_FlameBack = index.first;
+		tofuncall_LocalIndex = index.second;
+		TypeInfo = oprandt;
 	}
 
 	if(TypeInfo==nullptr){
@@ -691,16 +672,20 @@ shared_ptr<TypeAST>  UnaryExprAST::CheckType(shared_ptr<vector<Environment> > en
 	return TypeInfo;
 }
 
-shared_ptr<TypeAST>  BinaryExprAST::CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars){
+shared_ptr<TypeAST>  BinaryExprAST::CheckType(shared_ptr<vector<Environment> > env, shared_ptr<CodegenInfo> geninfo, shared_ptr<vector< pair<string, shared_ptr<TypeAST> >  > > CurrentLocalVars){
 	shared_ptr<TypeAST> lhst=LHS->CheckType(env,geninfo,CurrentLocalVars);
 	shared_ptr<TypeAST> rhst=RHS->CheckType(env,geninfo,CurrentLocalVars);
-	if(rhst==nullptr){
-		if(Operator=="="){
-			//オーバーロードの解決に失敗
-			RHS->TypeInfo=LHS->TypeInfo;
-			rhst=RHS->CheckType(env,geninfo,CurrentLocalVars);
-		}else{
-			error("オーバーロードの解決ができません");
+	
+	if (lhst == nullptr || rhst == nullptr){
+		//空リストの型が決定しない
+		if (lhst == nullptr && rhst==nullptr){
+			error("型を決定できませんでした");
+		}
+		else if(lhst==nullptr){
+			lhst = rhst;
+		}
+		else if (rhst == nullptr){
+			rhst = lhst;
 		}
 	}
 
@@ -712,12 +697,12 @@ shared_ptr<TypeAST>  BinaryExprAST::CheckType(shared_ptr<vector<Environment> > e
 			error("型に問題があります。二項演算子 "+Operator+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
 		}
 		if (Operator == "+" && lhst->GetName() == "string"){
-			auto index = SearchVariable_IgnoreType("!operator_append_string",env,geninfo,CurrentLocalVars);
+			auto index = SearchVariable_IgnoreType("!op_append_str",env,geninfo,CurrentLocalVars);
 			tofuncall_FlameBack = index.first;
 			tofuncall_LocalIndex = index.second;
 		}
 		if (Operator == "+" && typeid(*lhst) == typeid(ListTypeAST)){
-			auto index = SearchVariable_IgnoreType("!operator_append_list", env, geninfo, CurrentLocalVars);
+			auto index = SearchVariable_IgnoreType("!op_append_list", env, geninfo, CurrentLocalVars);
 			tofuncall_FlameBack = index.first;
 			tofuncall_LocalIndex = index.second;
 		}
@@ -753,6 +738,17 @@ shared_ptr<TypeAST>  BinaryExprAST::CheckType(shared_ptr<vector<Environment> > e
 		}
 		TypeInfo=lhst;
 	}
+	else if (Operator == "@+"){
+		if (typeid(*rhst) == typeid(ListTypeAST) && dynamic_pointer_cast<ListTypeAST>(rhst)->ContainType->GetName() != lhst->GetName()){
+			error("型に問題があります。二項演算子 " + Operator + " 左辺:" + lhst->GetName() + " 右辺:" + rhst->GetName());
+		}
+
+		auto index = SearchVariable_IgnoreType("!op_cons", env, geninfo, CurrentLocalVars);
+		tofuncall_FlameBack = index.first;
+		tofuncall_LocalIndex = index.second;
+
+		TypeInfo = rhst; //オペランドの型を元に自らの型を決める
+	}
 
 	if(TypeInfo==nullptr){
 		error("未知の二項演算子です: "+Operator);
@@ -761,7 +757,7 @@ shared_ptr<TypeAST>  BinaryExprAST::CheckType(shared_ptr<vector<Environment> > e
 	return TypeInfo;
 }
 
-shared_ptr<TypeAST>  FunctionAST::CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars){
+shared_ptr<TypeAST>  FunctionAST::CheckType(shared_ptr<vector<Environment> > env, shared_ptr<CodegenInfo> geninfo, shared_ptr<vector< pair<string, shared_ptr<TypeAST> >  > > CurrentLocalVars){
 	vector< pair<string,shared_ptr<TypeAST> > >::iterator argiter;
 	for(argiter=Args->begin();argiter!=Args->end();argiter++){
 		LocalVariables->push_back(*argiter);
@@ -775,6 +771,7 @@ shared_ptr<TypeAST>  FunctionAST::CheckType(shared_ptr<vector<Environment> > env
 		if(typeid(*(*iter2))==typeid(ReturnStatementAST)){
 			auto ft_ptr=dynamic_pointer_cast<FunctionTypeAST>(TypeInfo);
 			auto r_ptr=dynamic_pointer_cast<ReturnStatementAST>(*iter2);
+
 			//return文の場合特別扱い。返す値の型とこの関数の返り値の型が不一致ならばエラー
 			if(r_ptr->Expression==nullptr){
 				if(ft_ptr->TypeList.back()->GetName()=="!!undefined!!"){
@@ -784,12 +781,19 @@ shared_ptr<TypeAST>  FunctionAST::CheckType(shared_ptr<vector<Environment> > env
 				}else if(ft_ptr->TypeList.back()->GetName() != "void"){
 					error("'returnする値の型'と、'関数の戻り値の型'が一致しません。");
 				}
-			}else if(ft_ptr->TypeList.back()->GetName()=="!!undefined!!"){
-				//推論が必要
-				ft_ptr->TypeList.pop_back();
-				ft_ptr->TypeList.push_back(r_ptr->Expression->TypeInfo);
-			}else if(ft_ptr->TypeList.back()->GetName() != r_ptr->Expression->TypeInfo->GetName()){
-				error("'returnする値の型'と、'関数の戻り値の型'が一致しません。");
+			}
+			else{
+				if (r_ptr->Expression->TypeInfo == nullptr){
+					r_ptr->Expression->TypeInfo = ft_ptr->TypeList.back();
+				}
+				if (ft_ptr->TypeList.back()->GetName() == "!!undefined!!"){
+					//推論が必要
+					ft_ptr->TypeList.pop_back();
+					ft_ptr->TypeList.push_back(r_ptr->Expression->TypeInfo);
+				}
+				else if (ft_ptr->TypeList.back()->GetName() != r_ptr->Expression->TypeInfo->GetName()){
+					error("'returnする値の型'と、'関数の戻り値の型'が一致しません。");
+				}
 			}
 
 			//末尾呼び出しの判定(return statement)
@@ -816,41 +820,16 @@ shared_ptr<TypeAST>  FunctionAST::CheckType(shared_ptr<vector<Environment> > env
 	return TypeInfo; //自らの型を一応返しておく
 }
 
-shared_ptr<TypeAST>  CallExprAST::CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars){
-	//引数の型を順に決めていく
-	vector<shared_ptr<TypeAST> > argtype;
-	vector<shared_ptr<ExprAST> >::iterator iter2;
-	for(iter2=args->begin();iter2!=args->end();iter2++){
-		if((*iter2)->IsBuilt()==false){
-			(*iter2)=(dynamic_pointer_cast<UnBuiltExprAST >(*iter2))->BuildAST(geninfo);
-		}
-		(*iter2)->CheckType(env,geninfo,CurrentLocalVars);
-		if((*iter2)->TypeInfo==nullptr){
-			error("グローバル変数の型宣言は必須です");
-		}
-		argtype.push_back((*iter2)->TypeInfo);
-	}
-
-	argtype.push_back(make_shared<BasicTypeAST>("void"));
-
-
+shared_ptr<TypeAST>  CallExprAST::CheckType(shared_ptr<vector<Environment> > env, shared_ptr<CodegenInfo> geninfo, shared_ptr<vector< pair<string, shared_ptr<TypeAST> >  > > CurrentLocalVars){
 	if(callee->IsBuilt()==false){
 		callee=dynamic_pointer_cast<UnBuiltExprAST >(callee)->BuildAST(geninfo);
 	}
-
 	callee->CheckType(env,geninfo,CurrentLocalVars);
-
-	if(callee->TypeInfo!=nullptr && typeid(FunctionTypeAST) != typeid(*(callee->TypeInfo)) && typeid(ContinuationTypeAST) != typeid(*(callee->TypeInfo))){
-		error("calleeが関数ではありません");
-	}
-
 	if(callee->TypeInfo==nullptr){
-		//オーバーロードの解決ができない
-		callee->TypeInfo=make_shared<FunctionTypeAST>(argtype);
-		callee->CheckType(env,geninfo,CurrentLocalVars);
-		if(callee->TypeInfo==nullptr){
-			error("再帰呼び出しをするには型情報を記述してください");
-		}
+				error("再帰呼び出しをするには型情報を記述してください");
+			}
+	if(callee->TypeInfo!=nullptr && typeid(FunctionTypeAST) != typeid(*(callee->TypeInfo)) && typeid(ContinuationTypeAST) != typeid(*(callee->TypeInfo))){
+		error("関数呼び出し式で呼び出せるのは関数または継続です。");
 	}
 
 
@@ -858,6 +837,13 @@ shared_ptr<TypeAST>  CallExprAST::CheckType(shared_ptr<vector<Environment> > env
 		vector<shared_ptr<TypeAST> > currentarg=dynamic_pointer_cast<FunctionTypeAST>(callee->TypeInfo)->TypeList;
 		if(args->size()+1==currentarg.size()){ //+1するのは、argsには戻り値の型が含まれていないから
 			for(unsigned int j=0;j<args->size();j++){
+				if (args->at(j)->IsBuilt() == false){
+					args->at(j) = (dynamic_pointer_cast<UnBuiltExprAST >(args->at(j)))->BuildAST(geninfo);
+				}
+				args->at(j)->CheckType(env, geninfo, CurrentLocalVars);
+				if (args->at(j)->TypeInfo == nullptr){
+					args->at(j)->TypeInfo = currentarg[j];
+				}
 				if(args->at(j)->TypeInfo->GetName() != currentarg[j]->GetName()){
 					goto type_error;
 				}
@@ -869,7 +855,16 @@ shared_ptr<TypeAST>  CallExprAST::CheckType(shared_ptr<vector<Environment> > env
 		type_error:
 		error("引数リストの型とcalleeの引数の型が一致しません");
 	}else if(typeid(*(callee->TypeInfo))==typeid(ContinuationTypeAST)){
-		shared_ptr<TypeAST> contarg=dynamic_pointer_cast<ContinuationTypeAST>(callee->TypeInfo)->Type;
+		shared_ptr<TypeAST> contarg = dynamic_pointer_cast<ContinuationTypeAST>(callee->TypeInfo)->Type;
+		if (args->size() > 0){
+			if (args->at(0)->IsBuilt() == false){
+				args->at(0) = (dynamic_pointer_cast<UnBuiltExprAST>(args->at(0)))->BuildAST(geninfo);
+			}
+			args->at(0)->CheckType(env, geninfo, CurrentLocalVars);
+			if (args->at(0)->TypeInfo == nullptr){
+				args->at(0)->TypeInfo = contarg;
+			}
+		}
 		if((contarg->GetName()=="void" && args->size()==0) || (args->size()==1 && contarg->GetName()==args->at(0)->TypeInfo->GetName())){
 			TypeInfo=make_shared<BasicTypeAST>("void"); //継続へジャンプするから返り値の型とかどうでもいい
 			return TypeInfo;
@@ -879,7 +874,7 @@ shared_ptr<TypeAST>  CallExprAST::CheckType(shared_ptr<vector<Environment> > env
 	}
 }
 
-shared_ptr<TypeAST>  ListRefExprAST::CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars){
+shared_ptr<TypeAST>  ListRefExprAST::CheckType(shared_ptr<vector<Environment> > env, shared_ptr<CodegenInfo> geninfo, shared_ptr<vector< pair<string, shared_ptr<TypeAST> >  > > CurrentLocalVars){
 	if(IndexExpression->IsBuilt()==false){
 		IndexExpression=dynamic_pointer_cast<UnBuiltExprAST >(IndexExpression)->BuildAST(geninfo);
 	}
@@ -912,7 +907,7 @@ shared_ptr<TypeAST>  ListRefExprAST::CheckType(shared_ptr<vector<Environment> > 
 	return TypeInfo;
 }
 
-shared_ptr<TypeAST>  DataMemberRefExprAST::CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars){
+shared_ptr<TypeAST>  DataMemberRefExprAST::CheckType(shared_ptr<vector<Environment> > env, shared_ptr<CodegenInfo> geninfo, shared_ptr<vector< pair<string, shared_ptr<TypeAST> >  > > CurrentLocalVars){
 	if(target->IsBuilt()==false){
 		target=dynamic_pointer_cast<UnBuiltExprAST >(target)->BuildAST(geninfo);
 	}
@@ -1025,13 +1020,15 @@ void DataValExprAST::Codegen(shared_ptr<vector<int> > bytecodes, shared_ptr<Code
 }
 
 
-shared_ptr<TypeAST>  ListValExprAST::CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars)
+shared_ptr<TypeAST>  ListValExprAST::CheckType(shared_ptr<vector<Environment> > env, shared_ptr<CodegenInfo> geninfo, shared_ptr<vector< pair<string, shared_ptr<TypeAST> >  > > CurrentLocalVars)
 {
+	if (Value->size() == 0){TypeInfo = nullptr; return nullptr; }
+	bool is_list = false;
     for(auto iter=Value->begin();iter!=Value->end();iter++){
 		if((*iter)->IsBuilt()==false){
 			(*iter)=(dynamic_pointer_cast<UnBuiltExprAST >(*iter))->BuildAST(geninfo);
 		}
-		(*iter)->CheckType(env,geninfo,CurrentLocalVars);
+		(*iter)->CheckType(env, geninfo, CurrentLocalVars); if (*iter == nullptr){ is_list = true; }
 		if(TypeInfo==nullptr){
 			TypeInfo=(*iter)->TypeInfo;
 		}else{
@@ -1040,6 +1037,8 @@ shared_ptr<TypeAST>  ListValExprAST::CheckType(shared_ptr<vector<Environment> > 
 			}
 		}
     }
+	if (TypeInfo == nullptr){ error("型を決定できません"); }
+	if (is_list && typeid(*TypeInfo) != typeid(ListTypeAST)){ error("リストの要素の型がバラバラです。"); }
 	TypeInfo=make_shared<ListTypeAST>(TypeInfo); //要素の型のリスト
 
 	/*
@@ -1058,7 +1057,7 @@ shared_ptr<TypeAST>  ListValExprAST::CheckType(shared_ptr<vector<Environment> > 
 }
 
 
-shared_ptr<TypeAST>  TupleValExprAST::CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars)
+shared_ptr<TypeAST>  TupleValExprAST::CheckType(shared_ptr<vector<Environment> > env, shared_ptr<CodegenInfo> geninfo, shared_ptr<vector< pair<string, shared_ptr<TypeAST> >  > > CurrentLocalVars)
 {
 	vector<shared_ptr<TypeAST> > typelist;
     for(auto iter=Value->begin();iter!=Value->end();iter++){
@@ -1067,6 +1066,7 @@ shared_ptr<TypeAST>  TupleValExprAST::CheckType(shared_ptr<vector<Environment> >
 		}
 		(*iter)->CheckType(env,geninfo,CurrentLocalVars);
 
+		if ((*iter) == nullptr){ error("型を決定できません"); }
 		typelist.push_back((*iter)->TypeInfo);
     }
 	TypeInfo=make_shared<TupleTypeAST>(typelist); //要素の型のリスト
@@ -1086,7 +1086,7 @@ shared_ptr<TypeAST>  TupleValExprAST::CheckType(shared_ptr<vector<Environment> >
 
 
 
-shared_ptr<TypeAST>  DataValExprAST::CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars)
+shared_ptr<TypeAST>  DataValExprAST::CheckType(shared_ptr<vector<Environment> > env, shared_ptr<CodegenInfo> geninfo, shared_ptr<vector< pair<string, shared_ptr<TypeAST> >  > > CurrentLocalVars)
 {
 	vector< pair<string,shared_ptr<ExprAST> > >::iterator iter;
 	vector< pair<string,shared_ptr<TypeAST> >  >::iterator iter2;
@@ -1122,6 +1122,9 @@ shared_ptr<TypeAST>  DataValExprAST::CheckType(shared_ptr<vector<Environment> > 
 		for(iter4=data_temp->begin();iter4!=data_temp->end();iter4++){
 			if((*iter4).first==(*iter).first){
 				found=true;
+				if ((*iter).second->TypeInfo==nullptr){
+					(*iter).second->TypeInfo = typelist[index];
+				}
 				if(typelist[index]->GetName()!=(*iter).second->TypeInfo->GetName()){
 					error("データ初期化の型が定義と一致しません");
 				}

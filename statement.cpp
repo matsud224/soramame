@@ -137,14 +137,10 @@ void VariableDefStatementAST::CheckType(shared_ptr<vector<Environment> > env, sh
 	}
 	InitialValue->CheckType(env,geninfo,CurrentLocalVars);
 	if(InitialValue->TypeInfo==nullptr){
-		//オーバーロードの解決ができなかった
 		if(Variable->second==nullptr){
-			//型指定がなかった場合にはオーバーロード解決のヒントがないため、エラー
-			error("オーバーロードを解決できません：変数宣言に型を付与することでオーバーロードを指定できます");
+			error("型注釈が必要です");
 		}
-		//オーバーロードのヒントを与える
 		InitialValue->TypeInfo=Variable->second;
-		InitialValue->CheckType(env,geninfo,CurrentLocalVars);
 	}
 	if(Variable->second==nullptr){
 		//型が未指定だったとき

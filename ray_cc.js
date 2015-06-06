@@ -113,7 +113,7 @@ fun calc_server(in:channel((double,int)),out:channel((int,int,int))){
 		from.x = from.x+ 2.0/200.0
 		x=x+1
 	}
-	print(input[1]);print("\n")
+	print_int(input[1]);print("\n")
 
 	calc_server(in,out)
 }

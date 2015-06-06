@@ -24,7 +24,7 @@ var nowx:int=0,nowy:int=0
 fun update(){
 	nowx=nowx+1
 	if(nowx==200){
-		nowx=0;nowy=nowy+1;print(nowy);print("\n")
+		nowx=0;nowy=nowy+1;print_int(nowy);print("\n")
 	}
 }
 
