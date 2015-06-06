@@ -43,7 +43,7 @@ fun calc_server(in:channel(int),out:channel([(int,int,int)])){
 		result=result+[(x,y,temp)]
 		x=x+1
 	}
-	print(y);print("\n")
+	print_int(y);print("\n")
 	out<<result
 	calc_server(in,out)
 }

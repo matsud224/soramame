@@ -6,7 +6,7 @@ fun main(){
 fun make_adder()=> fun()=>void{
 	var n=0
 	return fun(){
-     	print(n);print("\n")
+     	print_int(n);print("\n")
 		n=n+1
 	}
 }
