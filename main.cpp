@@ -151,7 +151,11 @@ TokenRule TOKENRULE[TOKENRULECOUNT]={
     {"\\[",INITIAL,true,lbracket_lex},
     {"\\]",INITIAL,true,rbracket_lex},
     {R"([a-zA-Z_][a-zA-Z0-9_]*)",INITIAL,true,ident_lex},
+#if (_WIN32 || _WIN64)
+	{ R"([%$\\#=~\|\^\+\-\*/<>&!\?@]{1,6})", INITIAL, true, operator_lex },
+#else
 	{R"([%$\\#=~\|\^\+\\-\*/<>&!\?@]{1,6})",INITIAL,true,operator_lex},
+#endif
     {R"(\d+\.\d+)",INITIAL,true,doubleval_lex},
     {R"(\d+)",INITIAL,true,intval_lex},
     {R"("([^\\"]|\\.)*")",INITIAL,true,stringval_lex},

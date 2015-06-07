@@ -96,7 +96,7 @@ fun is_ok(board:[[int]])=>bool{
 }
 
 fun randomize(board:[[int]]){
-	for(0,20,fun(t:int){
+	for(0,30,fun(t:int){
 		var r=canmove(board)
 		var z=zeropos(board)
 		var rn=rand() % @?r
