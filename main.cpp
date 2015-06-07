@@ -151,7 +151,7 @@ TokenRule TOKENRULE[TOKENRULECOUNT]={
     {"\\[",INITIAL,true,lbracket_lex},
     {"\\]",INITIAL,true,rbracket_lex},
     {R"([a-zA-Z_][a-zA-Z0-9_]*)",INITIAL,true,ident_lex},
-	{R"([%$#=~\|\^\+\-\*/<>&!\?@]{1,6})",INITIAL,true,operator_lex},
+	{R"([%$\#=~\|\^\+\-\*/<>&!\?@]{1,6})",INITIAL,true,operator_lex},
     {R"(\d+\.\d+)",INITIAL,true,doubleval_lex},
     {R"(\d+)",INITIAL,true,intval_lex},
     {R"("([^\\"]|\\.)*")",INITIAL,true,stringval_lex},
@@ -324,7 +324,7 @@ int main(int argc,char* argv[])
 			error("コマンドライン引数1が不正です");
 		}
 	}else if(argc!=2){
-		error("コマンドライン引数が不正です"); 
+		error("コマンドライン引数が不正です");
 	}
 	try{
 		ifstream ifs(path);
@@ -332,7 +332,7 @@ int main(int argc,char* argv[])
 		while (std::getline(ifs, line)) {
 			str += line+"\n";
 		}
-		
+
 		lexer=make_shared<Lexer>(str.c_str());
 		parser=make_shared<Parser>();
 
@@ -345,11 +345,11 @@ int main(int argc,char* argv[])
 		if (SHOW_BYTECODE){ getchar(); return 0; }
 
 		cout<<BG_BLUE<<"~~~~~~~~~~~~~~~~~~~~~~~~"<<RESET<<endl;
-		
+
 		auto start = system_clock::now();
-		
+
 		VM::Run(VM::GetInitialFlame(executable),false);
-		
+
 		auto end = system_clock::now();
 		auto dur = end - start;
 		auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
