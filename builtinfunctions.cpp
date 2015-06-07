@@ -91,10 +91,10 @@ void mouse(int button, int state, int x, int y)
 		vars->reserve(callee->LocalVariables->size());
 		//引数の準備
 		VMValue v;
-		v.int_value = y; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(3)), v));
-		v.int_value = x; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(2)), v));
-		v.int_value = state; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(1)), v));
 		v.int_value = button; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(0)), v));
+		v.int_value = state; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(1)), v));
+		v.int_value = x; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(2)), v));
+		v.int_value = y; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(3)), v));
 
 		//ローカル変数の準備
 		for (int i = callee->Args->size(); i < callee->LocalVariables->size(); i++){
@@ -127,9 +127,9 @@ void keyboard(unsigned char key, int x, int y)
 		vars->reserve(callee->LocalVariables->size());
 		//引数の準備
 		VMValue v;
-		v.int_value = y; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(2)), v));
-		v.int_value = x; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(1)), v));
 		v.int_value = key; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(0)), v));
+		v.int_value = x; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(1)), v));
+		v.int_value = y; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(2)), v));
 
 		//ローカル変数の準備
 		for (int i = callee->Args->size(); i < callee->LocalVariables->size(); i++){
@@ -243,7 +243,9 @@ void glut_char(shared_ptr<Flame> curr_flame){
 	int x,y;
 	x=VM_STACK_GET.int_value;VM_STACK_POP;
 	y=VM_STACK_GET.int_value;VM_STACK_POP;
-	glRasterPos3i(x, y, 0);
+	if (!(x < 0 || y < 0)){
+		glRasterPos3i(x, y, 0);
+	}
 	glutBitmapCharacter(GLUT_BITMAP_9_BY_15,VM_STACK_GET.int_value);VM_STACK_POP;
 }
 
@@ -422,4 +424,8 @@ void op_length_str(shared_ptr<Flame> curr_flame){
 	string str = *(static_pointer_cast<string>(VM_STACK_GET.ref_value)); VM_STACK_POP;
 	VMValue v; v.int_value = str.length();
 	VM_STACK_PUSH(v);
+}
+
+void glut_postredisp(shared_ptr<Flame> curr_flame){
+	glutPostRedisplay();
 }

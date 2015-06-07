@@ -76,5 +76,6 @@ TokenValue dataexpr_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values
 TokenValue ialist_empty_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values);
 TokenValue ialist_add_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values);
 TokenValue listrefexpr_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values);
+TokenValue listrefexpr_paren_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values);
 TokenValue datamemberrefexpr_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values);
 TokenValue newobjexpr_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values);

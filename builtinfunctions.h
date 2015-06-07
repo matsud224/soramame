@@ -31,6 +31,7 @@ void glut_begin_quad(shared_ptr<Flame>);
 void glut_begin_trianglefan(shared_ptr<Flame>);
 void glut_begin_polygon(shared_ptr<Flame>);
 void glut_flush(shared_ptr<Flame>);
+void glut_postredisp(shared_ptr<Flame>);
 void glut_end(shared_ptr<Flame>);
 void glut_vertex2i(shared_ptr<Flame>);
 void glut_color3i(shared_ptr<Flame>);

@@ -291,7 +291,7 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
 	{{initassign_list,initassign_list,IDENT,operator_n,expression,COMMA,SYNTAXEND},ialist_add_reduce},
 
 	{{listrefexpr,primary,LBRACKET,expression,RBRACKET,SYNTAXEND},listrefexpr_reduce}, //配列・タプルのインデックス参照
-	{{listrefexpr,parenexpr,LBRACKET,expression,RBRACKET,SYNTAXEND},listrefexpr_reduce},
+	{{listrefexpr,parenexpr,LBRACKET,expression,RBRACKET,SYNTAXEND},listrefexpr_paren_reduce},
 
 	{{datamemberrefexpr,primary,DOT,IDENT,SYNTAXEND},datamemberrefexpr_reduce}, //構造体メンバ参照
 	{{datamemberrefexpr,parenexpr,DOT,IDENT,SYNTAXEND},datamemberrefexpr_reduce},

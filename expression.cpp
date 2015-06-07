@@ -904,7 +904,7 @@ shared_ptr<TypeAST>  ListRefExprAST::CheckType(shared_ptr<vector<Environment> > 
 	if(IndexExpression->TypeInfo->GetName()!="int"){
 		error("添字は整数で指定してください");
 	}
-
+	
 	if(target->IsBuilt()==false){
 		target=dynamic_pointer_cast<UnBuiltExprAST >(target)->BuildAST(geninfo);
 	}
