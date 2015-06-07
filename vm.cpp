@@ -167,9 +167,6 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 			case ddiv:
 				dopr1 = STACK_GET.double_value; STACK_POP;
 				dopr2 = STACK_GET.double_value; STACK_POP;
-				if (dopr2 == 0){ 
-					throw range_error("0除算"); 
-				}
 				v.double_value = dopr1 / dopr2;
 				STACK_PUSH(v);
 				break;

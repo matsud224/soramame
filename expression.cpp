@@ -548,9 +548,6 @@ shared_ptr<ExprAST> UnBuiltExprAST::BuildAST(shared_ptr<CodegenInfo> geninfo)
 						continue;
 					}
 					else if (op->Operator == "/"){
-						if (dynamic_pointer_cast<DoubleValExprAST>(operand2)->Value == 0){
-							error("ゼロ除算を見つけました。");
-						}
 						calcstack.push(make_shared<DoubleValExprAST>(geninfo,dynamic_pointer_cast<DoubleValExprAST>(operand1)->Value / dynamic_pointer_cast<DoubleValExprAST>(operand2)->Value));
 						continue;
 					}
