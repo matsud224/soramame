@@ -43,10 +43,12 @@ public:
 class OperatorInfo{
 public:
 	OperatorInfo(){}
-    OperatorInfo(int uorb,int assoc,int prec):UnaryOrBinary(uorb),Associativity(assoc),Precedence(prec){}
+	OperatorInfo(int uorb, int assoc, int prec) :UnaryOrBinary(uorb), Associativity(assoc), Precedence(prec){ UserDef = false; }
+	OperatorInfo(int uorb, int assoc, int prec,bool is_userdef) :UnaryOrBinary(uorb), Associativity(assoc), Precedence(prec),UserDef(is_userdef){ }
 	int UnaryOrBinary;
     int Associativity;
     int Precedence;
+	bool UserDef;
 };
 
 //パースした時に得た情報を詰め込んでおく

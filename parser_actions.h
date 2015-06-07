@@ -16,6 +16,8 @@ TokenValue stringvalexpr_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue operator_n_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue function_norettype_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue function_withrettype_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
+TokenValue function_operator_norettype_reduce(shared_ptr<CodegenInfo>, vector<TokenValue>);
+TokenValue function_operator_withrettype_reduce(shared_ptr<CodegenInfo>, vector<TokenValue>);
 TokenValue parameter_list_empty_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue parameter_list_parameter_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue parameter_list_addparameter_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);

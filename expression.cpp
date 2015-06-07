@@ -501,51 +501,68 @@ shared_ptr<ExprAST> UnBuiltExprAST::BuildAST(shared_ptr<CodegenInfo> geninfo)
 				if (typeid(*operand1) == typeid(IntValExprAST) && typeid(*operand2) == typeid(IntValExprAST)){
 					if (op->Operator == "+"){
 						calcstack.push(make_shared<IntValExprAST>(dynamic_pointer_cast<IntValExprAST>(operand1)->Value + dynamic_pointer_cast<IntValExprAST>(operand2)->Value));
+						continue;
 					}
 					else if (op->Operator == "-"){
 						calcstack.push(make_shared<IntValExprAST>(dynamic_pointer_cast<IntValExprAST>(operand1)->Value - dynamic_pointer_cast<IntValExprAST>(operand2)->Value));
+						continue;
 					}
 					else if (op->Operator == "*"){
 						calcstack.push(make_shared<IntValExprAST>(dynamic_pointer_cast<IntValExprAST>(operand1)->Value * dynamic_pointer_cast<IntValExprAST>(operand2)->Value));
+						continue;
 					}
 					else if (op->Operator == "/"){
 						if (dynamic_pointer_cast<IntValExprAST>(operand2)->Value == 0){
 							error("ゼロ除算を見つけました。");
 						}
 						calcstack.push(make_shared<IntValExprAST>(dynamic_pointer_cast<IntValExprAST>(operand1)->Value / dynamic_pointer_cast<IntValExprAST>(operand2)->Value));
+						continue;
 					}
 					else if (op->Operator == "%"){
 						if (dynamic_pointer_cast<IntValExprAST>(operand2)->Value == 0){
 							error("ゼロ除算を見つけました。");
 						}
 						calcstack.push(make_shared<IntValExprAST>(dynamic_pointer_cast<IntValExprAST>(operand1)->Value % dynamic_pointer_cast<IntValExprAST>(operand2)->Value));
+						continue;
 					}
 					else if (op->Operator == ">>"){
 						calcstack.push(make_shared<IntValExprAST>(dynamic_pointer_cast<IntValExprAST>(operand1)->Value >> dynamic_pointer_cast<IntValExprAST>(operand2)->Value));
+						continue;
 					}
 					else if (op->Operator == "<<"){
 						calcstack.push(make_shared<IntValExprAST>(dynamic_pointer_cast<IntValExprAST>(operand1)->Value << dynamic_pointer_cast<IntValExprAST>(operand2)->Value));
+						continue;
 					}
 				}
 				else if (typeid(*operand1) == typeid(DoubleValExprAST) && typeid(*operand2) == typeid(DoubleValExprAST)){
 					if (op->Operator == "+"){
 						calcstack.push(make_shared<DoubleValExprAST>(geninfo,dynamic_pointer_cast<DoubleValExprAST>(operand1)->Value + dynamic_pointer_cast<DoubleValExprAST>(operand2)->Value));
+						continue;
 					}
 					else if (op->Operator == "-"){
 						calcstack.push(make_shared<DoubleValExprAST>(geninfo,dynamic_pointer_cast<DoubleValExprAST>(operand1)->Value - dynamic_pointer_cast<DoubleValExprAST>(operand2)->Value));
+						continue;
 					}
 					else if (op->Operator == "*"){
 						calcstack.push(make_shared<DoubleValExprAST>(geninfo,dynamic_pointer_cast<DoubleValExprAST>(operand1)->Value * dynamic_pointer_cast<DoubleValExprAST>(operand2)->Value));
+						continue;
 					}
 					else if (op->Operator == "/"){
 						if (dynamic_pointer_cast<DoubleValExprAST>(operand2)->Value == 0){
 							error("ゼロ除算を見つけました。");
 						}
 						calcstack.push(make_shared<DoubleValExprAST>(geninfo,dynamic_pointer_cast<DoubleValExprAST>(operand1)->Value / dynamic_pointer_cast<DoubleValExprAST>(operand2)->Value));
+						continue;
 					}
 				}
+				
+				if (op->Info.UserDef){
+					//ユーザ定義なら関数コールとしてAST生成
+					auto args = make_shared<vector<shared_ptr<ExprAST>>>(); args->push_back(operand1); args->push_back(operand2);
+					calcstack.push(make_shared<CallExprAST>(make_shared<VariableExprAST>(op->Operator), args));
+				}
 				else{
-					calcstack.push(make_shared<BinaryExprAST>(op->Operator,operand1,operand2)); //マージ
+					calcstack.push(make_shared<BinaryExprAST>(op->Operator,operand1,operand2));
 				}
                 
             }else if(op->Info.UnaryOrBinary==Unary){
@@ -554,12 +571,20 @@ shared_ptr<ExprAST> UnBuiltExprAST::BuildAST(shared_ptr<CodegenInfo> geninfo)
 				if (typeid(*operand1) == typeid(IntValExprAST)){
 					if (op->Operator == "-"){
 						calcstack.push(make_shared<IntValExprAST>(dynamic_pointer_cast<IntValExprAST>(operand1)->Value*(-1)));
+						continue;
 					}
 				}
-				else{
-					calcstack.push(make_shared<UnaryExprAST>(op->Operator, operand1)); //マージ
+				
+				if (op->Info.UserDef){
+					//ユーザ定義なら関数コールとしてAST生成
+					auto args = make_shared<vector<shared_ptr<ExprAST>>>(); args->push_back(operand1);
+					calcstack.push(make_shared<CallExprAST>(make_shared<VariableExprAST>(op->Operator), args));
 				}
-				}else{
+				else{
+					calcstack.push(make_shared<UnaryExprAST>(op->Operator, operand1));
+				}
+				
+			}else{
 				error("unknown error.");
             }
         }

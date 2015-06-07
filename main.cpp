@@ -151,7 +151,7 @@ TokenRule TOKENRULE[TOKENRULECOUNT]={
     {"\\[",INITIAL,true,lbracket_lex},
     {"\\]",INITIAL,true,rbracket_lex},
     {R"([a-zA-Z_][a-zA-Z0-9_]*)",INITIAL,true,ident_lex},
-    {R"([%=~\|\^\+\-\*/<>&!\?@]{1,3})",INITIAL,true,operator_lex},
+	{R"([%$#=~\|\^\+\-\*/<>&!\?@]{1,6})",INITIAL,true,operator_lex},
     {R"(\d+\.\d+)",INITIAL,true,doubleval_lex},
     {R"(\d+)",INITIAL,true,intval_lex},
     {R"("([^\\"]|\\.)*")",INITIAL,true,stringval_lex},
@@ -296,7 +296,10 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
 	{{datamemberrefexpr,primary,DOT,IDENT,SYNTAXEND},datamemberrefexpr_reduce}, //構造体メンバ参照
 	{{datamemberrefexpr,parenexpr,DOT,IDENT,SYNTAXEND},datamemberrefexpr_reduce},
 
-	{{newobjexpr,NEW,LPAREN,type,RPAREN,SYNTAXEND},newobjexpr_reduce}
+	{{newobjexpr,NEW,LPAREN,type,RPAREN,SYNTAXEND},newobjexpr_reduce},
+
+	{ { functiondef, FUN, operator_n, IDENT,COMMA,IDENT,COMMA,INTVAL,LPAREN, parameter_list, RPAREN, LBRACE, block, RBRACE, SYNTAXEND }, function_operator_norettype_reduce },
+	{ { functiondef, FUN, operator_n,  IDENT, COMMA, IDENT, COMMA, INTVAL, LPAREN, parameter_list, RPAREN, operator_n, type, LBRACE, block, RBRACE, SYNTAXEND }, function_operator_withrettype_reduce }
 };
 
 

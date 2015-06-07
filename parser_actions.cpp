@@ -102,6 +102,79 @@ TokenValue function_withrettype_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenV
 	return t;
 }
 
+TokenValue function_operator_norettype_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values)
+{
+	TokenValue t;
+	t.function_ast = make_shared<FunctionAST>(cgi, dynamic_pointer_cast<OperatorAST>(values[1].expression_ast)->Operator, values[8].parameter_list, make_shared<BasicTypeAST>("void"), values[11].block_ast);
+	//演算子テーブルに登録
+	int uorb, assoc;
+	if (values[2].str == "binary"){
+		uorb = Binary;
+		if (values[8].parameter_list->size() != 2){
+			error("二項演算子の定義は２引数である必要があります");
+		}
+	}
+	else if (values[2].str == "unary"){
+		uorb = Unary;
+		if (values[8].parameter_list->size() != 1){
+			error("単項演算子の定義は１引数である必要があります");
+		}
+	}
+	else{
+		error("演算子定義：unary又はbinaryで指定してください");
+	}
+	if (values[4].str == "left"){
+		assoc = Left;
+	}
+	else if (values[4].str == "right"){
+		assoc = Right;
+	}
+	else{
+		error("演算子定義：left又はrightで指定してください");
+	}
+	cgi->OperatorList.insert(pair<string, OperatorInfo >(dynamic_pointer_cast<OperatorAST>(values[1].expression_ast)->Operator, OperatorInfo(uorb, assoc, values[6].intval,true)));
+	
+	return t;
+}
+
+TokenValue function_operator_withrettype_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values)
+{
+	AssertOperator(values[10], "=>");
+	TokenValue t;
+	t.function_ast = make_shared<FunctionAST>(cgi, dynamic_pointer_cast<OperatorAST>(values[1].expression_ast)->Operator, values[8].parameter_list, values[11].type_ast, values[13].block_ast);
+	
+	//演算子テーブルに登録
+	int uorb, assoc;
+	if (values[2].str == "binary"){
+		uorb = Binary;
+		if (values[8].parameter_list->size() != 2){
+			error("二項演算子の定義は２引数である必要があります");
+		}
+	}
+	else if (values[2].str == "unary"){
+		uorb = Unary;
+		if (values[8].parameter_list->size() != 1){
+			error("単項演算子の定義は１引数である必要があります");
+		}
+	}
+	else{
+		error("演算子定義：unary又はbinaryで指定してください");
+	}
+	if (values[4].str == "left"){
+		assoc = Left;
+	}
+	else if (values[4].str == "right"){
+		assoc = Right;
+	}
+	else{
+		error("演算子定義：left又はrightで指定してください");
+	}
+	cgi->OperatorList.insert(pair<string, OperatorInfo >(dynamic_pointer_cast<OperatorAST>(values[1].expression_ast)->Operator, OperatorInfo(uorb, assoc, values[6].intval,true)));
+
+	
+	return t;
+}
+
 TokenValue parameter_list_empty_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values)
 {
 	TokenValue t;
