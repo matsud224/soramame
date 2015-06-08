@@ -257,7 +257,7 @@ public:
 
         shared_ptr<vector< pair<string,shared_ptr<TypeAST> > > > args=make_shared< vector< pair<string,shared_ptr<TypeAST> > > >();
         args->push_back(pair<string,shared_ptr<TypeAST> >(varname,make_shared<ContinuationTypeAST>(t)));
-        InternalClosure=make_shared<FunctionAST>(cgi,"<anonymous>",args,t,Body);
+		InternalClosure = make_shared<FunctionAST>(cgi, "<anonymous:" + IntToString(anonymous_id++) + ">", args, t, Body);
     }
 
     virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);

@@ -308,6 +308,7 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
 
 
 bool SHOW_BYTECODE;
+int anonymous_id;
 
 int main(int argc,char* argv[])
 {
@@ -317,6 +318,7 @@ int main(int argc,char* argv[])
 	shared_ptr<Parser> parser;
 
 	SHOW_BYTECODE = false;
+	anonymous_id = 0;
 
 	char* path=argv[1];
 	if (argc == 3){

@@ -325,7 +325,7 @@ void FunctionAST::Codegen(shared_ptr<vector<int> > bytecodes_given,shared_ptr<Co
         bytecodes->push_back(ret_withvalue);
     }
 
-    if(Name=="<anonymous>"){
+    if(Name.find("<anonymous",0)!=string::npos){
         bytecodes_given->push_back(makeclosure);
         bytecodes_given->push_back(PoolIndex);
     }
@@ -1197,7 +1197,7 @@ bool FunctionAST::IsCTFEable(shared_ptr<CodegenInfo> cgi,int curr_fun_index){
 		return is_builtin_CTFEable;
 	}
 
-	if(Name=="<anonymous>"){
+	if (Name.find("<anonymous", 0) != string::npos){
 		return false; //クロージャはフレームへのポインタを持つため事前実行は不可
 	}
 

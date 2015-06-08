@@ -6,6 +6,7 @@
 using namespace std;
 
 extern bool SHOW_BYTECODE;
+extern int anonymous_id;
 
 const int TOKENRULECOUNT=39;
 const int SYNTAXRULECOUNT=118;

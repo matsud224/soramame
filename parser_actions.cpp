@@ -405,7 +405,7 @@ TokenValue closureexpr_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> val
 {
 	AssertOperator(values[4],"=>");
 	TokenValue t;
-	t.expression_ast=make_shared<FunctionAST>(cgi,"<anonymous>",values[2].parameter_list,values[5].type_ast,values[7].block_ast);
+	t.expression_ast=make_shared<FunctionAST>(cgi,"<anonymous:"+IntToString(anonymous_id++)+">",values[2].parameter_list,values[5].type_ast,values[7].block_ast);
 	return t;
 }
 
@@ -413,7 +413,7 @@ TokenValue closureexpr_rettypeinfer_reduce(shared_ptr<CodegenInfo> cgi,vector<To
 {
 	TokenValue t;
 	//返り値を推論する時は返り値の型をnullptrにすると関数の型リストに埋め込まれて識別できないので型名としてありえない文字列にした
-	t.expression_ast=make_shared<FunctionAST>(cgi,"<anonymous>",values[2].parameter_list,make_shared<BasicTypeAST>("!!undefined!!"),values[5].block_ast);
+	t.expression_ast = make_shared<FunctionAST>(cgi, "<anonymous:" + IntToString(anonymous_id++) + ">", values[2].parameter_list, make_shared<BasicTypeAST>("!!undefined!!"), values[5].block_ast);
 	return t;
 }
 
