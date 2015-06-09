@@ -543,7 +543,7 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 				map<string, VMValue>::iterator iter;
 				for (iter = obj->MemberMap->begin(); iter != obj->MemberMap->end(); iter++){
 					if (iter->first == name){
-						iter->second = STACK_GET;
+						iter->second = STACK_GET; STACK_POP;
 						break;
 					}
 				}
