@@ -15,5 +15,5 @@ fun main(){
 
 fun sleep_and_output(value:int,out:channel(int)){
 	sleep(value*1000)
-	out<<value
+	out ! value
 }

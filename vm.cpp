@@ -642,6 +642,17 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 				}
 			}
 			break;
+			case dup:
+			{
+				v = STACK_GET;
+				STACK_PUSH(v);
+			}
+			break;
+			case clean:
+			{
+				CurrentFlame->OperandStack.clear();
+			}
+			break;
 			default:
 				error("不正な命令です(" + IntToString(bytecode) + ")");
 				break;

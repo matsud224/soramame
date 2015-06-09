@@ -25,6 +25,7 @@ void Compiler::ASTgen()
     genInfo->OperatorList.insert(pair<string,OperatorInfo >("&&",OperatorInfo(Binary,Left,5)));
     genInfo->OperatorList.insert(pair<string,OperatorInfo >("||",OperatorInfo(Binary,Left,5)));
     genInfo->OperatorList.insert(pair<string,OperatorInfo >("!",OperatorInfo(Unary,Right,70)));
+	genInfo->OperatorList.insert(pair<string, OperatorInfo >("!", OperatorInfo(Binary, Right, 2)));
     genInfo->OperatorList.insert(pair<string,OperatorInfo >("?",OperatorInfo(Unary,Right,70)));
 
 	genInfo->OperatorList.insert(pair<string,OperatorInfo >("-",OperatorInfo(Unary,Right,70)));
@@ -42,7 +43,7 @@ void Compiler::ASTgen()
     genInfo->OperatorList.insert(pair<string,OperatorInfo >("!=",OperatorInfo(Binary,Left,8)));
     genInfo->OperatorList.insert(pair<string,OperatorInfo >("==",OperatorInfo(Binary,Left,8)));
 
-    genInfo->OperatorList.insert(pair<string,OperatorInfo >("=",OperatorInfo(Binary,Left,2)));
+    genInfo->OperatorList.insert(pair<string,OperatorInfo >("=",OperatorInfo(Binary,Right,2)));
 
 
 

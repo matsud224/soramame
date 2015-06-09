@@ -46,7 +46,7 @@ fun scan(in:channel((double,int)),out:channel((int,int,int)))
 	from.y=(-1.0)
 	while(from.y < 1.0)
 	{
-		in<<(from.y,y)
+		in ! (from.y,y)
 
 		from.y = from.y + 2.0/200.0
 		y=y+1
@@ -98,14 +98,14 @@ fun calc_server(in:channel((double,int)),out:channel((int,int,int))){
 			d = b * b - c
 			if(d < 0.0)
 			{
-				out<<(x,input[1],(-1))
+				out!(x,input[1],(-1))
 				continue()
 			}
 			det = sqrt(d)
 			t = (-b) + det
 			if(t < 0.0)
 			{
-				out<<(x,input[1],(-1))
+				out!(x,input[1],(-1))
 				continue()
 			}
 			sphere_color(point, from, t,x,input[1],out)
@@ -137,7 +137,7 @@ fun sphere_color(point:VECTOR, to:VECTOR, t:double,xpos:int,ypos:int,out:channel
 		col = 0
 	}
 
-	out<<(xpos,ypos,col)
+	out!(xpos,ypos,col)
 }
 
 fun vmulti(t:double, a:VECTOR, b:VECTOR)

@@ -37,7 +37,8 @@ enum{
     bcmpeq,bcmpne,
     makelist,makedata,
     makecontinuation,resume_continuation,
-    makechannel,channel_send,channel_receive
+    makechannel,channel_send,channel_receive,
+	dup,clean
 };
 
 class Flame{

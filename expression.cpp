@@ -110,10 +110,13 @@ pair<int, int> SearchVariable_IgnoreType(string Name, shared_ptr<vector<Environm
 void BinaryExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo)
 {
 	RHS->Codegen(bytecodes,geninfo);
-
+	
 
     //代入だけ特殊で、左辺を評価しない
     if(Operator=="="){
+
+		bytecodes->push_back(dup);
+
 		if(typeid(*LHS)==typeid(ListRefExprAST)){
 			shared_ptr<ListRefExprAST> lhs_cast=dynamic_pointer_cast<ListRefExprAST>(LHS);
 			lhs_cast->AssignmentCodegen(bytecodes,geninfo);
@@ -122,6 +125,8 @@ void BinaryExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<Codege
 			lhs_cast->AssignmentCodegen(bytecodes,geninfo);
 		}else if(typeid(*LHS)==typeid(VariableExprAST)){
 			auto v_lhs = dynamic_pointer_cast<VariableExprAST>(LHS);
+
+			
 			if (v_lhs->FlameBack == 0 && v_lhs->LocalIndex <= 5){
 				switch (v_lhs->LocalIndex){
 				case 0:
@@ -192,12 +197,15 @@ void BinaryExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<Codege
         }else if(LHS->TypeInfo->GetName()=="double"){
 			bytecodes->push_back(ddiv);
         }
-    }else if(Operator=="<<"){
-        if(LHS->TypeInfo->GetName()=="int"){
-            bytecodes->push_back(ilshift);
-        }else if(typeid(*LHS->TypeInfo)==typeid(ChannelTypeAST)){
-            bytecodes->push_back(channel_send);
-        }
+	}
+	else if (Operator == "<<"){
+		if (LHS->TypeInfo->GetName() == "int"){
+			bytecodes->push_back(ilshift);
+		}
+	} else if (Operator == "!"){
+		if (typeid(*LHS->TypeInfo) == typeid(ChannelTypeAST)){
+			bytecodes->push_back(channel_send);
+		}
     }else if(Operator==">>"){
         if(LHS->TypeInfo->GetName()=="int"){
             bytecodes->push_back(irshift);
@@ -393,6 +401,7 @@ void StringValExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<Cod
 void ListRefExprAST::AssignmentCodegen(shared_ptr<vector<int> > bytecodes, shared_ptr<CodegenInfo> geninfo)
 {
 	target->Codegen(bytecodes,geninfo);
+	
 	IndexExpression->Codegen(bytecodes,geninfo);
 	bytecodes->push_back(storebyindex);
 }
@@ -400,6 +409,7 @@ void ListRefExprAST::AssignmentCodegen(shared_ptr<vector<int> > bytecodes, share
 void DataMemberRefExprAST::AssignmentCodegen(shared_ptr<vector<int> > bytecodes, shared_ptr<CodegenInfo> geninfo)
 {
 	target->Codegen(bytecodes,geninfo);
+	
 	bytecodes->push_back(storefield);
 	bytecodes->push_back((make_shared<StringValExprAST>(geninfo,MemberName))->PoolIndex);
 }
@@ -730,13 +740,17 @@ shared_ptr<TypeAST>  BinaryExprAST::CheckType(shared_ptr<vector<Environment> > e
 		}
 
 		TypeInfo=lhst; //オペランドの型を元に自らの型を決める
-	}else if(Operator=="%" || Operator=="<<" || Operator==">>"){
-		if(lhst->GetName() != rhst->GetName() || (lhst->GetName()!="int")){
-			if(!(Operator=="<<" && typeid(ChannelTypeAST)==typeid(*lhst) && dynamic_pointer_cast<ChannelTypeAST>(lhst)->Type->GetName()==rhst->GetName())){
-				error("型に問題があります。二項演算子 "+Operator+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
-			}
+	}
+	else if (Operator == "%" || Operator == "<<" || Operator == ">>"){
+		if (lhst->GetName() != rhst->GetName() || (lhst->GetName() != "int")){
+			error("型に問題があります。二項演算子 " + Operator + " 左辺:" + lhst->GetName() + " 右辺:" + rhst->GetName());
 		}
-		TypeInfo=lhst;
+		TypeInfo = lhst;
+	} else if (Operator == "!"){
+		if (!(typeid(ChannelTypeAST) == typeid(*lhst) && dynamic_pointer_cast<ChannelTypeAST>(lhst)->Type->GetName() == rhst->GetName())){
+			error("型に問題があります。二項演算子 " + Operator + " 左辺:" + lhst->GetName() + " 右辺:" + rhst->GetName());
+		}
+		TypeInfo = make_shared<BasicTypeAST>("void");
 	}else if(Operator=="&&" || Operator=="||"){
 		if(lhst->GetName() != rhst->GetName() || (lhst->GetName()!="bool")){
 			error("型に問題があります。二項演算子 "+Operator+" 左辺:"+lhst->GetName()+" 右辺:"+rhst->GetName());
@@ -1741,6 +1755,16 @@ void ShowBytecode(shared_ptr<vector<int>> bc){
 		case channel_receive:
 		{
 			cout << "channel_receive" << endl;
+		}
+		break;
+		case dup:
+		{
+			cout << "dup" << endl;
+		}
+		break;
+		case clean:
+		{
+			cout << "clean" << endl;
 		}
 		break;
 		default:

@@ -14,7 +14,7 @@ fun main(){
 		glut_begin_point()
 		var y=0,n=0
 		while(y<512){
-			in<<y
+			in!y
 			y=y+1
 		}
 		while(n<512){
@@ -44,7 +44,7 @@ fun calc_server(in:channel(int),out:channel([(int,int,int)])){
 		x=x+1
 	}
 	print_int(y);print("\n")
-	out<<result
+	out!result
 	calc_server(in,out)
 }
 
