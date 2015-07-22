@@ -77,6 +77,7 @@ fun main(){
 			board[z[0]][z[1]]=board[cy][cx]
 			board[cy][cx]=0
 		}
+
 		glut_postredisp()
 	})
 

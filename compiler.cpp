@@ -64,7 +64,7 @@ void Compiler::ASTgen()
 	RegisterBuiltinFunction("glut_begin_trianglefan",glut_begin_trianglefan,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
 	RegisterBuiltinFunction("glut_begin_polygon",glut_begin_polygon,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
 	RegisterBuiltinFunction("glut_end",glut_end,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
-	RegisterBuiltinFunction("glut_postredisp", glut_end, make_shared<vector< pair<string, shared_ptr<TypeAST> > > >(arglist), make_shared<BasicTypeAST>("void"), false);
+	RegisterBuiltinFunction("glut_postredisp", glut_postredisp, make_shared<vector< pair<string, shared_ptr<TypeAST> > > >(arglist), make_shared<BasicTypeAST>("void"), false);
 
 	vector<shared_ptr<TypeAST> > voidarg;voidarg.push_back(make_shared<BasicTypeAST>("void"));
 	arglist.push_back(pair<string,shared_ptr<TypeAST> >("val",make_shared<FunctionTypeAST>(voidarg)));
