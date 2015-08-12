@@ -93,11 +93,11 @@ public:
     }
 
     shared_ptr<Executable> Compile(){
-    	cout<<endl<<BG_GREEN<<"構文解析を行っています..."<<RESET<<endl;
+    	//cout<<endl<<BG_GREEN<<"構文解析を行っています..."<<RESET<<endl;
 		ASTgen();
-		cout<<BG_GREEN<<"型検査を行っています..."<<RESET<<endl;
+		//cout<<BG_GREEN<<"型検査を行っています..."<<RESET<<endl;
 		TypeCheck();
-		cout<<BG_GREEN<<"コード生成を行っています..."<<RESET<<endl;
+		//cout<<BG_GREEN<<"コード生成を行っています..."<<RESET<<endl;
 		Codegen();
 		//cout<<BG_GREEN<<"コンパイル時関数実行を行っています..."<<RESET<<endl;
 		//CTFE(3);

@@ -31,8 +31,10 @@ class ChannelObject{
 public:
 	queue<VMValue> SentValues;
 	queue<pair<shared_ptr<condition_variable>,bool*> > Receivers;
+	queue<pair<shared_ptr<condition_variable>,bool*> > Senders;
+	int Capacity;
 
-	ChannelObject(){};
+	ChannelObject(int capacity){this->Capacity=capacity;};
 };
 
 class DataObject{

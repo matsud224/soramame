@@ -266,14 +266,17 @@ public:
     virtual vector<shared_ptr<ExprAST> > GetCallExprList();
 };
 
-class NewObjectAST : public ExprAST{
+class NewChannelAST : public ExprAST{
 public:
+	shared_ptr<ExprAST> CapacityExpression;
+
 	virtual bool IsConstant(){return false;}
 
     shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars);
 
-    NewObjectAST(shared_ptr<TypeAST> t){
-        TypeInfo=t;
+    NewChannelAST(shared_ptr<TypeAST> t,shared_ptr<ExprAST> capacity){
+        TypeInfo=make_shared<ChannelTypeAST>(t);
+        this->CapacityExpression=capacity;
 	}
 
     virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);

@@ -16,6 +16,7 @@
 #include <memory>
 #include <thread>
 #include <chrono>
+#include <limits.h>
 
 
 #define VM_STACK_POP curr_flame->OperandStack.pop_back();
@@ -30,6 +31,7 @@ using namespace std;
 shared_ptr<ClosureObject> glut_dispfun;
 shared_ptr<ClosureObject> glut_keyboardfun;
 shared_ptr<ClosureObject> glut_mousefun;
+map< int,pair<shared_ptr<ClosureObject>,int> > glut_timerfuns;
 
 shared_ptr<Flame> glut_current_flame;
 
@@ -60,6 +62,40 @@ void display(){
 	}
 }
 
+
+void timer(int value)
+{
+	auto item=glut_timerfuns[value];
+	glut_timerfuns.erase(value);
+	auto cobj=item.first;
+	auto callee=cobj->FunctionRef;
+
+	if(callee->isBuiltin){
+		//ビルトイン関数の場合は、フレームを作らず、直に値をスタックに置く
+		string builtin_name=callee->Name;
+		string typestr=callee->TypeInfo->GetName();
+
+		VM::BuiltinFunctionList[pair<string,string>(builtin_name,typestr)](glut_current_flame);
+
+	}else{
+		//フレームを作成
+		shared_ptr< vector< pair<string,VMValue> > > vars=make_shared<vector< pair<string,VMValue> > >();
+		vars->reserve(callee->LocalVariables->size());
+		//引数の準備
+		VMValue v;
+		v.int_value = item.second; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(0)), v));
+
+		//ローカル変数の準備
+		for (int i = callee->Args->size(); i < callee->LocalVariables->size(); i++){
+			VMValue v;v.int_value=0;
+			(*vars).push_back(pair<string,VMValue>(Var2Str(callee->LocalVariables->at(i)),v)); //ローカル変数はすべて0に初期化される
+		}
+		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,glut_current_flame,cobj->ParentFlame,callee);
+
+
+		VM::Run(inv_flame,true); //指定された関数のフレームを作成し、実行。そのフレームがポップされた時点で帰ってくる（trueを指定したので）
+	}
+}
 
 void resize(int w, int h)
 {
@@ -229,6 +265,21 @@ void glut_setkeyboardfunc(shared_ptr<Flame> curr_flame){
 	glut_keyboardfun=static_pointer_cast<ClosureObject>(VM_STACK_GET.ref_value);VM_STACK_POP;
 	glut_current_flame=curr_flame;
 	glutKeyboardFunc(keyboard);
+}
+
+void glut_settimerfunc(shared_ptr<Flame> curr_flame){
+	static int timerid=0;
+	int msecs=VM_STACK_GET.int_value;VM_STACK_POP;
+	auto clos=static_pointer_cast<ClosureObject>(VM_STACK_GET.ref_value);VM_STACK_POP;
+	int value=VM_STACK_GET.int_value;VM_STACK_POP;
+	glut_timerfuns[timerid]=pair<shared_ptr<ClosureObject>,int>(clos,value);
+	glut_current_flame=curr_flame;
+	glutTimerFunc(msecs,timer,timerid);
+	if(timerid==INT_MAX-1){
+		timerid=0;
+	}else{
+		timerid++;
+	}
 }
 
 void glut_mainloop(shared_ptr<Flame> curr_flame){

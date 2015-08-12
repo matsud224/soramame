@@ -48,7 +48,7 @@ pair<Symbol,TokenValue> if_lex(string str,Lexer *lex){return pair<Symbol,TokenVa
 pair<Symbol,TokenValue> while_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(WHILE ,Lexer::dummy);};
 pair<Symbol,TokenValue> fun_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(FUN ,Lexer::dummy);};
 pair<Symbol,TokenValue> else_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(ELSE ,Lexer::dummy);};
-pair<Symbol,TokenValue> new_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(NEW ,Lexer::dummy);};
+pair<Symbol,TokenValue> newchan_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(NEWCHAN ,Lexer::dummy);};
 pair<Symbol,TokenValue> return_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(RETURN_S ,Lexer::dummy);};
 pair<Symbol,TokenValue> data_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(DATA ,Lexer::dummy);};
 pair<Symbol,TokenValue> group_lex(string str,Lexer *lex){return pair<Symbol,TokenValue>(GROUP ,Lexer::dummy);};
@@ -127,7 +127,7 @@ TokenRule TOKENRULE[TOKENRULECOUNT]={
 	{R"([\r\n|\n|\r])",INITIAL,true,nextline_lex},
 	{"var",INITIAL,true,var_lex},
 	{"fun",INITIAL,true,fun_lex},
-	{"new",INITIAL,true,new_lex},
+	{"newchannel",INITIAL,true,newchan_lex},
 	{"channel",INITIAL,true,channel_lex},
     {"if",INITIAL,true,if_lex},
     {"while",INITIAL,true,while_lex},
@@ -235,7 +235,7 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{primary,listvalexpr,SYNTAXEND},NULL},
     {{primary,tuplevalexpr,SYNTAXEND},NULL},
     {{primary,dataexpr,SYNTAXEND},NULL},
-    {{primary,newobjexpr,SYNTAXEND},NULL},
+    {{primary,newchanexpr,SYNTAXEND},NULL},
     {{primary,listrefexpr,SYNTAXEND},NULL},
     {{primary,datamemberrefexpr,SYNTAXEND},NULL},
     {{variableexpr,IDENT,SYNTAXEND},variableexpr_reduce},
@@ -300,7 +300,8 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
 	{{datamemberrefexpr,primary,DOT,IDENT,SYNTAXEND},datamemberrefexpr_reduce}, //構造体メンバ参照
 	{{datamemberrefexpr,parenexpr,DOT,IDENT,SYNTAXEND},datamemberrefexpr_reduce},
 
-	{{newobjexpr,NEW,LPAREN,type,RPAREN,SYNTAXEND},newobjexpr_reduce},
+	{{newchanexpr,NEWCHAN,LPAREN,type,COMMA,expression,RPAREN,SYNTAXEND},newchanexpr_reduce},
+	{{newchanexpr,NEWCHAN,LPAREN,type,RPAREN,SYNTAXEND},newchanexpr_capacity0_reduce},
 
 	{ { functiondef, FUN, operator_n, IDENT,COMMA,IDENT,COMMA,INTVAL,LPAREN, parameter_list, RPAREN, LBRACE, block, RBRACE, SYNTAXEND }, function_operator_norettype_reduce },
 	{ { functiondef, FUN, operator_n,  IDENT, COMMA, IDENT, COMMA, INTVAL, LPAREN, parameter_list, RPAREN, operator_n, type, LBRACE, block, RBRACE, SYNTAXEND }, function_operator_withrettype_reduce }
@@ -350,16 +351,16 @@ int main(int argc,char* argv[])
 
 		if (SHOW_BYTECODE){ getchar(); return 0; }
 
-		cout<<BG_BLUE<<"~~~~~~~~~~~~~~~~~~~~~~~~"<<RESET<<endl;
+		//cout<<BG_BLUE<<"~~~~~~~~~~~~~~~~~~~~~~~~"<<RESET<<endl;
 
-		auto start = system_clock::now();
+		//auto start = system_clock::now();
 
 		VM::Run(VM::GetInitialFlame(executable),false);
 
-		auto end = system_clock::now();
-		auto dur = end - start;
-		auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
-		std::cout << endl<<endl<< msec << " msec" << endl;
+		//auto end = system_clock::now();
+		//auto dur = end - start;
+		//auto msec = std::chrono::duration_cast<std::chrono::milliseconds>(dur).count();
+		//std::cout << endl<<endl<< msec << " msec" << endl;
     }catch(SyntaxError){
         cerr<<BG_RED"Syntax error  line:";
         set<int>::iterator iter;
@@ -379,8 +380,8 @@ int main(int argc,char* argv[])
 	//std::chrono::milliseconds dura( 5000 );
 	//std::this_thread::sleep_for( dura );
 
-	cout << "finished." << endl;
-	getchar();
+	//cout << "finished." << endl;
+	//getchar();
 
     return 0;
 }

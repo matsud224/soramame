@@ -577,69 +577,117 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 			break;
 			case makechannel:
 			{
-				v.ref_value = make_shared<ChannelObject>();
+				int capacity=STACK_GET.int_value; STACK_POP;
+				if (capacity < 0){ throw runtime_error("InvalidArgumentException"); }
+				v.ref_value = make_shared<ChannelObject>(capacity);
 				STACK_PUSH(v);
 			}
 			break;
 			case channel_send:
 			{
-				/*cout << "send-unlocked:" << CurrentFlame->OperandStack.size() << endl;
-				if (CurrentFlame->OperandStack.size() != 2){
-				int a = CurrentFlame.use_count();
-				error("");
-				}*/
 				shared_ptr<ChannelObject> chan = static_pointer_cast<ChannelObject>(STACK_GET.ref_value); STACK_POP;
 				if (chan == nullptr){ throw runtime_error("NullPointerException"); }
-				//cout<<"attempt to send... s:"<<chan->SentValues.size()<<",r:"<<chan->Receivers.size()<<endl;
-				//cout << "send-locked:" << CurrentFlame->OperandStack.size() << endl;
-				//if (CurrentFlame->OperandStack.size() != 1){ error(""); }
-				lock_guard<mutex> lock(mtx);
-				//if (CurrentFlame->OperandStack.size() != 1){ error(""); }
-				//cout << "send:push." << endl;
-				chan->SentValues.push(STACK_GET);
-				STACK_POP;
 
-				if (chan->Receivers.size() > 0){
-					//寝ているスレッド（受信者）を起こす
-					//cout << "send:receiver unlocked." << endl;
-					auto rcv = chan->Receivers.front();
-					chan->Receivers.pop();
-					*(rcv.second) = true;
-					rcv.first->notify_one();
+				unique_lock<mutex> lock(mtx);
+				//printf("send\n");
+//printf("capa:%d\n",chan->Capacity);
+				if(chan->SentValues.size()<chan->Capacity){
+					//バッファへ入れる
+					chan->SentValues.push(STACK_GET);
+					STACK_POP;
+
+					if (chan->Receivers.size() > 0){
+						//寝ているスレッド（受信者）を起こす
+						auto rcv = chan->Receivers.front();
+						chan->Receivers.pop();
+						*(rcv.second) = true;
+						rcv.first->notify_one();
+					}
+				}else if(chan->SentValues.size()==chan->Capacity){
+					//バッファへ入れる
+					chan->SentValues.push(STACK_GET);
+					STACK_POP;
+
+					if (chan->Receivers.size() > 0){
+						//寝ているスレッド（受信者）を起こす
+						auto rcv = chan->Receivers.front();
+						chan->Receivers.pop();
+						*(rcv.second) = true;
+						rcv.first->notify_one();
+					}
+
+					//バッファがいっぱいなので寝る
+				re_wait4:
+					bool is_ready = false;
+					shared_ptr<condition_variable> cond = make_shared<condition_variable>();
+					chan->Senders.push(pair<shared_ptr<condition_variable>, bool*>(cond, &is_ready));
+					cond->wait(lock, [&]{return is_ready; });
+
+					/*if (chan->SentValues.size() == chan->Capacity){
+						goto re_wait4;
+					}*/
+
+
+				}else{
+					//バッファがいっぱいなので寝る
+				re_wait2:
+					bool is_ready = false;
+					shared_ptr<condition_variable> cond = make_shared<condition_variable>();
+					chan->Senders.push(pair<shared_ptr<condition_variable>, bool*>(cond, &is_ready));
+					cond->wait(lock, [&]{return is_ready; });
+
+					if (chan->SentValues.size() == chan->Capacity){
+						goto re_wait2;
+					}
+
+					//バッファへ入れる
+					chan->SentValues.push(STACK_GET);
+					STACK_POP;
 				}
 			}
 			break;
 			case channel_receive:
 			{
-				//cout << "receive:stack->" << CurrentFlame->OperandStack.size() << endl;
 				shared_ptr<ChannelObject> chan = static_pointer_cast<ChannelObject>(STACK_GET.ref_value); STACK_POP;
 				if (chan == nullptr){ throw runtime_error("NullPointerException"); }
-				//cout<<"attempt to receive... s:"<<chan->SentValues.size()<<",r:"<<chan->Receivers.size()<<endl;
+
 				unique_lock<mutex> lock(mtx);
+				//printf("receive\n");
+//printf("capa:%d\n",chan->Capacity);
 				if (chan->SentValues.size() == 0){
-					//送信者がいないので寝る
+					//バッファに値がない
+
 				re_wait:
-					//cout << "receive:wait."<<endl;
 					bool is_ready = false;
 					shared_ptr<condition_variable> cond = make_shared<condition_variable>();
 					chan->Receivers.push(pair<shared_ptr<condition_variable>, bool*>(cond, &is_ready));
 					cond->wait(lock, [&]{return is_ready; });
 
-					//受け取る
 					if (chan->SentValues.size() == 0){
 						goto re_wait;
 					}
-					//cout << "receive:wake." << endl;
-					v = chan->SentValues.front(); chan->SentValues.pop();
+
+					//受け取る
+					v = chan->SentValues.front();
+					chan->SentValues.pop();
 					STACK_PUSH(v);
-				}
-				else{
-					//cout << "receive:get." << endl;
+				}else{
 					//受け取る
 					v = chan->SentValues.front();
 					chan->SentValues.pop();
 					STACK_PUSH(v);
 				}
+
+
+
+				if (chan->Senders.size() > 0){
+					//寝ているスレッド（送信者）を起こす
+					auto snd = chan->Senders.front();
+					chan->Senders.pop();
+					*(snd.second) = true;
+					snd.first->notify_one();
+				}
+
 			}
 			break;
 			case dup:

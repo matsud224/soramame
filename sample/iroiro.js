@@ -19,7 +19,7 @@ fun main(){
 	print("\n\nmap:");
 	print_intlist(map(fun(x:int){return x^2},[1,2,3,4,5,6,7,8,9]));
 
-	print("\n\nŠÖ”‡¬F");
+	print("\n\ncomposite:");
 	var f=fun(x:int){return x*2}
 	var g=fun(x:int){return x*x}
 	print_intlist(map(f$g,[1,2,3,4,5,6,7,8,9]));

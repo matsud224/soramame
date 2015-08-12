@@ -9,7 +9,7 @@ extern bool SHOW_BYTECODE;
 extern int anonymous_id;
 
 const int TOKENRULECOUNT=39;
-const int SYNTAXRULECOUNT=118;
+const int SYNTAXRULECOUNT=119;
 const int SYMBOLCOUNT=71; //SYNTAXEND,INPUTEND,EMPTYをのぞく
 
 
@@ -21,7 +21,7 @@ enum Symbol{
 	variableexpr, parenexpr, funcallexpr, closureexpr, returnstatement,type,type_list,ifstatement,
 	SEMICOLON,LPAREN,RPAREN,LBRACE,RBRACE,LBRACKET,RBRACKET,COMMA,COLON,DOT,block,WHILE,whilestatement,listvalexpr,tuplevalexpr,
 	DATA,GROUP,datadef,groupdef,datamember_list,groupmember_list,dataexpr,initassign_list,listrefexpr,datamemberrefexpr,doublevalexpr,
-	CONTINUATION,CALLCC,callccexpr,NEW,newobjexpr,CHANNEL,ASYNC,asyncstatement,tuple_list
+	CONTINUATION,CALLCC,callccexpr,NEWCHAN,newchanexpr,CHANNEL,ASYNC,asyncstatement,tuple_list
 };
 
 

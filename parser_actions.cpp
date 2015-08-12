@@ -133,7 +133,7 @@ TokenValue function_operator_norettype_reduce(shared_ptr<CodegenInfo> cgi, vecto
 		error("演算子定義：left又はrightで指定してください");
 	}
 	cgi->OperatorList.insert(pair<string, OperatorInfo >(dynamic_pointer_cast<OperatorAST>(values[1].expression_ast)->Operator, OperatorInfo(uorb, assoc, values[6].intval,true)));
-	
+
 	return t;
 }
 
@@ -142,7 +142,7 @@ TokenValue function_operator_withrettype_reduce(shared_ptr<CodegenInfo> cgi, vec
 	AssertOperator(values[10], "=>");
 	TokenValue t;
 	t.function_ast = make_shared<FunctionAST>(cgi, dynamic_pointer_cast<OperatorAST>(values[1].expression_ast)->Operator, values[8].parameter_list, values[11].type_ast, values[13].block_ast);
-	
+
 	//演算子テーブルに登録
 	int uorb, assoc;
 	if (values[2].str == "binary"){
@@ -171,7 +171,7 @@ TokenValue function_operator_withrettype_reduce(shared_ptr<CodegenInfo> cgi, vec
 	}
 	cgi->OperatorList.insert(pair<string, OperatorInfo >(dynamic_pointer_cast<OperatorAST>(values[1].expression_ast)->Operator, OperatorInfo(uorb, assoc, values[6].intval,true)));
 
-	
+
 	return t;
 }
 
@@ -631,10 +631,17 @@ TokenValue callccexpr_void_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue
 	return t;
 }
 
-TokenValue newobjexpr_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values)
+TokenValue newchanexpr_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values)
 {
 	TokenValue t;
-	t.expression_ast=make_shared<NewObjectAST>(values[2].type_ast);
+	t.expression_ast=make_shared<NewChannelAST>(values[2].type_ast,make_shared<UnBuiltExprAST>(values[4].expression_list));
+	return t;
+}
+
+TokenValue newchanexpr_capacity0_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values)
+{
+	TokenValue t;
+	t.expression_ast=make_shared<NewChannelAST>(values[2].type_ast,make_shared<IntValExprAST>(0));
 	return t;
 }
 
