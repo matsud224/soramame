@@ -8,8 +8,8 @@ data VECTOR{
 
 fun main()
 {
-	var out=new(channel((int,int,int)))
-	var in=new(channel((double,int)))
+	var out=newchannel((int,int,int),100)
+	var in=newchannel((double,int),100)
 
 	async calc_server(in,out)
 	async calc_server(in,out)
@@ -57,11 +57,11 @@ fun scan(in:channel((double,int)),out:channel((int,int,int)))
 	{
 		result=out?
 		if(result[2]==(-1)){
-			//print("*");
+			print("*");
 			glut_color3i(100,100,100)
 			glut_vertex2i(result[0],result[1])
 		}else{
-			//print("+")
+			print("+")
 			glut_color3i(result[2],0,0)
 			glut_vertex2i(result[0],result[1])
 		}

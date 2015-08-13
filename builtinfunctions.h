@@ -19,6 +19,7 @@ void glut_openwindow(shared_ptr<Flame>);
 void glut_setdispfunc(shared_ptr<Flame>);
 void glut_setkeyboardfunc(shared_ptr<Flame>);
 void glut_setmousefunc(shared_ptr<Flame>);
+void glut_settimerfunc(shared_ptr<Flame> curr_flame);
 void glut_mainloop(shared_ptr<Flame>);
 void glut_clear(shared_ptr<Flame>);
 void glut_char(shared_ptr<Flame>);

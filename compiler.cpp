@@ -96,7 +96,7 @@ void Compiler::ASTgen()
 	arglist.push_back(pair<string,shared_ptr<TypeAST> >("msec",make_shared<BasicTypeAST>("int")));
 	arglist.push_back(pair<string,shared_ptr<TypeAST> >("callback",make_shared<FunctionTypeAST>(intarg)));
 	arglist.push_back(pair<string,shared_ptr<TypeAST> >("value",make_shared<BasicTypeAST>("int")));
-	RegisterBuiltinFunction("glut_settimerfunc",glut_setmousefunc,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
+	RegisterBuiltinFunction("glut_settimerfunc",glut_settimerfunc,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
 	arglist.clear();
 
     arglist.push_back(pair<string,shared_ptr<TypeAST> >("val",make_shared<BasicTypeAST>("int")));

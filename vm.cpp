@@ -565,13 +565,26 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 				shared_ptr<ContinuationObject> contobj = (static_pointer_cast<ContinuationObject>(STACK_GET.ref_value)); STACK_POP;
 				if (contobj == nullptr){ throw runtime_error("NullPointerException"); }
 				VMValue arg = STACK_GET; STACK_POP;
-				CurrentFlame = contobj->StartFlame;
+				shared_ptr<Flame> copyflame_current=nullptr;
 				int index = 0;
-				for (shared_ptr<Flame> f = CurrentFlame; f != nullptr; f = f->DynamicLink, index++){
+				for (shared_ptr<Flame> f = contobj->StartFlame; f != nullptr; f = f->DynamicLink, index++){
 					auto item = contobj->Snapshot[index];
-					f->PC = item.first;
-					f->OperandStack = item.second;
+					shared_ptr<Flame> copyflame=make_shared<Flame>(f->Variables,f->CodePtr,nullptr,f->StaticLink,f->FunctionInfo);
+					copyflame->PC = item.first;
+					copyflame->OperandStack = item.second;
+					if(copyflame_current!=nullptr){
+						copyflame_current->DynamicLink=copyflame;
+					}else{
+						copyflame_current=copyflame;
+						CurrentFlame=copyflame;
+					}
+					copyflame_current=copyflame;
 				}
+
+				if(copyflame_current!=nullptr){
+					copyflame_current->DynamicLink=nullptr;
+				}
+
 				CurrentFlame->OperandStack.push_back(arg);
 			}
 			break;

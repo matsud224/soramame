@@ -65,6 +65,7 @@ void display(){
 
 void timer(int value)
 {
+	//printf("timer() called!\n");
 	auto item=glut_timerfuns[value];
 	glut_timerfuns.erase(value);
 	auto cobj=item.first;

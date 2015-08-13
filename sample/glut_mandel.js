@@ -1,5 +1,5 @@
 fun main(){
-	var in=new(channel(int)),out=new(channel([(int,int,int)]))
+	var in=newchannel(int,150),out=newchannel([(int,int,int)],150)
 	
 	async calc_server(in,out)
 	async calc_server(in,out)
@@ -13,10 +13,13 @@ fun main(){
 		glut_clear()
 		glut_begin_point()
 		var y=0,n=0
-		while(y<512){
-			in!y
-			y=y+1
-		}
+		async fun(){
+			while(y<512){
+				in!y
+				y=y+1
+			}
+		}()
+		print("*********************************")
 		while(n<512){
 			var result=out?
 			var t=1

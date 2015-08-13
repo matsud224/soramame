@@ -1,10 +1,10 @@
 var x:int=0;
 
-var add_value:channel(int)=new(channel(int))
-var added:channel(int)=new(channel(int))
+var add_value:channel(int)=newchannel(int,10)
+var added:channel(int)=newchannel(int,10)
 
 fun main(){
-	var end_notify=new(channel(int))
+	var end_notify=newchannel(int,10)
 	async server();
 	async fun(){
 		var i=1
