@@ -634,6 +634,7 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 					bool is_ready = false;
 					shared_ptr<condition_variable> cond = make_shared<condition_variable>();
 					chan->Senders.push(pair<shared_ptr<condition_variable>, bool*>(cond, &is_ready));
+					chan->Sender_ProduceValue.push(false);
 					cond->wait(lock, [&]{return is_ready; });
 
 					/*if (chan->SentValues.size() == chan->Capacity){
@@ -647,9 +648,10 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 					bool is_ready = false;
 					shared_ptr<condition_variable> cond = make_shared<condition_variable>();
 					chan->Senders.push(pair<shared_ptr<condition_variable>, bool*>(cond, &is_ready));
+					chan->Sender_ProduceValue.push(true);
 					cond->wait(lock, [&]{return is_ready; });
 
-					if (chan->SentValues.size() == chan->Capacity){
+					if (chan->SentValues.size() > chan->Capacity){
 						goto re_wait2;
 					}
 
@@ -665,11 +667,24 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 				if (chan == nullptr){ throw runtime_error("NullPointerException"); }
 
 				unique_lock<mutex> lock(mtx);
+
 				//printf("receive\n");
 //printf("capa:%d\n",chan->Capacity);
+
 				if (chan->SentValues.size() == 0){
 					//バッファに値がない
+					if (chan->Senders.size() > 0){
+						//寝ているスレッド（送信者）を起こす
 
+						//Senderが値をプッシュしてくれるなら
+						if(chan->Sender_ProduceValue.front()==true){
+							auto snd = chan->Senders.front();
+							chan->Senders.pop();
+							chan->Sender_ProduceValue.pop();
+							*(snd.second) = true;
+							snd.first->notify_one();
+						}
+					}
 				re_wait:
 					bool is_ready = false;
 					shared_ptr<condition_variable> cond = make_shared<condition_variable>();
@@ -689,16 +704,22 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 					v = chan->SentValues.front();
 					chan->SentValues.pop();
 					STACK_PUSH(v);
-				}
+					redo9:
+					if (chan->Senders.size() > 0){
+						//寝ているスレッド（送信者）を起こす
+							auto snd = chan->Senders.front();
+							chan->Senders.pop();
 
+							*(snd.second) = true;
+							snd.first->notify_one();
 
+						if(chan->Sender_ProduceValue.front()==false){
+							chan->Sender_ProduceValue.pop();
+							goto redo9;
+						}
 
-				if (chan->Senders.size() > 0){
-					//寝ているスレッド（送信者）を起こす
-					auto snd = chan->Senders.front();
-					chan->Senders.pop();
-					*(snd.second) = true;
-					snd.first->notify_one();
+						chan->Sender_ProduceValue.pop();
+					}
 				}
 
 			}

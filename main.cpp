@@ -25,6 +25,8 @@
 #include <thread>
 #include <chrono>
 #include <sstream>
+#include <regex>
+
 
 
 using namespace std;
@@ -311,6 +313,27 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
 bool SHOW_BYTECODE;
 int anonymous_id;
 
+inline void DeleteHeadSpace(string &buf)
+{
+    size_t pos;
+    while((pos = buf.find_first_of(" 　\t")) == 0){
+        buf.erase(buf.begin());
+        if(buf.empty()) break;
+    }
+}
+
+string readall(string path){
+	std::ifstream ifs(path);
+    if (ifs.fail())
+    {
+        error("file load failed: "+path);
+    }
+	std::istreambuf_iterator<char> it(ifs);
+	std::istreambuf_iterator<char> last;
+	std::string str(it, last);
+	return str;
+}
+
 int main(int argc,char* argv[])
 {
 	srand((unsigned int)time(NULL));
@@ -336,8 +359,28 @@ int main(int argc,char* argv[])
 	try{
 		ifstream ifs(path);
 		string str="",line;
+
+		const char* include1 = "#include *<(.*)>";
+		const char* include2 = "#include *\"(.*)\"";
+		regex inc1_re(include1);
+		regex inc2_re(include2);
+		cmatch match;
+
 		while (std::getline(ifs, line)) {
-			str += line+"\n";
+            DeleteHeadSpace(line);
+
+			if ( regex_match(line.c_str(), match, inc1_re) ) {
+				//includeディレクトリから読み込み
+				//cout<<"./include/" << match.str(1)<<endl;
+				str+= readall("./include/" + match.str(1)) +"\n";
+			}else if( regex_match(line.c_str(), match, inc2_re) ){
+				//カレントディレクトリから読み込み
+				//cout<<"./" << match.str(1)<<endl;
+				str+= readall("./" + match.str(1)) +"\n";
+			}else{
+				str += line+"\n";
+			}
+
 		}
 
 		lexer=make_shared<Lexer>(str.c_str());

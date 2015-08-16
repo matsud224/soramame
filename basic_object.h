@@ -32,6 +32,8 @@ public:
 	queue<VMValue> SentValues;
 	queue<pair<shared_ptr<condition_variable>,bool*> > Receivers;
 	queue<pair<shared_ptr<condition_variable>,bool*> > Senders;
+	queue<bool> Sender_ProduceValue;
+
 	int Capacity;
 
 	ChannelObject(int capacity){this->Capacity=capacity;};
