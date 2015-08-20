@@ -392,7 +392,7 @@ int main(int argc,char* argv[])
 		parser.reset();
 		compiler.reset();
 
-		if (SHOW_BYTECODE){ getchar(); return 0; }
+		if (SHOW_BYTECODE){ return 0; }
 
 		//cout<<BG_BLUE<<"~~~~~~~~~~~~~~~~~~~~~~~~"<<RESET<<endl;
 

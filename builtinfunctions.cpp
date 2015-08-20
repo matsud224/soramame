@@ -10,9 +10,13 @@
 #include "statement.h"
 #include "expression.h"
 #include "utility.h"
+
+#ifdef USE_GLUT
 #define FREEGLUT_STATIC
 #include <GL/glut.h>
 #include <GL/gl.h>
+#endif
+
 #include <memory>
 #include <thread>
 #include <chrono>
@@ -27,6 +31,7 @@
 using namespace std;
 
 
+#ifdef USE_GLUT
 //**************GLUT用のいろいろ*******************
 shared_ptr<ClosureObject> glut_dispfun;
 shared_ptr<ClosureObject> glut_keyboardfun;
@@ -181,6 +186,8 @@ void keyboard(unsigned char key, int x, int y)
 
 }
 //**************GLUT用のいろいろ*******************
+#endif
+
 
 void print_str(shared_ptr<Flame> curr_flame){
 	string str=*(static_pointer_cast<string>(VM_STACK_GET.ref_value)); VM_STACK_POP;
@@ -238,6 +245,7 @@ void pow_int(shared_ptr<Flame> curr_flame){
 }
 
 
+#ifdef USE_GLUT
 void glut_openwindow(shared_ptr<Flame> curr_flame){
 	int argc=0;char *argv[1];
 	glutInitWindowPosition(10, 10);
@@ -355,6 +363,11 @@ void glut_color3i(shared_ptr<Flame> curr_flame){
 	//glcolor3iは0~INT_MAXで指定なので使いにくい（２５５までじゃない！！！）
 	glColor3ub(r,g,b);
 }
+
+void glut_postredisp(shared_ptr<Flame> curr_flame){
+	glutPostRedisplay();
+}
+#endif
 
 void math_sin(shared_ptr<Flame> curr_flame)
 {
@@ -478,6 +491,4 @@ void op_length_str(shared_ptr<Flame> curr_flame){
 	VM_STACK_PUSH(v);
 }
 
-void glut_postredisp(shared_ptr<Flame> curr_flame){
-	glutPostRedisplay();
-}
+

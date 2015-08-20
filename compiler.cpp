@@ -52,6 +52,7 @@ void Compiler::ASTgen()
 	RegisterBuiltinFunction("rand",rand_int,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("int"),false);
 	RegisterBuiltinFunction("hardware_concurrency",hw_concurrency,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("int"),false);
 
+	#ifdef USE_GLUT
 	RegisterBuiltinFunction("glut_mainloop",glut_mainloop,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
 	RegisterBuiltinFunction("glut_clear",glut_clear,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
 	RegisterBuiltinFunction("glut_flush",glut_flush,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
@@ -98,7 +99,9 @@ void Compiler::ASTgen()
 	arglist.push_back(pair<string,shared_ptr<TypeAST> >("value",make_shared<BasicTypeAST>("int")));
 	RegisterBuiltinFunction("glut_settimerfunc",glut_settimerfunc,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
 	arglist.clear();
+	#endif
 
+	arglist.clear();
     arglist.push_back(pair<string,shared_ptr<TypeAST> >("val",make_shared<BasicTypeAST>("int")));
     RegisterBuiltinFunction("print_int",print_int,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
 
@@ -113,7 +116,9 @@ void Compiler::ASTgen()
     arglist[0]=pair<string,shared_ptr<TypeAST> >("str",make_shared<BasicTypeAST>("string"));
     RegisterBuiltinFunction("print",print_str,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
 
+	#ifdef USE_GLUT
     RegisterBuiltinFunction("glut_openwindow",glut_openwindow,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
+	#endif
 
     arglist[0]=pair<string,shared_ptr<TypeAST> >("val",make_shared<BasicTypeAST>("int"));
     RegisterBuiltinFunction("abs",abs_int,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("int"),true);
@@ -136,12 +141,14 @@ void Compiler::ASTgen()
 	arglist.push_back(pair<string,shared_ptr<TypeAST> >("val2",make_shared<BasicTypeAST>("int")));
     RegisterBuiltinFunction("pow",pow_int,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("int"),true);
 
+	#ifdef USE_GLUT
 	RegisterBuiltinFunction("glut_vertex2i",glut_vertex2i,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
 
 	arglist.push_back(pair<string,shared_ptr<TypeAST> >("val3",make_shared<BasicTypeAST>("int")));
 	RegisterBuiltinFunction("glut_color3i",glut_color3i,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
 
 	RegisterBuiltinFunction("glut_char",glut_char,make_shared<vector< pair<string,shared_ptr<TypeAST> > > >(arglist),make_shared<BasicTypeAST>("void"),false);
+	#endif
 
 	//演算子から関数呼び出しへの橋渡し（引数などの情報は無視される）
 	RegisterBuiltinFunction("!op_append_list", op_append_list, make_shared<vector< pair<string, shared_ptr<TypeAST> > > >(), make_shared<BasicTypeAST>("<...>"), true);

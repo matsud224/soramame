@@ -52,6 +52,21 @@
 					<Add option="-pthread" />
 				</Linker>
 			</Target>
+			<Target title="Release(GLUT)">
+				<Option output="language1" prefix_auto="1" extension_auto="1" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Option parameters="~/language1/test3.js" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-Wextra" />
+					<Add option="-DUSE_GLUT" />
+				</Compiler>
+				<Linker>
+					<Add option="-lglut -lGLU -lGL" />
+					<Add option="-pthread" />
+				</Linker>
+			</Target>
 		</Build>
 		<Compiler>
 			<Add option="-std=c++11" />

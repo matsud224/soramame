@@ -15,6 +15,8 @@ void int2double(shared_ptr<Flame>);
 void double2int(shared_ptr<Flame>);
 void rand_int(shared_ptr<Flame>);
 void pow_int(shared_ptr<Flame>);
+
+#ifdef USE_GLUT
 void glut_openwindow(shared_ptr<Flame>);
 void glut_setdispfunc(shared_ptr<Flame>);
 void glut_setkeyboardfunc(shared_ptr<Flame>);
@@ -36,6 +38,7 @@ void glut_postredisp(shared_ptr<Flame>);
 void glut_end(shared_ptr<Flame>);
 void glut_vertex2i(shared_ptr<Flame>);
 void glut_color3i(shared_ptr<Flame>);
+#endif
 
 void math_sin(shared_ptr<Flame>);
 void math_cos(shared_ptr<Flame>);
