@@ -11,7 +11,7 @@
 				<Option output="language1" prefix_auto="1" extension_auto="1" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="~/language1/15puzzle.js" />
+				<Option parameters="~/optest.js" />
 				<Compiler>
 					<Add option="-std=c++11" />
 					<Add option="-Wall" />
@@ -56,7 +56,7 @@
 				<Option output="language1" prefix_auto="1" extension_auto="1" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="~/language1/test3.js" />
+				<Option parameters="~/optest.js" />
 				<Compiler>
 					<Add option="-O2" />
 					<Add option="-Wextra" />

@@ -36,6 +36,7 @@ TokenValue expression_add_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue expression_paren_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values);
 TokenValue expression_addparen_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue funcallexpr_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
+TokenValue funcallexpr_parenexpr_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values);
 TokenValue variableexpr_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue parenexpr_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue returnstatement_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);

@@ -312,6 +312,13 @@ TokenValue funcallexpr_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> val
 	return t;
 }
 
+TokenValue funcallexpr_parenexpr_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values)
+{
+	TokenValue t;
+	t.expression_ast=make_shared<CallExprAST>(make_shared<UnBuiltExprAST>(values[0].expression_list),values[2].arg_exp_list);
+	return t;
+}
+
 TokenValue variableexpr_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values)
 {
 	TokenValue t;

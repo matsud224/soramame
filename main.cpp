@@ -225,7 +225,7 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{expression,expression,operator_n,SYNTAXEND},expression_add_reduce},
     {{expression,expression,parenexpr,SYNTAXEND},expression_addparen_reduce},
     {{funcallexpr,primary,LPAREN,arg_list,RPAREN,SYNTAXEND},funcallexpr_reduce},
-    {{funcallexpr,parenexpr,LPAREN,arg_list,RPAREN,SYNTAXEND},funcallexpr_reduce},
+    {{funcallexpr,parenexpr,LPAREN,arg_list,RPAREN,SYNTAXEND},funcallexpr_parenexpr_reduce},
     {{primary,intvalexpr,SYNTAXEND},NULL},
     {{primary,doublevalexpr,SYNTAXEND},NULL},
     {{primary,boolvalexpr,SYNTAXEND},NULL},
