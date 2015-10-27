@@ -302,7 +302,7 @@ void Compiler::CTFE(int loop/*繰り返し回数*/){
 			exec_count++;
 
 			if((*iter)->TypeInfo->GetName()=="void"){
-				VMValue v;v.int_value=0;
+				VMValue v;v.primitive.int_value=0;
 				(*iter)->CalculatedValue=v;
 				continue;
 			}

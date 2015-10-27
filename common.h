@@ -27,9 +27,11 @@ enum Symbol{
 
 class VMValue{
 public:
-	int int_value;
-	bool bool_value;
-	double double_value;
+	union{
+		int int_value;
+		bool bool_value;
+		double double_value;
+	} primitive;
 	shared_ptr<void> ref_value;
 };
 

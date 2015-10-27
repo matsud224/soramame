@@ -62,7 +62,7 @@ public:
 	int PoolIndex;
     DoubleValExprAST(shared_ptr<CodegenInfo> cgi,double val):Value(val){
     	TypeInfo=make_shared<BasicTypeAST>("double");
-		VMValue v;v.double_value=Value;
+		VMValue v;v.primitive.double_value=Value;
 		PoolIndex=VM::PublicConstantPool.SetValue(v);
 	}
     virtual bool IsConstant(){return true;}

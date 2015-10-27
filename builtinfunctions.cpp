@@ -57,7 +57,7 @@ void display(){
 		vars->reserve(callee->LocalVariables->size());
 		//ローカル変数の準備
 		for (int i = callee->Args->size(); i < callee->LocalVariables->size(); i++){
-			VMValue v;v.int_value=0;
+			VMValue v;v.primitive.int_value=0;
 			(*vars).push_back(pair<string,VMValue>(Var2Str(callee->LocalVariables->at(i)),v)); //ローカル変数はすべて0に初期化される
 		}
 		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,glut_current_flame,cobj->ParentFlame,callee);
@@ -89,11 +89,11 @@ void timer(int value)
 		vars->reserve(callee->LocalVariables->size());
 		//引数の準備
 		VMValue v;
-		v.int_value = item.second; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(0)), v));
+		v.primitive.int_value = item.second; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(0)), v));
 
 		//ローカル変数の準備
 		for (int i = callee->Args->size(); i < callee->LocalVariables->size(); i++){
-			VMValue v;v.int_value=0;
+			VMValue v;v.primitive.int_value=0;
 			(*vars).push_back(pair<string,VMValue>(Var2Str(callee->LocalVariables->at(i)),v)); //ローカル変数はすべて0に初期化される
 		}
 		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,glut_current_flame,cobj->ParentFlame,callee);
@@ -133,14 +133,14 @@ void mouse(int button, int state, int x, int y)
 		vars->reserve(callee->LocalVariables->size());
 		//引数の準備
 		VMValue v;
-		v.int_value = button; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(0)), v));
-		v.int_value = state; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(1)), v));
-		v.int_value = x; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(2)), v));
-		v.int_value = y; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(3)), v));
+		v.primitive.int_value = button; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(0)), v));
+		v.primitive.int_value = state; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(1)), v));
+		v.primitive.int_value = x; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(2)), v));
+		v.primitive.int_value = y; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(3)), v));
 
 		//ローカル変数の準備
 		for (int i = callee->Args->size(); i < callee->LocalVariables->size(); i++){
-			VMValue v;v.int_value=0;
+			VMValue v;v.primitive.int_value=0;
 			(*vars).push_back(pair<string,VMValue>(Var2Str(callee->LocalVariables->at(i)),v)); //ローカル変数はすべて0に初期化される
 		}
 		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,glut_current_flame,cobj->ParentFlame,callee);
@@ -169,13 +169,13 @@ void keyboard(unsigned char key, int x, int y)
 		vars->reserve(callee->LocalVariables->size());
 		//引数の準備
 		VMValue v;
-		v.int_value = key; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(0)), v));
-		v.int_value = x; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(1)), v));
-		v.int_value = y; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(2)), v));
+		v.primitive.int_value = key; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(0)), v));
+		v.primitive.int_value = x; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(1)), v));
+		v.primitive.int_value = y; (*vars).push_back(pair<string, VMValue>(Var2Str(cobj->FunctionRef->Args->at(2)), v));
 
 		//ローカル変数の準備
 		for (int i = callee->Args->size(); i < callee->LocalVariables->size(); i++){
-			VMValue v;v.int_value=0;
+			VMValue v;v.primitive.int_value=0;
 			(*vars).push_back(pair<string,VMValue>(Var2Str(callee->LocalVariables->at(i)),v)); //ローカル変数はすべて0に初期化される
 		}
 		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,glut_current_flame,cobj->ParentFlame,callee);
@@ -195,51 +195,51 @@ void print_str(shared_ptr<Flame> curr_flame){
 }
 
 void print_int(shared_ptr<Flame> curr_flame){
-	int iopr1=VM_STACK_GET.int_value; VM_STACK_POP;
+	int iopr1=VM_STACK_GET.primitive.int_value; VM_STACK_POP;
 	cout<<iopr1<<flush;
 }
 
 void print_double(shared_ptr<Flame> curr_flame){
-	double dopr1=VM_STACK_GET.double_value; VM_STACK_POP;
+	double dopr1=VM_STACK_GET.primitive.double_value; VM_STACK_POP;
 	cout<<dopr1<<flush;
 }
 
 void print_bool(shared_ptr<Flame> curr_flame){
-	bool bopr1=static_cast<bool>(VM_STACK_GET.bool_value); VM_STACK_POP;
+	bool bopr1=static_cast<bool>(VM_STACK_GET.primitive.bool_value); VM_STACK_POP;
 	cout<<(bopr1?"true":"false")<<flush;
 }
 
 void abs_int(shared_ptr<Flame> curr_flame){
-	int iopr1=VM_STACK_GET.int_value; VM_STACK_POP;
-	VMValue v;v.int_value=abs(iopr1);
+	int iopr1=VM_STACK_GET.primitive.int_value; VM_STACK_POP;
+	VMValue v;v.primitive.int_value=abs(iopr1);
 	//返り値を直にプッシュ
 	VM_STACK_PUSH(v);
 }
 
 void int2double(shared_ptr<Flame> curr_flame){
-	int iopr1=VM_STACK_GET.int_value; VM_STACK_POP;
-	VMValue v;v.double_value=iopr1;
+	int iopr1=VM_STACK_GET.primitive.int_value; VM_STACK_POP;
+	VMValue v;v.primitive.double_value=iopr1;
 	//返り値を直にプッシュ
 	VM_STACK_PUSH(v);
 }
 
 void double2int(shared_ptr<Flame> curr_flame){
-	int iopr1=VM_STACK_GET.double_value; VM_STACK_POP;
-	VMValue v;v.int_value=iopr1;
+	int iopr1=VM_STACK_GET.primitive.double_value; VM_STACK_POP;
+	VMValue v;v.primitive.int_value=iopr1;
 	//返り値を直にプッシュ
 	VM_STACK_PUSH(v);
 }
 
 void rand_int(shared_ptr<Flame> curr_flame){
 	//返り値を直にプッシュ
-	VMValue v;v.int_value=rand();
+	VMValue v;v.primitive.int_value=rand();
 	VM_STACK_PUSH(v);
 }
 
 void pow_int(shared_ptr<Flame> curr_flame){
-	int iopr1=VM_STACK_GET.int_value; VM_STACK_POP;
-	int iopr2=VM_STACK_GET.int_value; VM_STACK_POP;
-	VMValue v;v.int_value=pow(iopr1,iopr2);
+	int iopr1=VM_STACK_GET.primitive.int_value; VM_STACK_POP;
+	int iopr2=VM_STACK_GET.primitive.int_value; VM_STACK_POP;
+	VMValue v;v.primitive.int_value=pow(iopr1,iopr2);
 	//返り値を直にプッシュ
 	VM_STACK_PUSH(v);
 }
@@ -278,9 +278,9 @@ void glut_setkeyboardfunc(shared_ptr<Flame> curr_flame){
 
 void glut_settimerfunc(shared_ptr<Flame> curr_flame){
 	static int timerid=0;
-	int msecs=VM_STACK_GET.int_value;VM_STACK_POP;
+	int msecs=VM_STACK_GET.primitive.int_value;VM_STACK_POP;
 	auto clos=static_pointer_cast<ClosureObject>(VM_STACK_GET.ref_value);VM_STACK_POP;
-	int value=VM_STACK_GET.int_value;VM_STACK_POP;
+	int value=VM_STACK_GET.primitive.int_value;VM_STACK_POP;
 	glut_timerfuns[timerid]=pair<shared_ptr<ClosureObject>,int>(clos,value);
 	glut_current_flame=curr_flame;
 	glutTimerFunc(msecs,timer,timerid);
@@ -301,12 +301,12 @@ void glut_clear(shared_ptr<Flame> curr_flame){
 
 void glut_char(shared_ptr<Flame> curr_flame){
 	int x,y;
-	x=VM_STACK_GET.int_value;VM_STACK_POP;
-	y=VM_STACK_GET.int_value;VM_STACK_POP;
+	x=VM_STACK_GET.primitive.int_value;VM_STACK_POP;
+	y=VM_STACK_GET.primitive.int_value;VM_STACK_POP;
 	if (!(x < 0 || y < 0)){
 		glRasterPos3i(x, y, 0);
 	}
-	glutBitmapCharacter(GLUT_BITMAP_9_BY_15,VM_STACK_GET.int_value);VM_STACK_POP;
+	glutBitmapCharacter(GLUT_BITMAP_9_BY_15,VM_STACK_GET.primitive.int_value);VM_STACK_POP;
 }
 
 void glut_begin_point(shared_ptr<Flame> curr_flame){
@@ -350,16 +350,16 @@ void glut_end(shared_ptr<Flame> curr_flame){
 }
 
 void glut_vertex2i(shared_ptr<Flame> curr_flame){
-	int x=VM_STACK_GET.int_value;VM_STACK_POP;
-	int y=VM_STACK_GET.int_value;VM_STACK_POP;
+	int x=VM_STACK_GET.primitive.int_value;VM_STACK_POP;
+	int y=VM_STACK_GET.primitive.int_value;VM_STACK_POP;
 	glVertex2i(x,y);
 }
 
 void glut_color3i(shared_ptr<Flame> curr_flame){
 	int r,g,b;
-	r=VM_STACK_GET.int_value;VM_STACK_POP;
-	g=VM_STACK_GET.int_value;VM_STACK_POP;
-	b=VM_STACK_GET.int_value;VM_STACK_POP;
+	r=VM_STACK_GET.primitive.int_value;VM_STACK_POP;
+	g=VM_STACK_GET.primitive.int_value;VM_STACK_POP;
+	b=VM_STACK_GET.primitive.int_value;VM_STACK_POP;
 	//glcolor3iは0~INT_MAXで指定なので使いにくい（２５５までじゃない！！！）
 	glColor3ub(r,g,b);
 }
@@ -371,69 +371,69 @@ void glut_postredisp(shared_ptr<Flame> curr_flame){
 
 void math_sin(shared_ptr<Flame> curr_flame)
 {
-	double iopr1=VM_STACK_GET.double_value; VM_STACK_POP;
-	VMValue v;v.double_value=sin(iopr1);
+	double iopr1=VM_STACK_GET.primitive.double_value; VM_STACK_POP;
+	VMValue v;v.primitive.double_value=sin(iopr1);
 	//返り値を直にプッシュ
 	VM_STACK_PUSH(v);
 }
 
 void math_cos(shared_ptr<Flame> curr_flame)
 {
-	double iopr1=VM_STACK_GET.double_value; VM_STACK_POP;
-	VMValue v;v.double_value=cos(iopr1);
+	double iopr1=VM_STACK_GET.primitive.double_value; VM_STACK_POP;
+	VMValue v;v.primitive.double_value=cos(iopr1);
 	//返り値を直にプッシュ
 	VM_STACK_PUSH(v);
 }
 
 void math_tan(shared_ptr<Flame> curr_flame)
 {
-	double iopr1=VM_STACK_GET.double_value; VM_STACK_POP;
-	VMValue v;v.double_value=tan(iopr1);
+	double iopr1=VM_STACK_GET.primitive.double_value; VM_STACK_POP;
+	VMValue v;v.primitive.double_value=tan(iopr1);
 	//返り値を直にプッシュ
 	VM_STACK_PUSH(v);
 }
 
 void math_asin(shared_ptr<Flame> curr_flame)
 {
-	double iopr1=VM_STACK_GET.double_value; VM_STACK_POP;
-	VMValue v;v.double_value=asin(iopr1);
+	double iopr1=VM_STACK_GET.primitive.double_value; VM_STACK_POP;
+	VMValue v;v.primitive.double_value=asin(iopr1);
 	//返り値を直にプッシュ
 	VM_STACK_PUSH(v);
 }
 
 void math_acos(shared_ptr<Flame> curr_flame)
 {
-	double iopr1=VM_STACK_GET.double_value; VM_STACK_POP;
-	VMValue v;v.double_value=acos(iopr1);
+	double iopr1=VM_STACK_GET.primitive.double_value; VM_STACK_POP;
+	VMValue v;v.primitive.double_value=acos(iopr1);
 	//返り値を直にプッシュ
 	VM_STACK_PUSH(v);
 }
 
 void math_atan(shared_ptr<Flame> curr_flame)
 {
-	double iopr1=VM_STACK_GET.double_value; VM_STACK_POP;
-	VMValue v;v.double_value=atan(iopr1);
+	double iopr1=VM_STACK_GET.primitive.double_value; VM_STACK_POP;
+	VMValue v;v.primitive.double_value=atan(iopr1);
 	//返り値を直にプッシュ
 	VM_STACK_PUSH(v);
 }
 
 void math_sqrt(shared_ptr<Flame> curr_flame)
 {
-	double iopr1=VM_STACK_GET.double_value; VM_STACK_POP;
-	VMValue v;v.double_value=sqrt(iopr1);
+	double iopr1=VM_STACK_GET.primitive.double_value; VM_STACK_POP;
+	VMValue v;v.primitive.double_value=sqrt(iopr1);
 	//返り値を直にプッシュ
 	VM_STACK_PUSH(v);
 }
 
 void sleep_msec(shared_ptr<Flame> curr_flame)
 {
-	int sleeptime=VM_STACK_GET.int_value;VM_STACK_POP;
+	int sleeptime=VM_STACK_GET.primitive.int_value;VM_STACK_POP;
 	this_thread::sleep_for(chrono::milliseconds(sleeptime));
 }
 
 void hw_concurrency(shared_ptr<Flame> curr_flame)
 {
-	VMValue v;v.int_value=thread::hardware_concurrency();
+	VMValue v;v.primitive.int_value=thread::hardware_concurrency();
 	VM_STACK_PUSH(v);
 }
 
@@ -481,13 +481,13 @@ void op_cons(shared_ptr<Flame> curr_flame){
 
 void op_length_list(shared_ptr<Flame> curr_flame){
 	list<VMValue> list1 = *(static_pointer_cast<list<VMValue>>(VM_STACK_GET.ref_value)); VM_STACK_POP;
-	VMValue v; v.int_value = list1.size();
+	VMValue v; v.primitive.int_value = list1.size();
 	VM_STACK_PUSH(v);
 }
 
 void op_length_str(shared_ptr<Flame> curr_flame){
 	string str = *(static_pointer_cast<string>(VM_STACK_GET.ref_value)); VM_STACK_POP;
-	VMValue v; v.int_value = str.length();
+	VMValue v; v.primitive.int_value = str.length();
 	VM_STACK_PUSH(v);
 }
 

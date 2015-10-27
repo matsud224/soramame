@@ -33,6 +33,7 @@ public:
 	queue<pair<shared_ptr<condition_variable>,bool*> > Receivers;
 	queue<pair<shared_ptr<condition_variable>,bool*> > Senders;
 	queue<bool> Sender_ProduceValue;
+	mutex mtx;
 
 	int Capacity;
 
