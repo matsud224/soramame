@@ -815,6 +815,7 @@ shared_ptr<TypeAST>  FunctionAST::CheckType(shared_ptr<vector<Environment> > env
 					ft_ptr->TypeList.pop_back();
 					ft_ptr->TypeList.push_back(make_shared<BasicTypeAST>("void"));
 				}else if(ft_ptr->TypeList.back()->GetName() != "void"){
+					cout<<this->Name<<"について："<<endl;
 					error("'returnする値の型'と、'関数の戻り値の型'が一致しません。");
 				}
 			}
@@ -828,6 +829,7 @@ shared_ptr<TypeAST>  FunctionAST::CheckType(shared_ptr<vector<Environment> > env
 					ft_ptr->TypeList.push_back(r_ptr->Expression->TypeInfo);
 				}
 				else if (ft_ptr->TypeList.back()->GetName() != r_ptr->Expression->TypeInfo->GetName()){
+					cout<<this->Name<<"について："<<endl;
 					error("'returnする値の型'と、'関数の戻り値の型'が一致しません。");
 				}
 			}
@@ -868,7 +870,7 @@ shared_ptr<TypeAST>  CallExprAST::CheckType(shared_ptr<vector<Environment> > env
 		error("関数呼び出し式で呼び出せるのは関数または継続です。");
 	}
 
-
+	bool error_occured=false;
 	if(typeid(*(callee->TypeInfo))==typeid(FunctionTypeAST)){
 		vector<shared_ptr<TypeAST> > currentarg=dynamic_pointer_cast<FunctionTypeAST>(callee->TypeInfo)->TypeList;
 		if(args->size()+1==currentarg.size()){ //+1するのは、argsには戻り値の型が含まれていないから
@@ -881,14 +883,22 @@ shared_ptr<TypeAST>  CallExprAST::CheckType(shared_ptr<vector<Environment> > env
 					args->at(j)->TypeInfo = currentarg[j];
 				}
 				if(args->at(j)->TypeInfo->GetName() != currentarg[j]->GetName()){
-					goto type_error;
+					error_occured=true;
 				}
 			}
+
+			if(error_occured){goto type_error;}
+
 			TypeInfo=currentarg.back(); //関数の型ではなく関数の戻り値の型を代入
 
 			return TypeInfo;
-		}
+		}else{error("引数の個数が一致しません");}
 		type_error:
+		cout<<"[found] / [callee]  "<<args->size()<<"/"<<currentarg.size()<<endl;
+		for(unsigned int j=0;j<args->size();j++){
+			cout<<((args->size()>j)?args->at(j)->TypeInfo->GetName():"<empty>")<<flush;
+			cout<<" / "<<((currentarg.size()>j)?currentarg[j]->GetName():"<empty>")<<endl;
+		}
 		error("引数リストの型とcalleeの引数の型が一致しません");
 	}else if(typeid(*(callee->TypeInfo))==typeid(ContinuationTypeAST)){
 		shared_ptr<TypeAST> contarg = dynamic_pointer_cast<ContinuationTypeAST>(callee->TypeInfo)->Type;
@@ -964,6 +974,7 @@ shared_ptr<TypeAST>  DataMemberRefExprAST::CheckType(shared_ptr<vector<Environme
 	if(!found){
 		error("型"+target->TypeInfo->GetName()+"は構造体型ではありません：メンバ参照の左辺を確認してください");
 	}
+
 	if(diter!=geninfo->TopLevelDataDef.end()){
 		for(miter=(*diter)->MemberList.begin();miter!=(*diter)->MemberList.end();miter++){
 			if(miter->first==MemberName){
@@ -977,6 +988,7 @@ shared_ptr<TypeAST>  DataMemberRefExprAST::CheckType(shared_ptr<vector<Environme
 			return TypeInfo;
 		}
 	}
+
 
 	vector<shared_ptr<GroupDefAST> >::iterator giter;
 	for(giter=geninfo->TopLevelGroupDef.begin();giter!=geninfo->TopLevelGroupDef.end();giter++){
@@ -997,6 +1009,7 @@ shared_ptr<TypeAST>  DataMemberRefExprAST::CheckType(shared_ptr<vector<Environme
 			return TypeInfo;
 		}
 	}
+
 }
 
 void ListValExprAST::Codegen(shared_ptr<vector<int> > bytecodes, shared_ptr<CodegenInfo> geninfo)
@@ -1162,6 +1175,7 @@ shared_ptr<TypeAST>  DataValExprAST::CheckType(shared_ptr<vector<Environment> > 
 					(*iter).second->TypeInfo = typelist[index];
 				}
 				if(typelist[index]->GetName()!=(*iter).second->TypeInfo->GetName()){
+					cout<<TypeInfo->GetName()<<"について："<<endl;
 					error("データ初期化の型が定義と一致しません");
 				}
 				(*iter4).second=(*iter).second;

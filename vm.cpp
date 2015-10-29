@@ -54,15 +54,18 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 
 	try{
 		while (true){
+			/*if(CurrentFlame!=nullptr && CurrentFlame->FunctionInfo!=nullptr){
+				cout<<CurrentFlame->FunctionInfo->Name <<" : "<<CurrentFlame->PC<<endl;
+			}*/
 			v = VMValue();
 			if (CurrentFlame == nullptr){
 				v.primitive.int_value = 0;
 				return v;
 			}
-			if (currflame_only && CurrentFlame == initial_flame->DynamicLink){
+			/*if (currflame_only && CurrentFlame == initial_flame->DynamicLink){
 				v.primitive.int_value = 0;
 				return v;
-			}
+			}*/
 			bytecode = OPERAND_GET;
 			switch (bytecode){
 			case ipush:

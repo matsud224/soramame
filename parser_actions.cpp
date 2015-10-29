@@ -624,6 +624,13 @@ TokenValue datamemberrefexpr_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenVal
 	return t;
 }
 
+TokenValue datamemberrefexpr_paren_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values)
+{
+	TokenValue t;
+	t.expression_ast=make_shared<DataMemberRefExprAST>(make_shared<UnBuiltExprAST>(values[0].expression_list),values[2].str); //parameterと型が一緒なので使わせてもらう
+	return t;
+}
+
 TokenValue callccexpr_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values)
 {
 	TokenValue t;

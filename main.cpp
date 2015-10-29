@@ -300,7 +300,7 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
 	{{listrefexpr,parenexpr,LBRACKET,expression,RBRACKET,SYNTAXEND},listrefexpr_paren_reduce},
 
 	{{datamemberrefexpr,primary,DOT,IDENT,SYNTAXEND},datamemberrefexpr_reduce}, //構造体メンバ参照
-	{{datamemberrefexpr,parenexpr,DOT,IDENT,SYNTAXEND},datamemberrefexpr_reduce},
+	{{datamemberrefexpr,parenexpr,DOT,IDENT,SYNTAXEND},datamemberrefexpr_paren_reduce},
 
 	{{newchanexpr,NEWCHAN,LPAREN,type,COMMA,expression,RPAREN,SYNTAXEND},newchanexpr_reduce},
 	{{newchanexpr,NEWCHAN,LPAREN,type,RPAREN,SYNTAXEND},newchanexpr_capacity0_reduce},

@@ -11,13 +11,16 @@
 				<Option output="language1" prefix_auto="1" extension_auto="1" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="~/optest.js" />
+				<Option parameters="sample/tetoris.js" />
 				<Compiler>
 					<Add option="-std=c++11" />
 					<Add option="-Wall" />
+					<Add option="-pg" />
 					<Add option="-g" />
+					<Add option="-DUSE_GLUT" />
 				</Compiler>
 				<Linker>
+					<Add option="-pg" />
 					<Add option="-lglut -lGLU -lGL" />
 					<Add option="-pthread" />
 				</Linker>
@@ -56,7 +59,7 @@
 				<Option output="language1" prefix_auto="1" extension_auto="1" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="~/optest.js" />
+				<Option parameters="sample/15puzzle.js" />
 				<Compiler>
 					<Add option="-O2" />
 					<Add option="-Wextra" />

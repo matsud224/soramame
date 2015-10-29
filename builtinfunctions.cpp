@@ -60,10 +60,11 @@ void display(){
 			VMValue v;v.primitive.int_value=0;
 			(*vars).push_back(pair<string,VMValue>(Var2Str(callee->LocalVariables->at(i)),v)); //ローカル変数はすべて0に初期化される
 		}
-		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,glut_current_flame,cobj->ParentFlame,callee);
+		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,nullptr,cobj->ParentFlame,callee);
 
 
 		VM::Run(inv_flame,true); //指定された関数のフレームを作成し、実行。そのフレームがポップされた時点で帰ってくる（trueを指定したので）
+		//cout<<"DISPLAY FINISHED!"<<endl;
 	}
 }
 
@@ -96,10 +97,11 @@ void timer(int value)
 			VMValue v;v.primitive.int_value=0;
 			(*vars).push_back(pair<string,VMValue>(Var2Str(callee->LocalVariables->at(i)),v)); //ローカル変数はすべて0に初期化される
 		}
-		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,glut_current_flame,cobj->ParentFlame,callee);
+		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,nullptr,cobj->ParentFlame,callee);
 
 
 		VM::Run(inv_flame,true); //指定された関数のフレームを作成し、実行。そのフレームがポップされた時点で帰ってくる（trueを指定したので）
+
 	}
 }
 
@@ -143,7 +145,7 @@ void mouse(int button, int state, int x, int y)
 			VMValue v;v.primitive.int_value=0;
 			(*vars).push_back(pair<string,VMValue>(Var2Str(callee->LocalVariables->at(i)),v)); //ローカル変数はすべて0に初期化される
 		}
-		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,glut_current_flame,cobj->ParentFlame,callee);
+		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,nullptr,cobj->ParentFlame,callee);
 
 
 		VM::Run(inv_flame,true); //指定された関数のフレームを作成し、実行。そのフレームがポップされた時点で帰ってくる（trueを指定したので）
@@ -178,7 +180,7 @@ void keyboard(unsigned char key, int x, int y)
 			VMValue v;v.primitive.int_value=0;
 			(*vars).push_back(pair<string,VMValue>(Var2Str(callee->LocalVariables->at(i)),v)); //ローカル変数はすべて0に初期化される
 		}
-		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,glut_current_flame,cobj->ParentFlame,callee);
+		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,nullptr,cobj->ParentFlame,callee);
 
 		VM::Run(inv_flame,true); //指定された関数のフレームを作成し、実行。そのフレームがポップされた時点で帰ってくる（trueを指定したので）
 	}
