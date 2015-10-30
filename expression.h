@@ -285,6 +285,25 @@ public:
     virtual vector<shared_ptr<ExprAST> > GetCallExprList();
 };
 
+class NewVectorAST : public ExprAST{
+public:
+	shared_ptr<ExprAST> CapacityExpression;
+
+	virtual bool IsConstant(){return false;}
+
+    shared_ptr<TypeAST> CheckType(shared_ptr<vector<Environment> > env,shared_ptr<CodegenInfo> geninfo,shared_ptr<vector< pair<string,shared_ptr<TypeAST> >  > > CurrentLocalVars);
+
+    NewVectorAST(shared_ptr<TypeAST> t,shared_ptr<ExprAST> capacity){
+        TypeInfo=make_shared<VectorTypeAST>(t);
+        this->CapacityExpression=capacity;
+	}
+
+    virtual void Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo);
+
+    virtual bool IsCTFEable(shared_ptr<CodegenInfo>,int){return false;};
+    virtual vector<shared_ptr<ExprAST> > GetCallExprList();
+};
+
 class VariableExprAST : public ExprAST{
 public:
     string Name;

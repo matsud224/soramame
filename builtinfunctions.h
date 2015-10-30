@@ -58,3 +58,4 @@ void op_car(shared_ptr<Flame>);
 void op_cons(shared_ptr<Flame>);
 void op_length_list(shared_ptr<Flame>);
 void op_length_str(shared_ptr<Flame>);
+void op_length_vector(shared_ptr<Flame> curr_flame);

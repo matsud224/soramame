@@ -327,6 +327,10 @@ fun EraseLine(){
             if(count == FieldSize.Width){
                 flag = true
 				DeletedLine=DeletedLine+1
+				if(DeletedLine%2==0){CurrentSpeed = CurrentSpeed-1}
+				if(CurrentSpeed < 400){
+					CurrentSpeed = 400
+				}
 				glut_postredisp()
                 For(0,FieldSize.Width - 1,fun(j:int){
                     Field.Remove(j, i)
@@ -347,11 +351,6 @@ fun EraseLine(){
                 })
             }
         })
-    }
-
-    CurrentSpeed = CurrentSpeed-2
-    if(CurrentSpeed <= 100){
-        CurrentSpeed = 100
     }
 }
 

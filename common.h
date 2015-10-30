@@ -8,9 +8,8 @@ using namespace std;
 extern bool SHOW_BYTECODE;
 extern int anonymous_id;
 
-const int TOKENRULECOUNT=39;
-const int SYNTAXRULECOUNT=119;
-const int SYMBOLCOUNT=71; //SYNTAXEND,INPUTEND,EMPTYをのぞく
+const int SYNTAXRULECOUNT=122;
+const int SYMBOLCOUNT=74; //SYNTAXEND,INPUTEND,EMPTYをのぞく
 
 
 class TypeAST;
@@ -21,7 +20,7 @@ enum Symbol{
 	variableexpr, parenexpr, funcallexpr, closureexpr, returnstatement,type,type_list,ifstatement,
 	SEMICOLON,LPAREN,RPAREN,LBRACE,RBRACE,LBRACKET,RBRACKET,COMMA,COLON,DOT,block,WHILE,whilestatement,listvalexpr,tuplevalexpr,
 	DATA,GROUP,datadef,groupdef,datamember_list,groupmember_list,dataexpr,initassign_list,listrefexpr,datamemberrefexpr,doublevalexpr,
-	CONTINUATION,CALLCC,callccexpr,NEWCHAN,newchanexpr,CHANNEL,ASYNC,asyncstatement,tuple_list
+	CONTINUATION,CALLCC,callccexpr,NEWCHAN,newchanexpr,CHANNEL,ASYNC,asyncstatement,tuple_list,VECTOR,NEWVECTOR,newvectorexpr
 };
 
 
@@ -70,7 +69,8 @@ enum{
     makelist,makedata,
     makecontinuation,resume_continuation,
     makechannel,channel_send,channel_receive,
-	dup,clean
+	dup,clean,
+	makevector,loadbyindex_vec,storebyindex_vec
 };
 
 class TokenValue{

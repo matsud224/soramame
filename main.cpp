@@ -99,6 +99,7 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{primary,tuplevalexpr,SYNTAXEND},NULL},
     {{primary,dataexpr,SYNTAXEND},NULL},
     {{primary,newchanexpr,SYNTAXEND},NULL},
+    {{primary,newvectorexpr,SYNTAXEND},NULL},
     {{primary,listrefexpr,SYNTAXEND},NULL},
     {{primary,datamemberrefexpr,SYNTAXEND},NULL},
     {{variableexpr,IDENT,SYNTAXEND},variableexpr_reduce},
@@ -111,6 +112,7 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
     {{type,LPAREN,type_list,RPAREN,SYNTAXEND},type_tupletype_reduce},
     {{type,CONTINUATION,LPAREN,type,RPAREN,SYNTAXEND},type_conttype_reduce},
     {{type,CHANNEL,LPAREN,type,RPAREN,SYNTAXEND},type_chantype_reduce},
+    {{type,VECTOR,LPAREN,type,RPAREN,SYNTAXEND},type_vectortype_reduce},
     {{type_list,EMPTY,SYNTAXEND},type_list_empty_reduce},
     {{type_list,type,SYNTAXEND},type_list_type_reduce},
     {{type_list,type_list,COMMA,type,SYNTAXEND},type_list_addtype_reduce},
@@ -165,6 +167,8 @@ SyntaxRule SYNTAXRULE[SYNTAXRULECOUNT]={
 
 	{{newchanexpr,NEWCHAN,LPAREN,type,COMMA,expression,RPAREN,SYNTAXEND},newchanexpr_reduce},
 	{{newchanexpr,NEWCHAN,LPAREN,type,RPAREN,SYNTAXEND},newchanexpr_capacity0_reduce},
+
+	{{newvectorexpr,NEWVECTOR,LPAREN,type,COMMA,expression,RPAREN,SYNTAXEND},newvectorexpr_reduce},
 
 	{ { functiondef, FUN, operator_n, IDENT,COMMA,IDENT,COMMA,INTVAL,LPAREN, parameter_list, RPAREN, LBRACE, block, RBRACE, SYNTAXEND }, function_operator_norettype_reduce },
 	{ { functiondef, FUN, operator_n,  IDENT, COMMA, IDENT, COMMA, INTVAL, LPAREN, parameter_list, RPAREN, operator_n, type, LBRACE, block, RBRACE, SYNTAXEND }, function_operator_withrettype_reduce }

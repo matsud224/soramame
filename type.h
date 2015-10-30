@@ -85,6 +85,16 @@ public:
     }
 };
 
+//配列型
+class VectorTypeAST : public TypeAST{
+public:
+    VectorTypeAST(shared_ptr<TypeAST> t):ContainType(t){}
+    shared_ptr<TypeAST>  ContainType;
+    virtual string GetName(){
+		return "vector("+ContainType->GetName()+")";
+    }
+};
+
 //タプル型
 class TupleTypeAST : public TypeAST{
 public:

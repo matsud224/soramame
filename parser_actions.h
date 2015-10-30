@@ -49,6 +49,7 @@ TokenValue type_listtype_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue type_tupletype_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue type_list_empty_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue type_list_type_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
+TokenValue type_vectortype_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values);
 TokenValue type_list_addtype_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue closureexpr_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
 TokenValue callccexpr_reduce(shared_ptr<CodegenInfo>,vector<TokenValue>);
@@ -82,3 +83,4 @@ TokenValue datamemberrefexpr_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValu
 TokenValue datamemberrefexpr_paren_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values);
 TokenValue newchanexpr_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values);
 TokenValue newchanexpr_capacity0_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values);
+TokenValue newvectorexpr_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values);

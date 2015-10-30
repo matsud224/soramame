@@ -494,6 +494,12 @@ void op_length_list(shared_ptr<Flame> curr_flame){
 	VM_STACK_PUSH(v);
 }
 
+void op_length_vector(shared_ptr<Flame> curr_flame){
+	vector<VMValue> vec1 = *(static_pointer_cast<vector<VMValue>>(VM_STACK_GET.ref_value)); VM_STACK_POP;
+	VMValue v; v.primitive.int_value = vec1.size();
+	VM_STACK_PUSH(v);
+}
+
 void op_length_str(shared_ptr<Flame> curr_flame){
 	string str = *(static_pointer_cast<string>(VM_STACK_GET.ref_value)); VM_STACK_POP;
 	VMValue v; v.primitive.int_value = str.length();

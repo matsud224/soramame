@@ -59,7 +59,7 @@ void UnaryExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<Codegen
         if(TypeInfo->GetName()=="bool"){
             bytecodes->push_back(bnot);
         }
-    }else if(Operator=="-"){
+    }else if(Operator=="-" || Operator=="~"){
         if(TypeInfo->GetName()=="int"){
             bytecodes->push_back(ineg);
         }else if(TypeInfo->GetName()=="double"){
@@ -303,9 +303,16 @@ void CallExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenI
 
 void ListRefExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo)
 {
-	target->Codegen(bytecodes,geninfo);
-	IndexExpression->Codegen(bytecodes,geninfo);
-	bytecodes->push_back(loadbyindex);
+	if(typeid(VectorTypeAST) == typeid(*(target->TypeInfo))){
+		target->Codegen(bytecodes,geninfo);
+		IndexExpression->Codegen(bytecodes,geninfo);
+		bytecodes->push_back(loadbyindex_vec);
+
+	}else{
+		target->Codegen(bytecodes,geninfo);
+		IndexExpression->Codegen(bytecodes,geninfo);
+		bytecodes->push_back(loadbyindex);
+	}
 }
 
 void DataMemberRefExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo)
@@ -400,10 +407,16 @@ void StringValExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<Cod
 
 void ListRefExprAST::AssignmentCodegen(shared_ptr<vector<int> > bytecodes, shared_ptr<CodegenInfo> geninfo)
 {
-	target->Codegen(bytecodes,geninfo);
+	if(typeid(VectorTypeAST) == typeid(*(target->TypeInfo))){
+		target->Codegen(bytecodes,geninfo);
+		IndexExpression->Codegen(bytecodes,geninfo);
+		bytecodes->push_back(storebyindex_vec);
+	}else{
+		target->Codegen(bytecodes,geninfo);
+		IndexExpression->Codegen(bytecodes,geninfo);
+		bytecodes->push_back(storebyindex);
 
-	IndexExpression->Codegen(bytecodes,geninfo);
-	bytecodes->push_back(storebyindex);
+	}
 }
 
 void DataMemberRefExprAST::AssignmentCodegen(shared_ptr<vector<int> > bytecodes, shared_ptr<CodegenInfo> geninfo)
@@ -576,7 +589,7 @@ shared_ptr<ExprAST> UnBuiltExprAST::BuildAST(shared_ptr<CodegenInfo> geninfo)
                 operand1=calcstack.top(); calcstack.pop();
 
 				if (typeid(*operand1) == typeid(IntValExprAST)){
-					if (op->Operator == "-"){
+					if (op->Operator == "-"  || op->Operator == "~"){
 						calcstack.push(make_shared<IntValExprAST>(dynamic_pointer_cast<IntValExprAST>(operand1)->Value*(-1)));
 						continue;
 					}
@@ -654,7 +667,7 @@ shared_ptr<TypeAST>  UnaryExprAST::CheckType(shared_ptr<vector<Environment> > en
 			error("型に問題があります。単項演算子:"+Operator+" オペランド:"+oprandt->GetName());
 		}
 		TypeInfo=oprandt;
-	}else if(Operator=="-"){
+	}else if(Operator=="-" || Operator=="~"){
 		if(oprandt->GetName()!="int" && oprandt->GetName()!="double"){
 			error("型に問題があります。単項演算子:"+Operator+" オペランド:"+oprandt->GetName());
 		}
@@ -665,15 +678,18 @@ shared_ptr<TypeAST>  UnaryExprAST::CheckType(shared_ptr<vector<Environment> > en
 		}
 		TypeInfo=dynamic_pointer_cast<ChannelTypeAST>(oprandt)->Type;
 	}else if (Operator == "@?"){
-		if (!(typeid(*oprandt) == typeid(ListTypeAST)) && oprandt->GetName() != "string"){
+		if (!(typeid(*oprandt) == typeid(ListTypeAST)) && oprandt->GetName() != "string" && !(typeid(*oprandt) == typeid(VectorTypeAST))){
 			error("型に問題があります。単項演算子:" + Operator + " オペランド:" + oprandt->GetName());
 		}
 		if (oprandt->GetName() == "string"){
 			auto index = SearchVariable_IgnoreType("!op_length_str", env, geninfo, CurrentLocalVars);
 			tofuncall_FlameBack = index.first;
 			tofuncall_LocalIndex = index.second;
-		}
-		else{
+		}else if(typeid(*oprandt)==typeid(VectorTypeAST)){
+			auto index = SearchVariable_IgnoreType("!op_length_vector", env, geninfo, CurrentLocalVars);
+			tofuncall_FlameBack = index.first;
+			tofuncall_LocalIndex = index.second;
+		}else{
 			auto index = SearchVariable_IgnoreType("!op_length_list", env, geninfo, CurrentLocalVars);
 			tofuncall_FlameBack = index.first;
 			tofuncall_LocalIndex = index.second;
@@ -934,12 +950,14 @@ shared_ptr<TypeAST>  ListRefExprAST::CheckType(shared_ptr<vector<Environment> > 
 	}
 	target->CheckType(env,geninfo,CurrentLocalVars);
 
-	if(typeid(ListTypeAST) != typeid(*(target->TypeInfo)) && typeid(TupleTypeAST) != typeid(*(target->TypeInfo))){
-		error("添字を指定できるのはリストまたはタプルです");
+	if(typeid(ListTypeAST) != typeid(*(target->TypeInfo)) && typeid(TupleTypeAST) != typeid(*(target->TypeInfo)) && typeid(VectorTypeAST) != typeid(*(target->TypeInfo))){
+		error("添字を指定できるのはリストまたはタプルまたはベクタです");
 	}
 
 	if(typeid(ListTypeAST) == typeid(*(target->TypeInfo))){
 		TypeInfo=dynamic_pointer_cast<ListTypeAST>(target->TypeInfo)->ContainType;
+	}else if(typeid(VectorTypeAST) == typeid(*(target->TypeInfo))){
+		TypeInfo=dynamic_pointer_cast<VectorTypeAST>(target->TypeInfo)->ContainType;
 	}else if(typeid(TupleTypeAST) == typeid(*(target->TypeInfo))){
 		if(typeid(*IndexExpression) != typeid(IntValExprAST)){
 			error("タプルの添字は整数定数を指定してください");
@@ -1482,6 +1500,34 @@ vector< shared_ptr<ExprAST> > NewChannelAST::GetCallExprList()
 }
 
 
+shared_ptr<TypeAST> NewVectorAST::CheckType(shared_ptr<vector<Environment> > env, shared_ptr<CodegenInfo> geninfo, shared_ptr<vector< pair<string, shared_ptr<TypeAST> > > > CurrentLocalVars)
+{
+	if(CapacityExpression->IsBuilt()==false){
+		CapacityExpression=dynamic_pointer_cast<UnBuiltExprAST >(CapacityExpression)->BuildAST(geninfo);
+	}
+	CapacityExpression->CheckType(env,geninfo,CurrentLocalVars);
+	if(CapacityExpression->TypeInfo->GetName()!="int"){
+		error("配列の長さは整数で指定してください");
+	}
+
+	return TypeInfo;
+}
+
+
+
+void NewVectorAST::Codegen(shared_ptr<vector<int> > bytecodes, shared_ptr<CodegenInfo> geninfo)
+{
+	CapacityExpression->Codegen(bytecodes,geninfo);
+	bytecodes->push_back(makevector);
+}
+
+vector< shared_ptr<ExprAST> > NewVectorAST::GetCallExprList()
+{
+	vector<shared_ptr<ExprAST> > result;
+	return result;
+}
+
+
 void ShowBytecode(shared_ptr<vector<int>> bc){
 	for (auto i = 0; i<bc->size(); i++){
 		cout << i << " : ";
@@ -1783,6 +1829,21 @@ void ShowBytecode(shared_ptr<vector<int>> bc){
 		case clean:
 		{
 			cout << "clean" << endl;
+		}
+		break;
+		case makevector:
+		{
+			cout << "makevector" << endl;
+		}
+		break;
+		case loadbyindex_vec:
+		{
+			cout << "loadbyindex_vec" << endl;
+		}
+		break;
+		case storebyindex_vec:
+		{
+			cout << "storebyindex_vec" << endl;
 		}
 		break;
 		default:

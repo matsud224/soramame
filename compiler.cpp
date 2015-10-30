@@ -29,6 +29,7 @@ void Compiler::ASTgen()
     genInfo->OperatorList.insert(pair<string,OperatorInfo >("?",OperatorInfo(Unary,Right,70)));
 
 	genInfo->OperatorList.insert(pair<string,OperatorInfo >("-",OperatorInfo(Unary,Right,70)));
+	genInfo->OperatorList.insert(pair<string,OperatorInfo >("~",OperatorInfo(Unary,Right,70))); //単項マイナスの代替
 
 	genInfo->OperatorList.insert(pair<string, OperatorInfo >("@+", OperatorInfo(Binary, Left, 20)));
 
@@ -157,6 +158,7 @@ void Compiler::ASTgen()
 	RegisterBuiltinFunction("!op_car", op_car, make_shared<vector< pair<string, shared_ptr<TypeAST> > > >(), make_shared<BasicTypeAST>("<...>"), true);
 	RegisterBuiltinFunction("!op_cons", op_cons, make_shared<vector< pair<string, shared_ptr<TypeAST> > > >(), make_shared<BasicTypeAST>("<...>"), true);
 	RegisterBuiltinFunction("!op_length_list", op_length_list, make_shared<vector< pair<string, shared_ptr<TypeAST> > > >(), make_shared<BasicTypeAST>("<...>"), true);
+	RegisterBuiltinFunction("!op_length_vector", op_length_vector, make_shared<vector< pair<string, shared_ptr<TypeAST> > > >(), make_shared<BasicTypeAST>("<...>"), true);
 	RegisterBuiltinFunction("!op_length_str", op_length_str, make_shared<vector< pair<string, shared_ptr<TypeAST> > > >(), make_shared<BasicTypeAST>("<...>"), true);
 
 

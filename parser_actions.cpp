@@ -378,12 +378,21 @@ TokenValue type_chantype_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> v
 	return t;
 }
 
+TokenValue type_vectortype_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values)
+{
+	TokenValue t;
+	t.type_ast=make_shared<VectorTypeAST>(values[2].type_ast);
+	return t;
+}
+
 TokenValue type_listtype_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values)
 {
 	TokenValue t;
 	t.type_ast=make_shared<ListTypeAST>(values[1].type_ast);
 	return t;
 }
+
+
 
 TokenValue type_list_empty_reduce(shared_ptr<CodegenInfo> cgi,vector<TokenValue> values)
 {
@@ -656,6 +665,13 @@ TokenValue newchanexpr_capacity0_reduce(shared_ptr<CodegenInfo> cgi, vector<Toke
 {
 	TokenValue t;
 	t.expression_ast=make_shared<NewChannelAST>(values[2].type_ast,make_shared<IntValExprAST>(0));
+	return t;
+}
+
+TokenValue newvectorexpr_reduce(shared_ptr<CodegenInfo> cgi, vector<TokenValue> values)
+{
+	TokenValue t;
+	t.expression_ast=make_shared<NewVectorAST>(values[2].type_ast,make_shared<UnBuiltExprAST>(values[4].expression_list));
 	return t;
 }
 

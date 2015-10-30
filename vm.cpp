@@ -11,6 +11,7 @@
 #include <thread>
 #include <memory>
 #include <mutex>
+#include <array>
 #include <condition_variable>
 
 #define STACK_POP CurrentFlame->OperandStack.pop_back();
@@ -750,6 +751,31 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 			case clean:
 			{
 				CurrentFlame->OperandStack.clear();
+			}
+			break;
+			case makevector:
+			{
+				int capacity=STACK_GET.primitive.int_value; STACK_POP;
+				if (capacity < 0){ throw runtime_error("InvalidArgumentException"); }
+				v.ref_value = make_shared<vector<VMValue> >(capacity);
+				STACK_PUSH(v);
+				v.ref_value=nullptr;
+			}
+			break;
+			case loadbyindex_vec:
+			{
+				iopr1 = STACK_GET.primitive.int_value; STACK_POP;
+				shared_ptr<vector<VMValue> > lst = static_pointer_cast<vector<VMValue>>(STACK_GET.ref_value); STACK_POP;
+				if (lst->size() <= iopr1){ throw out_of_range("Out of range"); }
+				STACK_PUSH((*lst)[iopr1]);
+			}
+			break;
+			case storebyindex_vec:
+			{
+				iopr1 = STACK_GET.primitive.int_value; STACK_POP;
+				auto lst = (static_pointer_cast<vector<VMValue>>(STACK_GET.ref_value)); STACK_POP;
+				if (lst->size() <= iopr1){ throw out_of_range("Out of range"); }
+				(*lst)[iopr1] = STACK_GET; STACK_POP;
 			}
 			break;
 			default:

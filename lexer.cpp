@@ -101,6 +101,8 @@ pair<Symbol,TokenValue> Lexer::Get()
 			return pair<Symbol,TokenValue>(CALLCC ,Lexer::dummy);
 		}else if(buffer=="async"){
 			return pair<Symbol,TokenValue>(ASYNC ,Lexer::dummy);
+		}else if(buffer=="newvector"){
+			return pair<Symbol,TokenValue>(NEWVECTOR ,Lexer::dummy);
 		}else{
 			t.str=buffer;
 			return pair<Symbol,TokenValue>(IDENT ,t);
