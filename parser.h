@@ -51,7 +51,6 @@ public:
 	unsigned int selected_count; //選択したアクションの数（バックトラックするごとに１増える）
 	ConflictType Conflict_Type;
 	int CodePosition; //lexerを復帰させるために、curr_indexを覚えておく
-	State state;
 	int curr_line;
     vector<int> StateStack;
     vector< TokenValue > WorkStack;
@@ -83,7 +82,7 @@ private:
     int FindItem(pair<Symbol*,int>);
     void TraverseReduces(pair<Symbol*,int>,int,set<int>,vector<int>);
     TokenValue default_action(vector<TokenValue> values);
-    void CreateBacktrackingPoint(int,State,int,ConflictType,pair<Symbol,TokenValue>,pair<Symbol,TokenValue>,shared_ptr<CodegenInfo>);
+    void CreateBacktrackingPoint(int,ConflictType,pair<Symbol,TokenValue>,pair<Symbol,TokenValue>,shared_ptr<CodegenInfo>);
 
     vector<int> StateStack;
     vector< TokenValue > WorkStack; //データを置いていきます

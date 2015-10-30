@@ -6,6 +6,7 @@
 #include "type.h"
 #include "expression.h"
 #include "basic_object.h"
+#include "common.h"
 #include <map>
 #include <thread>
 #include <memory>
@@ -48,7 +49,7 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
     bool bopr1,bopr2;
     double dopr1,dopr2;
     int flameback,localindex;
-
+	//int maxsize=0;
 	int i;int bytecode;
 	shared_ptr<Flame> initial_flame=CurrentFlame; //呼び出し時のフレーム
 
@@ -57,11 +58,12 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 			/*if(CurrentFlame!=nullptr && CurrentFlame->FunctionInfo!=nullptr){
 				cout<<CurrentFlame->FunctionInfo->Name <<" : "<<CurrentFlame->PC<<endl;
 			}*/
-			v = VMValue();
-			if (CurrentFlame == nullptr){
-				v.primitive.int_value = 0;
-				return v;
-			}
+			//v = VMValue();
+
+			/*if(maxsize<CurrentFlame->OperandStack.size()){
+				maxsize=CurrentFlame->OperandStack.size();
+				cout<<"MAX UPDATED: "<<maxsize<<endl;
+			}*/
 			/*if (currflame_only && CurrentFlame == initial_flame->DynamicLink){
 				v.primitive.int_value = 0;
 				return v;
@@ -346,6 +348,10 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 			break;
 			case ret:
 				CurrentFlame = CurrentFlame->DynamicLink;
+				if (CurrentFlame == nullptr){
+					v.primitive.int_value = 0;
+					return v;
+				}
 				break;
 			case ret_withvalue:
 				v = STACK_GET; STACK_POP;
@@ -356,6 +362,9 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 				CurrentFlame = CurrentFlame->DynamicLink;
 				if (!(CurrentFlame == nullptr)){
 					STACK_PUSH(v);
+				}else{
+					v.primitive.int_value = 0;
+					return v;
 				}
 				break;
 			case makeclosure:
@@ -365,6 +374,7 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 				shared_ptr<ClosureObject> cobj = make_shared<ClosureObject>(static_pointer_cast<FunctionObject>(VM::PublicConstantPool.GetValue(iopr1).ref_value), CurrentFlame);
 				v.ref_value = cobj;
 				STACK_PUSH(v);
+				v.ref_value=nullptr;
 			}
 			break;
 			case skip:
@@ -393,6 +403,7 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 				}
 				VMValue v2; v2.ref_value = newlist;
 				STACK_PUSH(v2);
+				v2.ref_value=nullptr;
 			}
 			break;
 			case makedata:
@@ -408,6 +419,7 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 				shared_ptr<DataObject> newdata = make_shared<DataObject>(originalname, newmap);
 				VMValue v2; v2.ref_value = newdata;
 				STACK_PUSH(v2);
+				v2.ref_value=nullptr;
 			}
 			break;
 			case loadlocal:
@@ -561,6 +573,7 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 				snapshot.front().first += 5; //PCを適切な位置にする
 				v.ref_value = make_shared<ContinuationObject>(snapshot, CurrentFlame);
 				STACK_PUSH(v);
+				v.ref_value=nullptr;
 			}
 			break;
 			case resume_continuation:
@@ -597,6 +610,7 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 				if (capacity < 0){ throw runtime_error("InvalidArgumentException"); }
 				v.ref_value = make_shared<ChannelObject>(capacity);
 				STACK_PUSH(v);
+				v.ref_value=nullptr;
 			}
 			break;
 			case channel_send:

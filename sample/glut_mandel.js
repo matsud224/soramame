@@ -1,5 +1,5 @@
 fun main(){
-	var in=newchannel(int,150),out=newchannel([(int,int,int)],150)
+	var in=newchannel(int,1500),out=newchannel([(int,int,int)],1500)
 	
 	async calc_server(in,out)
 	async calc_server(in,out)
@@ -37,13 +37,13 @@ fun main(){
 	glut_mainloop()
 }
 
-fun calc_server(in:channel(int),out:channel([(int,int,int)])){
-	var y=in?
-	var result=[(0,0,0)]
+fun calc_server(id:int,y_start:int,y_end:int,out:channel((int,[int]))){
+	var y=y_start
+	var result:[(int,int,int)]=[]
 	var x=0
 	while(x<1024){
 		var temp=mandel_sub(x,y)
-		result=result+[(x,y,temp)]
+		result=result
 		x=x+1
 	}
 	print_int(y);print("\n")

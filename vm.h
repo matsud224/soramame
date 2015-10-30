@@ -13,34 +13,6 @@ class CodegenInfo;
 class Executable;
 class FunctionObject;
 
-enum{
-    ipush,bpush,pushnull,pushim1,pushi0,pushi1,pushi2,pushi3,pushi4,pushi5,
-    ldc,
-    iadd,dadd,
-    isub,dsub,
-    imul,dmul,
-    idiv,ddiv,
-    band,bor,
-    imod,
-    ineg,bnot,dneg,
-    ilshift,irshift,
-    invoke,
-    loadlocal,loadbyindex,loadfield,
-	loadlocal00,loadlocal01,loadlocal02,loadlocal03,loadlocal04,loadlocal05,
-	ret,ret_withvalue,
-    storelocal,storefield,storebyindex,
-	storelocal00, storelocal01, storelocal02, storelocal03, storelocal04, storelocal05,
-	makeclosure,
-    skip,iffalse_skip,back,
-    icmpeq,icmpne,icmplt,icmple,icmpgt,icmpge,
-    dcmpeq,dcmpne,dcmplt,dcmple,dcmpgt,dcmpge,
-    bcmpeq,bcmpne,
-    makelist,makedata,
-    makecontinuation,resume_continuation,
-    makechannel,channel_send,channel_receive,
-	dup,clean
-};
-
 class Flame{
 public:
     shared_ptr< vector< pair<string,VMValue> > > Variables; //型検査には通ってるので型情報は保管しない（変数名と値のペア）
@@ -52,6 +24,7 @@ public:
     int PC;
     Flame(shared_ptr< vector< pair<string,VMValue> > > vars,shared_ptr< vector<int> > codeptr,shared_ptr<Flame> dynamiclink,shared_ptr<Flame> staticlink,shared_ptr<FunctionObject> finfo):Variables(vars),CodePtr(codeptr),DynamicLink(dynamiclink),StaticLink(staticlink),FunctionInfo(finfo){
     	PC=0;
+    	OperandStack.reserve(32);
 	}
 };
 

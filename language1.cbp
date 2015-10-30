@@ -48,6 +48,7 @@
 				<Option parameters="~/language1/test3.js" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add option="-std=c++11" />
 					<Add option="-Wextra" />
 				</Compiler>
 				<Linker>
@@ -62,6 +63,7 @@
 				<Option parameters="sample/15puzzle.js" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add option="-std=c++11" />
 					<Add option="-Wextra" />
 					<Add option="-DUSE_GLUT" />
 				</Compiler>

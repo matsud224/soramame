@@ -25,16 +25,18 @@ var BEGIN_DATA= -1
 var DIRECTION_DEF= -2
 var DATA:[int]= [
 				BEGIN_DATA,DIRECTION_DEF,0,0,0,1,1,0,1,1,
-				BEGIN_DATA,DIRECTION_DEF,0,0,1,1,
-						   DIRECTION_DEF,0,1,1,0,
-				BEGIN_DATA,DIRECTION_DEF,0,0,0,1,0,2,0,3,
-						   DIRECTION_DEF,0,0,1,0,2,0,3,0,
-				BEGIN_DATA,DIRECTION_DEF,0,0,0,1,1,1,1,2,
-						   DIRECTION_DEF,0,1,1,0,1,1,2,0,
-				BEGIN_DATA,DIRECTION_DEF,1,0,0,1,1,1,0,2,
+				BEGIN_DATA,DIRECTION_DEF,0,0,1,0,2,0,3,0,
+						   DIRECTION_DEF,3,0,3,1,3,2,3,3,
+						   DIRECTION_DEF,0,3,1,3,2,3,3,3,
+						   DIRECTION_DEF,0,0,0,1,0,2,0,3,
+				BEGIN_DATA,DIRECTION_DEF,0,0,1,0,1,1,2,1,
+						   DIRECTION_DEF,0,1,1,0,1,1,0,2,
 						   DIRECTION_DEF,0,0,1,0,1,1,2,1,
-				BEGIN_DATA,DIRECTION_DEF,0,0,0,1,1,1,1,2,
+						   DIRECTION_DEF,0,1,1,0,1,1,0,2,
+				BEGIN_DATA,DIRECTION_DEF,1,0,0,1,1,1,2,0,
+						   DIRECTION_DEF,0,0,0,1,1,1,1,2,
 						   DIRECTION_DEF,0,1,1,0,1,1,2,0,
+						   DIRECTION_DEF,0,0,0,1,1,1,1,2,
 				BEGIN_DATA,DIRECTION_DEF,0,0,0,1,1,1,2,1,
 						   DIRECTION_DEF,0,0,1,0,0,1,0,2,
 						   DIRECTION_DEF,0,0,1,0,2,0,2,1,
@@ -46,12 +48,7 @@ var DATA:[int]= [
 				BEGIN_DATA,DIRECTION_DEF,0,1,1,0,1,1,2,1,
 						   DIRECTION_DEF,0,0,0,1,0,2,1,1,
 						   DIRECTION_DEF,0,0,1,0,2,0,1,1,
-						   DIRECTION_DEF,0,1,1,0,1,1,1,2,
-				BEGIN_DATA,DIRECTION_DEF,0,0,
-				BEGIN_DATA,DIRECTION_DEF,0,0,1,1,2,0,
-						   DIRECTION_DEF,1,0,0,1,1,2,
-						   DIRECTION_DEF,0,1,1,0,2,1,
-						   DIRECTION_DEF,0,0,1,1,0,2
+						   DIRECTION_DEF,0,1,1,0,1,1,1,2
 				]
 var BLOCKCOLORS:[(int,int,int)]=[(184,0,60),(204,86,22),(235,175,0),(0,135,71),(0,169,205),(52,87,119),(142,104,166)]
 
@@ -472,6 +469,13 @@ fun Paint(){
         }
     })
 	
+
+	glut_color3i(0,0,0)
+		glut_char(600,270,'N')
+		glut_char(-1,-1,'E')
+		glut_char(-1,-1,'X')
+		glut_char(-1,-1,'T')
+		glut_char(-1,-1,':')
     BlockPatterns[NextBlockData.Item1][NextBlockData.Item2].ForEach(fun(p:Point,colorcode:int)=>void{
 		var c=GetColor(colorcode)
 		glut_color3i(c[0],c[1],c[2])

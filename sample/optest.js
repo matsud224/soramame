@@ -1,5 +1,5 @@
 fun main(){
-	print_int(2^3);print("\n")
+	print_int(2^3^2);print("\n")
 	var f= fun(x:int)=>int{ return x*x }
 	var g= fun(x:int)=>int{ return x+2 }
 	print_int( (f$g)(3) )

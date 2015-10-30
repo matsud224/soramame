@@ -38,7 +38,7 @@ shared_ptr<ClosureObject> glut_keyboardfun;
 shared_ptr<ClosureObject> glut_mousefun;
 map< int,pair<shared_ptr<ClosureObject>,int> > glut_timerfuns;
 
-shared_ptr<Flame> glut_current_flame;
+shared_ptr<Flame> builtin_share_flame=make_shared<Flame>(nullptr,nullptr,nullptr,nullptr,nullptr);
 
 void display(){
 	auto cobj=glut_dispfun;
@@ -48,9 +48,9 @@ void display(){
 		//ビルトイン関数の場合は、フレームを作らず、直に値をスタックに置く
 		string builtin_name=callee->Name;
 		string typestr=callee->TypeInfo->GetName();
-
-		VM::BuiltinFunctionList[pair<string,string>(builtin_name,typestr)](glut_current_flame);
-
+		builtin_share_flame->OperandStack.clear();
+		VM::BuiltinFunctionList[pair<string,string>(builtin_name,typestr)](builtin_share_flame);
+		builtin_share_flame->OperandStack.clear();
 	}else{
 		//フレームを作成
 		shared_ptr< vector< pair<string,VMValue> > > vars=make_shared<vector< pair<string,VMValue> > >();
@@ -81,9 +81,11 @@ void timer(int value)
 		//ビルトイン関数の場合は、フレームを作らず、直に値をスタックに置く
 		string builtin_name=callee->Name;
 		string typestr=callee->TypeInfo->GetName();
-
-		VM::BuiltinFunctionList[pair<string,string>(builtin_name,typestr)](glut_current_flame);
-
+		builtin_share_flame->OperandStack.clear();
+		VMValue v;v.primitive.int_value=item.second;
+		builtin_share_flame->OperandStack.push_back(v);
+		VM::BuiltinFunctionList[pair<string,string>(builtin_name,typestr)](builtin_share_flame);
+		builtin_share_flame->OperandStack.clear();
 	}else{
 		//フレームを作成
 		shared_ptr< vector< pair<string,VMValue> > > vars=make_shared<vector< pair<string,VMValue> > >();
@@ -126,9 +128,14 @@ void mouse(int button, int state, int x, int y)
 		//ビルトイン関数の場合は、フレームを作らず、直に値をスタックに置く
 		string builtin_name=callee->Name;
 		string typestr=callee->TypeInfo->GetName();
-
-		VM::BuiltinFunctionList[pair<string,string>(builtin_name,typestr)](glut_current_flame);
-
+		builtin_share_flame->OperandStack.clear();
+		VMValue v;
+		v.primitive.int_value=y;builtin_share_flame->OperandStack.push_back(v);
+		v.primitive.int_value=x;builtin_share_flame->OperandStack.push_back(v);
+		v.primitive.int_value=state;builtin_share_flame->OperandStack.push_back(v);
+		v.primitive.int_value=button;builtin_share_flame->OperandStack.push_back(v);
+		VM::BuiltinFunctionList[pair<string,string>(builtin_name,typestr)](builtin_share_flame);
+		builtin_share_flame->OperandStack.clear();
 	}else{
 		//フレームを作成
 		shared_ptr< vector< pair<string,VMValue> > > vars=make_shared<vector< pair<string,VMValue> > >();
@@ -162,9 +169,13 @@ void keyboard(unsigned char key, int x, int y)
 		//ビルトイン関数の場合は、フレームを作らず、直に値をスタックに置く
 		string builtin_name=callee->Name;
 		string typestr=callee->TypeInfo->GetName();
-
-		VM::BuiltinFunctionList[pair<string,string>(builtin_name,typestr)](glut_current_flame);
-
+		builtin_share_flame->OperandStack.clear();
+		VMValue v;
+		v.primitive.int_value=y;builtin_share_flame->OperandStack.push_back(v);
+		v.primitive.int_value=x;builtin_share_flame->OperandStack.push_back(v);
+		v.primitive.int_value=key;builtin_share_flame->OperandStack.push_back(v);
+		VM::BuiltinFunctionList[pair<string,string>(builtin_name,typestr)](builtin_share_flame);
+		builtin_share_flame->OperandStack.clear();
 	}else{
 		//フレームを作成
 		shared_ptr< vector< pair<string,VMValue> > > vars=make_shared<vector< pair<string,VMValue> > >();
@@ -262,19 +273,16 @@ void glut_openwindow(shared_ptr<Flame> curr_flame){
 
 void glut_setdispfunc(shared_ptr<Flame> curr_flame){
 	glut_dispfun=static_pointer_cast<ClosureObject>(VM_STACK_GET.ref_value);VM_STACK_POP;
-	glut_current_flame=curr_flame;
 	glutDisplayFunc(display);
 }
 
 void glut_setmousefunc(shared_ptr<Flame> curr_flame){
 	glut_mousefun=static_pointer_cast<ClosureObject>(VM_STACK_GET.ref_value);VM_STACK_POP;
-	glut_current_flame=curr_flame;
 	glutMouseFunc(mouse);
 }
 
 void glut_setkeyboardfunc(shared_ptr<Flame> curr_flame){
 	glut_keyboardfun=static_pointer_cast<ClosureObject>(VM_STACK_GET.ref_value);VM_STACK_POP;
-	glut_current_flame=curr_flame;
 	glutKeyboardFunc(keyboard);
 }
 
@@ -284,7 +292,6 @@ void glut_settimerfunc(shared_ptr<Flame> curr_flame){
 	auto clos=static_pointer_cast<ClosureObject>(VM_STACK_GET.ref_value);VM_STACK_POP;
 	int value=VM_STACK_GET.primitive.int_value;VM_STACK_POP;
 	glut_timerfuns[timerid]=pair<shared_ptr<ClosureObject>,int>(clos,value);
-	glut_current_flame=curr_flame;
 	glutTimerFunc(msecs,timer,timerid);
 	if(timerid==INT_MAX-1){
 		timerid=0;

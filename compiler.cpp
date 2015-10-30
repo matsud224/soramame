@@ -243,9 +243,11 @@ void Compiler::Codegen()
 		genInfo->Bootstrap->push_back(0);
 		genInfo->Bootstrap->push_back(counter++);
     }
+    genInfo->Bootstrap->push_back(clean);
 	//グローバル変数の初期化
     for(iterv=genInfo->TopLevelVariableDef.begin();iterv!=genInfo->TopLevelVariableDef.end();iterv++){
 		(*iterv)->Codegen(genInfo->Bootstrap,genInfo);
+		genInfo->Bootstrap->push_back(clean);
     }
     //main関数の呼び出し
     genInfo->Bootstrap->push_back(makeclosure);

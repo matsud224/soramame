@@ -6,6 +6,7 @@
 #include "statement.h"
 #include "type.h"
 #include "expression.h"
+#include "common.h"
 #include <condition_variable>
 
 class Flame;

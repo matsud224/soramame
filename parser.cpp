@@ -265,7 +265,7 @@ void Parser::BuildStateTable(){
 	#ifdef PARSER_DEBUG
     cout<<endl<<"shift/reduce conflict: "<<sr_conflict<<endl<<"reduce/reduce conflict: "<<rr_conflict<<endl<<endl;
 
-	
+
     if(sr_conflict+rr_conflict>0){
 		cout<<"次の状態でコンフリクトが発生しています： ";
 		for(set<int>::iterator iter=conflict_state.begin();iter!=conflict_state.end();iter++){
@@ -477,8 +477,7 @@ void Parser::Put(shared_ptr<Lexer> lexer,shared_ptr<CodegenInfo> cgi,pair<Symbol
 
 			BacktrackingPoint btp=BacktrackingPoint_list.back();
 
-			lexer->curr_index=btp.CodePosition;
-			lexer->curr_state=btp.state;
+
 			lexer->curr_line=btp.curr_line;
 			StateStack=btp.StateStack;
 			WorkStack=btp.WorkStack;
@@ -594,8 +593,6 @@ void Parser::Put(shared_ptr<Lexer> lexer,shared_ptr<CodegenInfo> cgi,pair<Symbol
 				error_candidates.insert(lexer->curr_line);
 				BacktrackingPoint btp=BacktrackingPoint_list.back();
 
-				lexer->curr_index=btp.CodePosition;
-				lexer->curr_state=btp.state;
 				lexer->curr_line=btp.curr_line;
 				StateStack=btp.StateStack;
 				WorkStack=btp.WorkStack;
@@ -665,7 +662,7 @@ void Parser::Put(shared_ptr<Lexer> lexer,shared_ptr<CodegenInfo> cgi,pair<Symbol
 			cout<<BG_MAGENTA"コンフリクトを解決できないので１つ目のアクションを試します"<<RESET<<endl;
 		#endif
 
-		CreateBacktrackingPoint(lexer->curr_index,lexer->curr_state,lexer->curr_line,shift_existence?ShiftReduce:ReduceReduce,input,input_backup,cgi);
+		CreateBacktrackingPoint(lexer->curr_line,shift_existence?ShiftReduce:ReduceReduce,input,input_backup,cgi);
 
     }
 
@@ -741,11 +738,9 @@ void Parser::Put(shared_ptr<Lexer> lexer,shared_ptr<CodegenInfo> cgi,pair<Symbol
     return;
 }
 
-void Parser::CreateBacktrackingPoint(int code_pos,State state,int curr_line,ConflictType conflict_type,pair<Symbol,TokenValue> input,pair<Symbol,TokenValue> input_backup,shared_ptr<CodegenInfo> cgi){
+void Parser::CreateBacktrackingPoint(int curr_line,ConflictType conflict_type,pair<Symbol,TokenValue> input,pair<Symbol,TokenValue> input_backup,shared_ptr<CodegenInfo> cgi){
 	BacktrackingPoint p;
 	p.selected_count=1;
-	p.CodePosition=code_pos;
-	p.state=state;
 	p.curr_line=curr_line;
 	p.Conflict_Type=conflict_type;
 	p.StateStack=StateStack;

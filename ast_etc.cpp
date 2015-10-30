@@ -49,7 +49,7 @@ void BlockAST::Codegen(shared_ptr<vector<int> > bytecodes, shared_ptr<CodegenInf
 
     vector<shared_ptr<StatementAST> >::iterator itere;
     for(itere=Body->begin();itere!=Body->end();itere++){
-		bytecodes->push_back(clean);
+		codes->push_back(clean);
         (*itere)->Codegen(codes,geninfo);
     }
 
