@@ -1,25 +1,19 @@
 fun main(){
-	var in=newchannel(int,1500),out=newchannel([(int,int,int)],1500)
+	var out=newchannel([(int,int,int)],4)
 	
-	async calc_server(in,out)
-	async calc_server(in,out)
-	async calc_server(in,out)
-	async calc_server(in,out)
+	async calc_server(0,127,out)
+	async calc_server(128,255,out)
+	async calc_server(256,383,out)
+	async calc_server(384,511,out)
 	
 	//ウィンドウを開く
-	glut_openwindow("mandelbrot")
+	glut_openwindow("mandelbrot_parallel")
 	glut_setdisplayfunc(fun(){
 		print("draw\n")
 		glut_clear()
 		glut_begin_point()
 		var y=0,n=0
-		async fun(){
-			while(y<512){
-				in!y
-				y=y+1
-			}
-		}()
-		print("*********************************")
+
 		while(n<512){
 			var result=out?
 			var t=1
@@ -37,18 +31,19 @@ fun main(){
 	glut_mainloop()
 }
 
-fun calc_server(id:int,y_start:int,y_end:int,out:channel((int,[int]))){
+fun calc_server(y_start:int,y_end:int,out:channel( (int,int,[(int,int,int)]) ) ){
 	var y=y_start
 	var result:[(int,int,int)]=[]
-	var x=0
-	while(x<1024){
-		var temp=mandel_sub(x,y)
-		result=result
-		x=x+1
+	while(y<=y_end){
+		var x=0
+		while(x<1024){
+			result=make_color(result)@+result
+			x=x+1
+		}
+		y=y+1
 	}
-	print_int(y);print("\n")
-	out!result
-	calc_server(in,out)
+	print("Finished!\n")
+	out!(y_start,y_end,result)
 }
 
 fun mandel_sub(nowx:int,nowy:int)=>int{

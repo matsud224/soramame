@@ -10,8 +10,11 @@ var NextBlockData:Pair=Pair{Item1=0,Item2=0}
 var CurrentSpeed:int
 var IsGameover:bool=false
 var NEXTOFFSET:Point=Point{X=600,Y=300}
+var HOLDOFFSET:Point=Point{X=600,Y=600}
 var DeletedLine:int=0
 var Lock:bool = true
+var HoldItem:int= 3;
+var AllowHold:bool =false;
 
 /*キーコード*/
 var KEY_LEFT:int = 'c';
@@ -19,6 +22,7 @@ var KEY_UP:int = 'v';
 var KEY_RIGHT:int = 'm';
 var KEY_DOWN:int = 'n';
 var KEY_SPACE:int = ' ';
+var KEY_HOLD:int = 'h';
 
 //落ちてくるもの
 var BEGIN_DATA= -1
@@ -57,6 +61,29 @@ data Size{ Height:int; Width:int }
 data Point{ X:int; Y:int }
 data YColorPair{Y:int;ColorCode:int}
 data HashSet{ Add:fun(int,int,int)=>void; ForEach:fun(fun(Point,int)=>void)=>void; Contains:fun(int,int)=>bool; Remove:fun(int,int)=>void }
+
+
+//テトリミノの出現確率を調整
+var remain:[int] =[]
+fun rand_mino()=>int{
+	var intgen: fun(int)=>[int] =fun(end:int)=>[int]{
+		var r:[int]=[]	
+		for(0,end,fun(t:int){
+			r=t@+r
+		})
+		return r
+	}
+	var randomize=fun(list:[int]){
+		for(0,(@?list)*3,fun(t:int){
+			var r1=rand() % @?list,r2=rand() % @?list
+			var temp=list[r1]			
+			list[r1]=list[r2]; list[r2]=temp
+		})
+	}
+	if(@?remain==0){ remain=intgen((@?BlockPatterns)-1); randomize(remain) }
+	var r= @<remain;remain= @>remain
+	return r;
+}
 
 //HashSet(Pointを入れるの専用)
 fun NewHashSet()=>HashSet{
@@ -119,6 +146,12 @@ fun NewHashSet()=>HashSet{
 	}
 }
 
+fun for(start:int,end:int,block:fun(int)=>void){
+    if(start>end){return}
+    block(start)
+    for(start+1,end,block)
+}
+
 fun SetShadow(){
     Shadow=NewHashSet()
 
@@ -150,11 +183,11 @@ fun DownBlock(n:int){
     callcc(ret){
 		BlockPatterns[NowBlock.Item1][NowBlock.Item2].ForEach(fun(p:Point,colorcode:int)=>void{
 		    if(p.Y + Offset.Y + 1 > FieldSize.Height - 1){
-		        NextBlock()
+		        NextBlock(NextBlockData,true)
 		        ret()
 		    }
 		    if(Field.Contains(p.X + Offset.X, p.Y + Offset.Y + 1)){
-		        NextBlock()
+		        NextBlock(NextBlockData,true)
 		        ret()
 		    }
 		})
@@ -168,7 +201,7 @@ fun DownBlock(n:int){
 fun Tyakuti(){
     SetShadow()
     Offset.Y = ShadowYOffset
-    NextBlock()
+    NextBlock(NextBlockData,true)
 
     glut_postredisp()
 }
@@ -199,20 +232,23 @@ fun TurnBlock(){
 }
 
 
-fun NextBlock(){
-    BlockPatterns[NowBlock.Item1][NowBlock.Item2].ForEach(fun(p:Point,colorcode:int)=>void{
+fun NextBlock(p:Pair,nextreq:bool){
+    if(nextreq){BlockPatterns[NowBlock.Item1][NowBlock.Item2].ForEach(fun(p:Point,colorcode:int)=>void{
         if(p.Y + Offset.Y < 0){
             Gameover()
         }
         Field.Add(p.X + Offset.X, p.Y + Offset.Y,colorcode)
-    })
+    })}
 
     EraseLine()
 
-    NowBlock.Item1 = NextBlockData.Item1
-	NowBlock.Item2 = NextBlockData.Item2
-    NextBlockData.Item1 = rand()% @?BlockPatterns
-    NextBlockData.Item2 = 0
+    NowBlock.Item1 = p.Item1
+	NowBlock.Item2 = p.Item2
+	if(nextreq){
+		NextBlockData.Item1 = rand_mino()
+		NextBlockData.Item2 = 0
+		AllowHold=true;
+	}
 	glut_postredisp()
 
     var maxx = -1000
@@ -351,8 +387,9 @@ fun Initialize(x:int, y:int){
     Field=NewHashSet()
     FieldSize=Size{Height = y,Width=x}
 
-    NowBlock=Pair{Item1 = rand()%(@?BlockPatterns - 1),Item2 = 0}
-	NextBlockData=Pair{Item1=rand()%(@?BlockPatterns - 1),Item2=0}
+    NowBlock=Pair{Item1 = rand_mino(),Item2 = 0}
+	NextBlockData=Pair{Item1=rand_mino(),Item2=0}
+	HoldItem=rand()%(@?BlockPatterns - 1)
     var maxx = -1000
     var maxy = -1000
     BlockPatterns[NowBlock.Item1][NowBlock.Item2].ForEach(fun(p:Point,colorcode:int)=>void{
@@ -384,11 +421,20 @@ fun KeyDown(keycode:int,x:int,y:int){
 	if(keycode==KEY_SPACE){ TurnBlock(); return }
 	if(keycode==KEY_UP){ Tyakuti(); return }
 	if(keycode==KEY_LEFT){ LeftBlock(); return }
+	if(keycode==KEY_HOLD){ Hold(); return }
+}
+
+fun Hold(){
+	if(!AllowHold){return}
+	var temp=HoldItem
+	HoldItem=NowBlock.Item1
+	NextBlock(Pair{Item1=temp},false)
+	AllowHold=false
 }
 
 fun main(){
     Initialize(10, 20)
-	glut_openwindow("TETORIS")
+	glut_openwindow("TETRIS")
 
 	glut_setdisplayfunc(Paint)
 	glut_settimerfunc(CurrentSpeed,DownBlock,1)
@@ -442,30 +488,26 @@ fun Paint(){
 		glut_char(-1,-1,':')
 	glut_putnum(600,100,DeletedLine)
 
+	
+	glut_color3i(10,10,10)
+    FillRectangle(0, 0, BlockSize * FieldSize.Width, BlockSize * FieldSize.Height)
+
     Field.ForEach(fun(p:Point,colorcode:int)=>void{
 		var c=GetColor(colorcode)
-		glut_color3i(c[0],c[1],c[2])
-        FillRectangle(p.X * BlockSize, p.Y * BlockSize, BlockSize, BlockSize)
-		glut_color3i(0,0,0)
-        DrawRectangle(p.X * BlockSize, p.Y * BlockSize, BlockSize, BlockSize)
+        DrawBlock(p.X * BlockSize, p.Y * BlockSize, BlockSize, BlockSize,c)
     })
 
     SetShadow()
 
     Shadow.ForEach(fun(p:Point,colorcode:int)=>void{
-		glut_color3i(150,150,150)
+		glut_color3i(100,100,100)
         FillRectangle(p.X * BlockSize, p.Y * BlockSize, BlockSize, BlockSize)
-		glut_color3i(0,0,0)
-        DrawRectangle(p.X * BlockSize, p.Y * BlockSize, BlockSize, BlockSize)
     })
 
     BlockPatterns[NowBlock.Item1][NowBlock.Item2].ForEach(fun(p:Point,colorcode:int)=>void{
         if(p.X + Offset.X >= 0 && p.X + Offset.X <= FieldSize.Width - 1 && p.Y + Offset.Y >= 0 && p.Y + Offset.Y <= FieldSize.Height - 1){
 			var c=GetColor(colorcode)
-			glut_color3i(c[0],c[1],c[2])
-            FillRectangle((p.X + Offset.X) * BlockSize, (p.Y + Offset.Y) * BlockSize, BlockSize, BlockSize)
-			glut_color3i(0,0,0)
-            DrawRectangle((p.X + Offset.X) * BlockSize, (p.Y + Offset.Y) * BlockSize, BlockSize, BlockSize)
+            DrawBlock((p.X + Offset.X) * BlockSize, (p.Y + Offset.Y) * BlockSize, BlockSize, BlockSize,c)
         }
     })
 	
@@ -478,14 +520,20 @@ fun Paint(){
 		glut_char(-1,-1,':')
     BlockPatterns[NextBlockData.Item1][NextBlockData.Item2].ForEach(fun(p:Point,colorcode:int)=>void{
 		var c=GetColor(colorcode)
-		glut_color3i(c[0],c[1],c[2])
-        FillRectangle(NEXTOFFSET.X+(p.X) * BlockSize, NEXTOFFSET.Y+(p.Y) * BlockSize, BlockSize, BlockSize)
-		glut_color3i(0,0,0)
-        DrawRectangle(NEXTOFFSET.X+(p.X) * BlockSize,NEXTOFFSET.Y+ (p.Y) * BlockSize, BlockSize, BlockSize)
+        DrawBlock(NEXTOFFSET.X+(p.X) * BlockSize, NEXTOFFSET.Y+(p.Y) * BlockSize, BlockSize, BlockSize,c)
     })
 
 	glut_color3i(0,0,0)
-    DrawRectangle(0, 0, BlockSize * FieldSize.Width, BlockSize * FieldSize.Height)
+		glut_char(600,570,'H')
+		glut_char(-1,-1,'O')
+		glut_char(-1,-1,'L')
+		glut_char(-1,-1,'D')
+		glut_char(-1,-1,':')
+    BlockPatterns[HoldItem][0].ForEach(fun(p:Point,colorcode:int)=>void{
+		var c=GetColor(colorcode)
+        DrawBlock(HOLDOFFSET.X+(p.X) * BlockSize, HOLDOFFSET.Y+(p.Y) * BlockSize, BlockSize, BlockSize,c)
+    })
+
 
 	glut_flush()
 }
@@ -506,6 +554,41 @@ fun FillRectangle(x:int,y:int,w:int,h:int){
 	glut_vertex2i(x+w,y+h);
 	glut_vertex2i(x+w,y);
 	glut_end()
+}
+
+fun glut_color(c:(int,int,int)){glut_color3i(c[0],c[1],c[2])}
+
+fun DrawBlock(x:int,y:int,w:int,h:int,c:(int,int,int)){
+	glut_color(c)
+	FillRectangle(x,y,w,h)
+	var bright1=brightness(50,c),bright2=brightness(25,c)
+	var dark1=brightness(-25,c),dark2=brightness(-50,c)
+	glut_color(bright1)
+	glut_begin_quad()
+	glut_vertex2i(x,y); glut_vertex2i(x+w/8,y+h/8);
+	glut_vertex2i(x+w/8,y+h-h/8); glut_vertex2i(x,y+h);
+	glut_end()
+	glut_color(bright2)
+	glut_begin_quad()
+	glut_vertex2i(x,y); glut_vertex2i(x+w,y);
+	glut_vertex2i(x+w-w/8,y+h/8); glut_vertex2i(x+w/8,y+h/8);
+	glut_end()
+	glut_color(dark1)
+	glut_begin_quad()
+	glut_vertex2i(x+w/8,y+h-h/8); glut_vertex2i(x+w-w/8,y+h-h/8);
+	glut_vertex2i(x+w,y+h); glut_vertex2i(x,y+h);
+	glut_end()
+	glut_color(dark2)
+	glut_begin_quad()
+	glut_vertex2i(x+w-w/8,y+h/8); glut_vertex2i(x+w-w/8,y+h-h/8);
+	glut_vertex2i(x+w,y+h); glut_vertex2i(x+w,y);
+	glut_end()
+}
+
+fun tocolor(a:int)=>int{if(a<0){return 0} if(a>255){return 255} return a}
+
+fun brightness(inc:int,color:(int,int,int))=>(int,int,int){
+	return (tocolor(color[0]+inc),tocolor(color[1]+inc),tocolor(color[2]+inc))
 }
 
 fun GetColor(n:int)=>(int,int,int){

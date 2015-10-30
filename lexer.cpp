@@ -24,27 +24,35 @@ bool isoperatorchar(char c){
 
 pair<Symbol,TokenValue> Lexer::Get()
 {
+
 	retry:
     char c;
     TokenValue t; t=TokenValue();
     string buffer; buffer.reserve(32);
+    if(continue_comment){goto blockcomment_resume;}
     while(c=ifs.get(),isspace(c)){
 		if(c=='\n'){this->curr_line++; return pair<Symbol,TokenValue>(LINEEND ,Lexer::dummy);}
     }
 
     if(c==EOF){
 		return pair<Symbol,TokenValue>(INPUTEND,dummy);
-    }else if(continue_comment || (c=='/' && ifs.peek()=='*')){
+    }else if(c=='/' && ifs.peek()=='*'){
 		//ブロックコメント
-		int level=1;
+		static int level=0;
+		level++;
+		blockcomment_resume:
 		if(continue_comment){continue_comment=false;}
-		ifs.get();
+		else{ifs.get();}
+
 		while(true){
 			c=ifs.get();
-			if(c=='\n'){
+			if(c==EOF){
+				error("ブロックコメントが正しくありません： */ が不足しています");
+			}else if(c=='\n'){
 				continue_comment=true;
 				return pair<Symbol,TokenValue>(LINEEND ,Lexer::dummy);
 			}else if(c=='/' && ifs.peek()=='*'){
+				ifs.get();
 				level++;
 			}else if(c=='*' && ifs.peek()=='/'){
 				ifs.get();
