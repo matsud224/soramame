@@ -1,28 +1,31 @@
 fun main(){
-	var out=newchannel( (int,int,[(int,int,int)]) ,4)
-	
-	async calc_server(0,127,out)
-	async calc_server(128,255,out)
-	async calc_server(256,383,out)
-	async calc_server(384,511,out)
-	
+	var out=newchannel( (int,int,vector(int),vector(int),vector(int) ) ,4)
+	/*
+	async calc_server(0,159,out)
+	async calc_server(160,255,out)
+	async calc_server(256,351,out)
+	async calc_server(352,511,out)
+	*/
+	async calc_server(0,255,out)
+	async calc_server(256,511,out)
 	//ウィンドウを開く
 	glut_openwindow("mandelbrot_parallel")
 	glut_setdisplayfunc(fun(){
 		glut_clear()
 		glut_begin_point()
 		var n=0
-		while(n<4){
+		while(n<2){
 			var result=out?
-			var y=result[1]
-			while(y>=result[0]){
+			var y=result[1],y_start=result[0]
+			while(y>=y_start){
 				var x=1023
 				while(x>=0){
-					glut_color3i(result[2][x*y][0],result[2][x*y][1],result[2][x*y][2])
+					var index=1024*(y-y_start)+x
+					glut_color3i(result[2][index],result[3][index],result[4][index])
 					glut_vertex2i(x,y)
-					x=x+1
+					x=x-1
 				}
-				y=y+1
+				y=y-1
 			}
 			n=n+1
 		}
@@ -32,9 +35,11 @@ fun main(){
 	glut_mainloop()
 }
 
-fun calc_server(y_start:int,y_end:int,out:channel( (int,int,[(int,int,int)]) ) ){
+fun calc_server(y_start:int,y_end:int,out:channel( (int,int,vector(int),vector(int),vector(int) ) ) ){
 	var y=y_start
-	var result:[(int,int,int)]=[]
+	var result_r=newvector( int, (y_end-y_start+1)*1024)
+	var result_g=newvector( int, (y_end-y_start+1)*1024)
+	var result_b=newvector( int, (y_end-y_start+1)*1024)
 	while(y<=y_end){
 		var x=0
 		while(x<1024){
@@ -75,14 +80,16 @@ fun calc_server(y_start:int,y_end:int,out:channel( (int,int,[(int,int,int)]) ) )
 					break((max,min,((360.0-h)/60.0)*(max-min)+min))
 				}
 			}
-			
-			result= (d2i(temp[0]),d2i(temp[1]),d2i(temp[2]))@+result
+			var index=(y-y_start)*1024+x
+			result_r[index]=d2i(temp[0])
+			result_g[index]=d2i(temp[1])
+			result_b[index]=d2i(temp[2])
 			x=x+1
 		}
-		y=y+1;print_int(y);print("\n")
+		y=y+1;//print_int(y);print("\n")
 	}
 	print("Finished!\n")
-	out!(y_start,y_end,result)
+	out!(y_start,y_end,result_r,result_g,result_b)
 }
 
 fun mandel_sub(nowx:int,nowy:int)=>int{

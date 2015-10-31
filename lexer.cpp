@@ -103,6 +103,8 @@ pair<Symbol,TokenValue> Lexer::Get()
 			return pair<Symbol,TokenValue>(ASYNC ,Lexer::dummy);
 		}else if(buffer=="newvector"){
 			return pair<Symbol,TokenValue>(NEWVECTOR ,Lexer::dummy);
+		}else if(buffer=="vector"){
+			return pair<Symbol,TokenValue>(VECTOR ,Lexer::dummy);
 		}else{
 			t.str=buffer;
 			return pair<Symbol,TokenValue>(IDENT ,t);

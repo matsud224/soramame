@@ -303,7 +303,7 @@ void CallExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenI
 
 void ListRefExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenInfo> geninfo)
 {
-	if(typeid(VectorTypeAST) == typeid(*(target->TypeInfo))){
+	if(typeid(ListTypeAST) != typeid(*(target->TypeInfo))){
 		target->Codegen(bytecodes,geninfo);
 		IndexExpression->Codegen(bytecodes,geninfo);
 		bytecodes->push_back(loadbyindex_vec);
@@ -407,7 +407,7 @@ void StringValExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<Cod
 
 void ListRefExprAST::AssignmentCodegen(shared_ptr<vector<int> > bytecodes, shared_ptr<CodegenInfo> geninfo)
 {
-	if(typeid(VectorTypeAST) == typeid(*(target->TypeInfo))){
+	if(typeid(ListTypeAST) != typeid(*(target->TypeInfo))){
 		target->Codegen(bytecodes,geninfo);
 		IndexExpression->Codegen(bytecodes,geninfo);
 		bytecodes->push_back(storebyindex_vec);
@@ -1068,7 +1068,7 @@ void TupleValExprAST::Codegen(shared_ptr<vector<int> > bytecodes, shared_ptr<Cod
 		for(auto riter=Value->rbegin();riter!=Value->rend();riter++){
 			(*riter)->Codegen(bytecodes,geninfo);
 		}
-		bytecodes->push_back(makelist);
+		bytecodes->push_back(maketuple);
 		bytecodes->push_back(Value->size());
 	//}
 }
@@ -1844,6 +1844,12 @@ void ShowBytecode(shared_ptr<vector<int>> bc){
 		case storebyindex_vec:
 		{
 			cout << "storebyindex_vec" << endl;
+		}
+		break;
+		case maketuple:
+		{
+			cout << "maketuple" << endl;
+			i++; cout << i << " : " << bc->at(i) << endl;
 		}
 		break;
 		default:

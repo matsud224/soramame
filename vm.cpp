@@ -404,7 +404,6 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 				}
 				VMValue v2; v2.ref_value = newlist;
 				STACK_PUSH(v2);
-				v2.ref_value=nullptr;
 			}
 			break;
 			case makedata:
@@ -420,7 +419,6 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 				shared_ptr<DataObject> newdata = make_shared<DataObject>(originalname, newmap);
 				VMValue v2; v2.ref_value = newdata;
 				STACK_PUSH(v2);
-				v2.ref_value=nullptr;
 			}
 			break;
 			case loadlocal:
@@ -776,6 +774,20 @@ VMValue VM::Run(shared_ptr<Flame> CurrentFlame,bool currflame_only){
 				auto lst = (static_pointer_cast<vector<VMValue>>(STACK_GET.ref_value)); STACK_POP;
 				if (lst->size() <= iopr1){ throw out_of_range("Out of range"); }
 				(*lst)[iopr1] = STACK_GET; STACK_POP;
+			}
+			break;
+			case maketuple:
+			{
+				iopr1 = OPERAND_GET; //リストサイズ
+				auto newlist = make_shared< vector<VMValue> >(iopr1);
+
+				for (int i = 0; i < iopr1; i++){
+					VMValue lv;
+					lv = STACK_GET; STACK_POP; //リストの要素
+					(*newlist)[i]=lv;
+				}
+				VMValue v2; v2.ref_value = newlist;
+				STACK_PUSH(v2);
 			}
 			break;
 			default:

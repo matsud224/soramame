@@ -70,7 +70,7 @@ enum{
     makecontinuation,resume_continuation,
     makechannel,channel_send,channel_receive,
 	dup,clean,
-	makevector,loadbyindex_vec,storebyindex_vec
+	makevector,loadbyindex_vec,storebyindex_vec,maketuple
 };
 
 class TokenValue{

@@ -50,7 +50,7 @@ fun main(){
 				glut_vertex2i(x,y)
 				x=x+1
 			}
-			print_int(y);print("\n");
+			//print_int(y);print("\n");
 			y=y+1
 		}
 		glut_end()
