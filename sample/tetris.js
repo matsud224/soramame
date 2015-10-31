@@ -327,7 +327,7 @@ fun EraseLine(){
             if(count == FieldSize.Width){
                 flag = true
 				DeletedLine=DeletedLine+1
-				if(DeletedLine%2==0){CurrentSpeed = CurrentSpeed-1}
+				CurrentSpeed = CurrentSpeed-1
 				if(CurrentSpeed < 400){
 					CurrentSpeed = 400
 				}
