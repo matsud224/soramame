@@ -1,6 +1,6 @@
 fun main(){
 	var list=[4,2,2,1,9,7,5,6,0,3,4]
-	var in:channel(int)=newchannel(int,10)
+	var in:channel(int)=newchannel(int,0)
 	var i=0
 	while(i< @?list){
 		async sleep_and_output(list[i],in)

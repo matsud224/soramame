@@ -32,7 +32,7 @@ fun scan()
 {
 	var radius:double,b:double,c:double,d:double,t:double
 	var det:double
-	var from=VECTOR{},to=VECTOR{},vector=VECTOR{},point=VECTOR{}
+	var from=VECTOR{},to=VECTOR{},vec=VECTOR{},point=VECTOR{}
 	
 	point.x = 0.0
 	point.y = 0.0
@@ -51,9 +51,9 @@ fun scan()
 		while(from.x < 1.0)
 		{
 			callcc(continue){
-				vminus(from,point,vector)
-				b = innerproduct(to,vector)
-				c = innerproduct(vector,vector) - radius*radius
+				vminus(from,point,vec)
+				b = innerproduct(to,vec)
+				c = innerproduct(vec,vec) - radius*radius
 				d = b * b - c
 				if(d < 0.0)
 				{
