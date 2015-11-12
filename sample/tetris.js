@@ -327,9 +327,9 @@ fun EraseLine(){
             if(count == FieldSize.Width){
                 flag = true
 				DeletedLine=DeletedLine+1
-				CurrentSpeed = CurrentSpeed-1
-				if(CurrentSpeed < 400){
-					CurrentSpeed = 400
+				CurrentSpeed = CurrentSpeed-5
+				if(CurrentSpeed < 100){
+					CurrentSpeed = 100
 				}
 				glut_postredisp()
                 For(0,FieldSize.Width - 1,fun(j:int){
@@ -532,7 +532,6 @@ fun Paint(){
 		var c=GetColor(colorcode)
         DrawBlock(HOLDOFFSET.X+(p.X) * BlockSize, HOLDOFFSET.Y+(p.Y) * BlockSize, BlockSize, BlockSize,c)
     })
-
 
 	glut_flush()
 }

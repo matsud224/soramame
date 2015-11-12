@@ -166,7 +166,11 @@ fun main(){
 			})
 		})
 
-		glut_setmousefunc(fun(button:int,state:int,x:int,y:int){
+		glut_end()
+		glut_flush()  
+  })
+
+	glut_setmousefunc(fun(button:int,state:int,x:int,y:int){
 			if(GAMEOVER || GAMECLEAR){return}
 			var cx:int,cy:int; /*マス目での座標*/
 			if(x<0 || y<0 || x>(BLOCKSIZE*XSIZE) || y>(BLOCKSIZE*YSIZE)){
@@ -199,10 +203,6 @@ fun main(){
 
 			glut_postredisp()
 		})
-
-		glut_end()
-		glut_flush()  
-  })
   glut_mainloop()
 }
 
