@@ -14,7 +14,7 @@
 #include "color_text.h"
 #include <memory>
 #include "expression.h"
-
+#include <iomanip>
 
 shared_ptr<ExprAST> GetInitValue(shared_ptr<TypeAST>  type,shared_ptr<CodegenInfo> cgi);
 
@@ -1530,11 +1530,11 @@ vector< shared_ptr<ExprAST> > NewVectorAST::GetCallExprList()
 
 void ShowBytecode(shared_ptr<vector<int>> bc){
 	for (auto i = 0; i<bc->size(); i++){
-		cout << i << " : ";
+		cout << setfill('0') << setw(5) << right << i << " : ";
 		switch (bc->at(i)){
 		case ipush:
-			cout << "ipush" << endl;
-			i++; cout << i << " : " << bc->at(i) << endl;
+			cout << "ipush";
+			i++; cout << " " << bc->at(i) << endl;
 			break;
 		case pushim1:
 			cout << "pushim1" << endl;
@@ -1558,15 +1558,15 @@ void ShowBytecode(shared_ptr<vector<int>> bc){
 			cout << "pushi5" << endl;
 			break;
 		case bpush:
-			cout << "bpush" << endl;
-			i++; cout << i << " : " << bc->at(i) << endl;
+			cout << "bpush" ;
+			i++; cout << " " << bc->at(i) << endl;
 			break;
 		case pushnull:
 			cout << "pushnull" << endl;
 			break;
 		case ldc:
-			cout << "ldc" << endl;
-			i++; cout << i << " : " << bc->at(i) << endl;
+			cout << "ldc";
+			i++; cout << " " << bc->at(i) << endl;
 			break;
 		case iadd:
 			cout << "iadd" << endl;
@@ -1659,9 +1659,9 @@ void ShowBytecode(shared_ptr<vector<int>> bc){
 			cout << "bcmpne" << endl;
 			break;
 		case invoke:
-			cout << "invoke" << endl;
-			i++; cout << i << " : " << bc->at(i) << endl;
-			i++; cout << i << " : " << bc->at(i) << endl;
+			cout << "invoke";
+			i++; cout << " " << bc->at(i);
+			i++; cout << " " << bc->at(i) << endl;
 			break;
 		case ret:
 			cout << "ret" << endl;
@@ -1671,40 +1671,40 @@ void ShowBytecode(shared_ptr<vector<int>> bc){
 			break;
 		case makeclosure:
 		{
-			cout << "makeclosure" <<endl;
-			i++; cout << i << " : " << bc->at(i) << endl;
+			cout << "makeclosure";
+			i++; cout << " " << bc->at(i) << endl;
 		}
 		break;
 		case skip:
-			cout << "skip" << endl;
-			i++; cout << i << " : " << bc->at(i) << endl;
+			cout << "skip";
+			i++; cout << " " << bc->at(i) << endl;
 			break;
 		case iffalse_skip:
-			cout << "iffalse_skip" << endl;
-			i++; cout << i << " : " << bc->at(i) << endl;
+			cout << "iffalse_skip";
+			i++; cout << " " << bc->at(i) << endl;
 			break;
 		case back:
-			cout << "back" << endl;
-			i++; cout << i << " : " << bc->at(i) << endl;
+			cout << "back";
+			i++; cout << " " << bc->at(i) << endl;
 			break;
 		case makelist:
 		{
-			cout << "makelist" << endl;
-			i++; cout << i << " : " << bc->at(i) << endl;
+			cout << "makelist";
+			i++; cout << " " << bc->at(i) << endl;
 		}
 		break;
 		case makedata:
 		{
-			cout << "makedata" << endl;
-			i++; cout << i << " : " << bc->at(i) << endl;
-			i++; cout << i << " : " << bc->at(i) << endl;
+			cout << "makedata";
+			i++; cout << " " << bc->at(i);
+			i++; cout << " " << bc->at(i) << endl;
 		}
 		break;
 		case loadlocal:
 		{
-			cout << "loadlocal" << endl;
-			i++; cout << i << " : " << bc->at(i) << endl;
-			i++; cout << i << " : " << bc->at(i) << endl;
+			cout << "loadlocal";
+			i++; cout << " " << bc->at(i);
+			i++; cout << " " << bc->at(i) << endl;
 		}
 		break;
 		case loadlocal00:
@@ -1744,15 +1744,15 @@ void ShowBytecode(shared_ptr<vector<int>> bc){
 		break;
 		case loadfield:
 		{
-			cout << "loadfield" << endl;
-			i++; cout << i << " : " << bc->at(i) << endl;
+			cout << "loadfield";
+			i++; cout << " " << bc->at(i) << endl;
 		}
 		break;
 		case storelocal:
 		{
-			cout << "storelocal" << endl;
-			i++; cout << i << " : " << bc->at(i) << endl;
-			i++; cout << i << " : " << bc->at(i) << endl;
+			cout << "storelocal";
+			i++; cout << " " << bc->at(i);
+			i++; cout << " " << bc->at(i) << endl;
 		}
 		break;
 		case storelocal00:
@@ -1792,8 +1792,8 @@ void ShowBytecode(shared_ptr<vector<int>> bc){
 		break;
 		case storefield:
 		{
-			cout << "storelfield" << endl;
-			i++; cout << i << " : " << bc->at(i) << endl;
+			cout << "storelfield";
+			i++; cout << " " << bc->at(i) << endl;
 		}
 		break;
 		case makecontinuation:
@@ -1848,8 +1848,8 @@ void ShowBytecode(shared_ptr<vector<int>> bc){
 		break;
 		case maketuple:
 		{
-			cout << "maketuple" << endl;
-			i++; cout << i << " : " << bc->at(i) << endl;
+			cout << "maketuple";
+			i++; cout << " " << bc->at(i) << endl;
 		}
 		break;
 		default:
