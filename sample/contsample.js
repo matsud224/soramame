@@ -1,7 +1,11 @@
-//継続で脱出
+/*
+	productは、リストの要素の積を求める関数
+	0を見つけると継続で直ちに脱出する
+*/
+
 fun main(){
 	var x=callcc(c,int){
-		return product([1,2,3],c)
+		return product([1,2,0,3],c)
 	}
 	
 	print_int(x)

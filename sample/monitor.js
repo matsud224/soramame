@@ -1,3 +1,5 @@
+//２つのスレッドからxへアクセスする箇所をモニタにした
+
 var x:int=0;
 
 var add_value:channel(int)=newchannel(int,10)

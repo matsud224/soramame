@@ -1,3 +1,8 @@
+/*
+	マンデルブロ集合を描画
+	（描画に十数秒かかります）
+*/
+
 fun main(){
 	//ウィンドウを開く
 	glut_openwindow("mandelbrot")

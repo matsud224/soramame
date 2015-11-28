@@ -1,3 +1,8 @@
+/*
+	マンデルブロ集合の計算を並列に行うようにした。
+	僅かに高速化された。
+*/
+
 fun main(){
 	var out=newchannel( (int,int,vector(int),vector(int),vector(int) ) ,4)
 	/*

@@ -1,3 +1,14 @@
+/*
+	テトリス
+	操作方法
+		C ...左移動
+		M ...右移動
+		N ...下移動
+		V ...落下
+		Space ...回転
+		H ...HOLDと入れ替え
+*/
+
 var NowBlock:Pair=Pair{Item1=0,Item2=0}
 var Field:HashSet
 var FieldSize:Size=Size{Height=0,Width=0}

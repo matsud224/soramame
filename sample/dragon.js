@@ -4,7 +4,7 @@ data Point{
 }
 
 fun main(){
-  //ƒEƒBƒ“ƒhƒE‚ðŠJ‚­
+  //ã‚¦ã‚£ãƒ³ãƒ‰ã‚¦ã‚’é–‹ã
   glut_openwindow("dragon")
   glut_setdisplayfunc(fun(){
 	glut_clear()
@@ -56,5 +56,5 @@ fun drawDragon(a:Point,b:Point,n:int){
 fun drawLine(x1:int,y1:int,x2:int,y2:int){
 	glut_vertex2i(x1,y1)
 	glut_vertex2i(x2,y2)
-	//print(x1);print(",");print(y1);print("->");print(x2);print(",");print(y2);print("\n")
+	//print(x1);print(",");print(y1);print("->");print(x2);print(",");print(y2);print("Â¥n")
 }

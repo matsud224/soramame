@@ -1,3 +1,7 @@
+/*
+	ライフゲーム
+*/
+
 var XSIZE:int=50,YSIZE:int=50,BLOCKSIZE:int=15
 var XOFFSET:int=10,YOFFSET:int=70
 var SPEED:int=500,RUNNING:bool=false

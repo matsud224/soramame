@@ -1,3 +1,9 @@
+/*
+	マインスイーパ
+	右クリックで旗を立てられます（旗はFと表示される）
+	表示個数旗を立てたなら、左クリックで隣接マスを一気に開くことができます
+*/
+
 //(int,int)は、開閉/旗状態と地雷有無
 var board:vector(vector((int,bool)))
 var STATUS_CLOSE:int=0,STATUS_OPEN:int=1,STATUS_FLAG:int=2
