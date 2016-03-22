@@ -26,7 +26,6 @@
 #define VM_STACK_POP curr_flame->OperandStack.pop_back();
 #define VM_STACK_PUSH(x) curr_flame->OperandStack.push_back((x))
 #define VM_STACK_GET curr_flame->OperandStack.back()
-#define VM_OPERAND_GET (*(curr_flame->CodePtr))[curr_flame->PC++]
 
 using namespace std;
 
@@ -60,7 +59,7 @@ void display(){
 			VMValue v;v.primitive.int_value=0;
 			(*vars).push_back(pair<string,VMValue>(Var2Str(callee->LocalVariables->at(i)),v)); //ローカル変数はすべて0に初期化される
 		}
-		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,nullptr,cobj->ParentFlame,callee);
+		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecode_labels,nullptr,cobj->ParentFlame,callee);
 
 
 		VM::Run(inv_flame,true); //指定された関数のフレームを作成し、実行。そのフレームがポップされた時点で帰ってくる（trueを指定したので）
@@ -99,7 +98,7 @@ void timer(int value)
 			VMValue v;v.primitive.int_value=0;
 			(*vars).push_back(pair<string,VMValue>(Var2Str(callee->LocalVariables->at(i)),v)); //ローカル変数はすべて0に初期化される
 		}
-		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,nullptr,cobj->ParentFlame,callee);
+		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecode_labels,nullptr,cobj->ParentFlame,callee);
 
 
 		VM::Run(inv_flame,true); //指定された関数のフレームを作成し、実行。そのフレームがポップされた時点で帰ってくる（trueを指定したので）
@@ -152,7 +151,7 @@ void mouse(int button, int state, int x, int y)
 			VMValue v;v.primitive.int_value=0;
 			(*vars).push_back(pair<string,VMValue>(Var2Str(callee->LocalVariables->at(i)),v)); //ローカル変数はすべて0に初期化される
 		}
-		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,nullptr,cobj->ParentFlame,callee);
+		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecode_labels,nullptr,cobj->ParentFlame,callee);
 
 
 		VM::Run(inv_flame,true); //指定された関数のフレームを作成し、実行。そのフレームがポップされた時点で帰ってくる（trueを指定したので）
@@ -191,7 +190,7 @@ void keyboard(unsigned char key, int x, int y)
 			VMValue v;v.primitive.int_value=0;
 			(*vars).push_back(pair<string,VMValue>(Var2Str(callee->LocalVariables->at(i)),v)); //ローカル変数はすべて0に初期化される
 		}
-		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecodes,nullptr,cobj->ParentFlame,callee);
+		shared_ptr<Flame> inv_flame=make_shared<Flame>(vars,callee->bytecode_labels,nullptr,cobj->ParentFlame,callee);
 
 		VM::Run(inv_flame,true); //指定された関数のフレームを作成し、実行。そのフレームがポップされた時点で帰ってくる（trueを指定したので）
 	}

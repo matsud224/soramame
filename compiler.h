@@ -60,18 +60,20 @@ public:
     vector<shared_ptr<DataDefAST> > TopLevelDataDef;
     vector<shared_ptr<GroupDefAST> > TopLevelGroupDef;
     shared_ptr<vector<int> > Bootstrap;
+    shared_ptr<vector<label_or_immediate> > Bootstrap_labels;
     int MainFuncPoolIndex; //main関数のコンスタントプール・インデックス
 	shared_ptr<vector< pair<string,shared_ptr<TypeAST> > > > LocalVariables;
 
 	CodegenInfo(){
 		LocalVariables=make_shared<vector< pair<string,shared_ptr<TypeAST> > > >();
 		Bootstrap=make_shared<vector<int> >();
+		Bootstrap_labels=make_shared<vector<label_or_immediate> >();
 	}
 };
 
 class Executable{
 public:
-	shared_ptr<vector<int> > Bootstrap;
+	shared_ptr<vector<label_or_immediate> > Bootstrap_labels;
 	int MainFuncPoolIndex; //main関数のコンスタントプール・インデックス
 	shared_ptr<vector< pair<string,shared_ptr<TypeAST> > > > LocalVariables;
 };
@@ -103,7 +105,7 @@ public:
 		//CTFE(3);
 
 		shared_ptr<Executable> ret_executable=make_shared<Executable>();
-		ret_executable->Bootstrap=move(genInfo->Bootstrap);
+		ret_executable->Bootstrap_labels=move(genInfo->Bootstrap_labels);
 		ret_executable->MainFuncPoolIndex=genInfo->MainFuncPoolIndex;
 		ret_executable->LocalVariables=move(genInfo->LocalVariables);
 

@@ -23,6 +23,11 @@ enum Symbol{
 	CONTINUATION,CALLCC,callccexpr,NEWCHAN,newchanexpr,CHANNEL,ASYNC,asyncstatement,tuple_list,VECTOR,NEWVECTOR,newvectorexpr
 };
 
+typedef union{
+	const void *label;
+	int immediate;
+} label_or_immediate;
+
 
 class VMValue{
 public:
@@ -30,6 +35,7 @@ public:
 		int int_value;
 		bool bool_value;
 		double double_value;
+		const void **insttable;
 	} primitive;
 	shared_ptr<void> ref_value;
 };
@@ -55,7 +61,7 @@ enum{
     imod,
     ineg,bnot,dneg,
     ilshift,irshift,
-    invoke,
+    invoke,invoke_tail,invoke_async,
     loadlocal,loadbyindex,loadfield,
 	loadlocal00,loadlocal01,loadlocal02,loadlocal03,loadlocal04,loadlocal05,
 	ret,ret_withvalue,

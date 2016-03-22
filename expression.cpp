@@ -76,8 +76,6 @@ void UnaryExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<Codegen
 		bytecodes->push_back(tofuncall_FlameBack);
 		bytecodes->push_back(tofuncall_LocalIndex);
 		bytecodes->push_back(invoke);
-		bytecodes->push_back(0);
-		bytecodes->push_back(0);
 	}
     return;
 }
@@ -176,8 +174,6 @@ void BinaryExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<Codege
 			bytecodes->push_back(tofuncall_FlameBack);
 			bytecodes->push_back(tofuncall_LocalIndex);
 			bytecodes->push_back(invoke);
-			bytecodes->push_back(0);
-			bytecodes->push_back(0);
 		}
     }else if(Operator=="-"){
         if(LHS->TypeInfo->GetName()=="int"){
@@ -269,8 +265,6 @@ void BinaryExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<Codege
 		bytecodes->push_back(tofuncall_FlameBack);
 		bytecodes->push_back(tofuncall_LocalIndex);
 		bytecodes->push_back(invoke);
-		bytecodes->push_back(0);
-		bytecodes->push_back(0);
 	}
     return;
 }
@@ -293,9 +287,13 @@ void CallExprAST::Codegen(shared_ptr<vector<int> > bytecodes,shared_ptr<CodegenI
 	}
     callee->Codegen(bytecodes,geninfo);
     if(typeid(*(callee->TypeInfo))==typeid(FunctionTypeAST)){
-		bytecodes->push_back(invoke);
-		bytecodes->push_back(IsTail?1:0);
-		bytecodes->push_back(IsAsync?1:0);
+		if(IsAsync){
+			bytecodes->push_back(invoke_async);
+		}else if(IsTail){
+			bytecodes->push_back(invoke_tail);
+		}else{
+			bytecodes->push_back(invoke);
+		}
     }else if(typeid(*(callee->TypeInfo))==typeid(ContinuationTypeAST)){
 		bytecodes->push_back(resume_continuation);
     }
@@ -346,10 +344,12 @@ void FunctionAST::Codegen(shared_ptr<vector<int> > bytecodes_given,shared_ptr<Co
     }
 
 	if (SHOW_BYTECODE){
-		cout << endl << "---" << Name << "---" << endl;
+		cout << endl << "--- " << Name << " ---" << endl;
 		ShowBytecode(bytecodes);
 		cout << endl;
-	}
+	}else{
+		VM::BytecodeToLabels(bytecodes,bytecode_labels);
+    }
     return;
 }
 
@@ -1461,8 +1461,6 @@ void ContinuationAST::Codegen(shared_ptr<vector<int> > bytecodes, shared_ptr<Cod
     InternalClosure->Codegen(bytecodes,geninfo);
 	//---この時点でスタックトップに継続を欲しがっているクロージャが置かれている
 	bytecodes->push_back(invoke);
-	bytecodes->push_back(0);
-	bytecodes->push_back(0);
 }
 
 vector<shared_ptr<ExprAST> > ContinuationAST::GetCallExprList()
@@ -1659,9 +1657,13 @@ void ShowBytecode(shared_ptr<vector<int>> bc){
 			cout << "bcmpne" << endl;
 			break;
 		case invoke:
-			cout << "invoke";
-			i++; cout << " " << bc->at(i);
-			i++; cout << " " << bc->at(i) << endl;
+			cout << "invoke" << endl;
+			break;
+		case invoke_tail:
+			cout << "invoke_tail" << endl;
+			break;
+		case invoke_async:
+			cout << "invoke_async" << endl;
 			break;
 		case ret:
 			cout << "ret" << endl;

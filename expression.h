@@ -197,6 +197,7 @@ public:
     shared_ptr<vector< pair<string,shared_ptr<TypeAST> > > > Args;
 	shared_ptr<Flame> ParentFlame; //クロージャの場合、生成元のフレームを覚えておく（実行時にVMが使用）
     shared_ptr<vector<int> > bytecodes;
+    shared_ptr<vector<label_or_immediate> > bytecode_labels;
 	shared_ptr<BlockAST> Body;
 	shared_ptr<vector< pair<string,shared_ptr<TypeAST> > > > LocalVariables; //Argsを含む
 
@@ -215,10 +216,11 @@ public:
 
 		LocalVariables=make_shared<vector< pair<string,shared_ptr<TypeAST> > > >();
 		bytecodes=make_shared<vector<int> >();
+		bytecode_labels=make_shared<vector<label_or_immediate> >();
 
 		TypeInfo=make_shared<FunctionTypeAST>(typelist);
         isBuiltin=false;
-        VMValue v; v.ref_value=make_shared<FunctionObject>(Name,TypeInfo,isBuiltin,Args,LocalVariables,bytecodes);
+        VMValue v; v.ref_value=make_shared<FunctionObject>(Name,TypeInfo,isBuiltin,Args,LocalVariables,bytecode_labels);
 		PoolIndex = VM::PublicConstantPool.SetValue(v);
     }
 

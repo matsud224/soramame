@@ -255,10 +255,9 @@ void Compiler::Codegen()
     genInfo->Bootstrap->push_back(makeclosure);
 	genInfo->Bootstrap->push_back(genInfo->MainFuncPoolIndex);
 	genInfo->Bootstrap->push_back(invoke);
-	genInfo->Bootstrap->push_back(0);
-	genInfo->Bootstrap->push_back(0);
 	genInfo->Bootstrap->push_back(ret);
 
+	VM::BytecodeToLabels(genInfo->Bootstrap,genInfo->Bootstrap_labels);
 }
 
 void Compiler::CTFE(int loop/*繰り返し回数*/){
@@ -323,8 +322,6 @@ void Compiler::CTFE(int loop/*繰り返し回数*/){
 			preexec_code.push_back(0); //FlameBack
 			preexec_code.push_back(dynamic_cast<Variableshared_ptr<ExprAST> >((*iter)->callee)->LocalIndex);
 			preexec_code.push_back(invoke);
-			preexec_code.push_back(0);
-			preexec_code.push_back(0);
 			preexec_code.push_back(ret);
 
 			genInfo->Bootstrap=preexec_code;

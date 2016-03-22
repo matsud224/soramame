@@ -57,8 +57,9 @@ public:
 	shared_ptr<TypeAST> TypeInfo;
 	shared_ptr<vector<pair<string,shared_ptr<TypeAST> > > > Args;
 	shared_ptr<vector<pair<string,shared_ptr<TypeAST> > > > LocalVariables;
-	shared_ptr<vector<int> > bytecodes;
+	shared_ptr<vector<label_or_immediate> > bytecode_labels;
 
-	FunctionObject(string name,shared_ptr<TypeAST> type,bool isbuiltin,shared_ptr<vector<pair<string,shared_ptr<TypeAST> > > > args,shared_ptr<vector<pair<string,shared_ptr<TypeAST> > > > localvars,shared_ptr<vector<int> > bc):Name(name),TypeInfo(type),isBuiltin(isbuiltin),Args(args),LocalVariables(localvars),bytecodes(bc){}
+	FunctionObject(string name,shared_ptr<TypeAST> type,bool isbuiltin,shared_ptr<vector<pair<string,shared_ptr<TypeAST> > > > args,shared_ptr<vector<pair<string,shared_ptr<TypeAST> > > > localvars,shared_ptr<vector<label_or_immediate> > bc)
+		:Name(name),TypeInfo(type),isBuiltin(isbuiltin),Args(args),LocalVariables(localvars),bytecode_labels(bc){}
 	FunctionObject(string name,shared_ptr<TypeAST> type,bool isbuiltin,shared_ptr<vector<pair<string,shared_ptr<TypeAST> > > > args):Name(name),TypeInfo(type),isBuiltin(isbuiltin),Args(args){}
 };
