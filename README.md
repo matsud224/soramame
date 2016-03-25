@@ -34,6 +34,9 @@ make release
 ```
 ./language1 -b sample/qsort.js
 ```
+
+Ubuntu15.10(64bit)で動作確認しました。
+
 サンプルプログラムはsampleディレクトリにあります。
 sample/sample_readme.txtにサンプルプログラムの説明が書いてあります。
 いくつかのサンプルの実行にはGLUTが必要です。
