@@ -2,9 +2,8 @@
 
 オレオレ言語です。LRパーサから手作りです(yaccは使ってません)。バイトコードへコンパイルし、仮想マシン上で実行します。
 
-sampleディレクトリにたくさんのサンプルがあります（拡張子がjsなのはシンタックスハイライトしてくれるから）。テトリスやライフゲーム、マインスイーパもあります！
-
 部誌の記事(pp.1-16): http://www.kitcc.org/share/lime/lime52.pdf
+
 kernelvm名古屋でのスライド: http://www.slideshare.net/matsud224/soramame
 
 ### 特徴 ###
@@ -16,11 +15,22 @@ kernelvm名古屋でのスライド: http://www.slideshare.net/matsud224/soramam
 * ユーザ定義演算子
 * 末尾呼び出し最適化
 
-### Build ###
+### ビルド ###
 ```
 make release_glut_
 ```
-GLUT抜きの方は:
+（GLUTのインストールが必要です）
+GLUT抜きでビルド:
 ```
 make release
 ```
+
+### 実行 ###
+```
+./language1 sample/qsort.js
+```
+バイトコードの逆アセンブル：
+./language1 -b sample/qsort.js
+
+サンプルプログラムはsampleディレクトリにあります。
+sample/sample_readme.txtにサンプルプログラムの説明が書いてあります。
