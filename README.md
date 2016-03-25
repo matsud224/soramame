@@ -1,6 +1,6 @@
 # README #
 
-オレオレ言語です。LRパーサから手作りです(yaccは使ってません)。バイトコードへコンパイルし、仮想マシン上で実行します。
+オレオレ言語です。LRパーサから手作りです。バイトコードへコンパイルし、仮想マシン上で実行します。
 
 部誌の記事(pp.1-16): http://www.kitcc.org/share/lime/lime52.pdf
 
@@ -20,6 +20,7 @@ kernelvm名古屋でのスライド: http://www.slideshare.net/matsud224/soramam
 make release_glut_
 ```
 （GLUTのインストールが必要です）
+
 GLUT抜きでビルド:
 ```
 make release
@@ -30,7 +31,9 @@ make release
 ./language1 sample/qsort.js
 ```
 バイトコードの逆アセンブル：
+```
 ./language1 -b sample/qsort.js
-
+```
 サンプルプログラムはsampleディレクトリにあります。
 sample/sample_readme.txtにサンプルプログラムの説明が書いてあります。
+いくつかのサンプルの実行にはGLUTが必要です。
