@@ -1,12 +1,6 @@
-# README #
+# プログラミング言語 soramame #
 
-オレオレ言語です。LRパーサから手作りです。バイトコードへコンパイルし、仮想マシン上で実行します。
-
-部誌の記事(pp.1-16): http://www.kitcc.org/share/lime/lime52.pdf
-
-kernelvm名古屋でのスライド: http://www.slideshare.net/matsud224/soramame
-
-### 特徴 ###
+soramameは以下のような特徴を持つオレオレ言語です。
 
 * 静的型付き言語（ローカル変数は型推論）
 * 並列実行とチャンネル通信
@@ -14,6 +8,15 @@ kernelvm名古屋でのスライド: http://www.slideshare.net/matsud224/soramam
 * クロージャ
 * ユーザ定義演算子
 * 末尾呼び出し最適化
+
+LRパーサから手作りです。
+バイトコードへコンパイルし、仮想マシン上で実行します。
+
+
+スライド: https://bitbucket.org/matsud224/soramame/downloads/soramame_slide.pdf
+
+soramame言語の解説文書：https://bitbucket.org/matsud224/soramame/downloads/soramame_lime52.pdf
+
 
 ### ビルド ###
 ```
@@ -28,15 +31,21 @@ make release
 
 ### 実行 ###
 ```
-./language1 sample/qsort.js
+./soramame sample/qsort.js
 ```
 バイトコードの逆アセンブル：
 ```
-./language1 -b sample/qsort.js
+./soramame -b sample/qsort.js
 ```
 
 Ubuntu15.10(64bit)で動作確認しました。
 
 サンプルプログラムはsampleディレクトリにあります。
 sample/sample_readme.txtにサンプルプログラムの説明が書いてあります。
+
 いくつかのサンプルの実行にはGLUTが必要です。
+Ubuntuの場合は、
+```
+sudo apt-get install freeglut3 freeglut3-dev
+```
+でインストールできます。
