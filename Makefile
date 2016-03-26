@@ -27,7 +27,7 @@ LIB_DEBUG = $(LIB)
 LDFLAGS_DEBUG = $(LDFLAGS) -pg -lglut -lGLU -lGL -pthread
 OBJDIR_DEBUG = .objs
 DEP_DEBUG = 
-OUT_DEBUG = ./language1
+OUT_DEBUG = ./soramame
 
 INC_DEBUG_PARSER_ = $(INC)
 CFLAGS_DEBUG_PARSER_ = $(CFLAGS) -std=c++11 -Wall -g -DPARSER_DEBUG
@@ -38,7 +38,7 @@ LIB_DEBUG_PARSER_ = $(LIB)
 LDFLAGS_DEBUG_PARSER_ = $(LDFLAGS) -lglut -lGLU -lGL -pthread
 OBJDIR_DEBUG_PARSER_ = .objs
 DEP_DEBUG_PARSER_ = 
-OUT_DEBUG_PARSER_ = ./language1
+OUT_DEBUG_PARSER_ = ./soramame
 
 INC_RELEASE = $(INC)
 CFLAGS_RELEASE = $(CFLAGS) -O2 -std=c++11 -Wextra
@@ -49,7 +49,7 @@ LIB_RELEASE = $(LIB)
 LDFLAGS_RELEASE = $(LDFLAGS) -lglut -lGLU -lGL -pthread
 OBJDIR_RELEASE = .objs
 DEP_RELEASE = 
-OUT_RELEASE = ./language1
+OUT_RELEASE = ./soramame
 
 INC_RELEASE_GLUT_ = $(INC)
 CFLAGS_RELEASE_GLUT_ = $(CFLAGS) -O2 -std=c++11 -Wextra -DUSE_GLUT
@@ -60,7 +60,7 @@ LIB_RELEASE_GLUT_ = $(LIB)
 LDFLAGS_RELEASE_GLUT_ = $(LDFLAGS) -lglut -lGLU -lGL -pthread
 OBJDIR_RELEASE_GLUT_ = .objs
 DEP_RELEASE_GLUT_ = 
-OUT_RELEASE_GLUT_ = ./language1
+OUT_RELEASE_GLUT_ = ./soramame
 
 OBJ_DEBUG = $(OBJDIR_DEBUG)/vm.cpp.o $(OBJDIR_DEBUG)/utility.cpp.o $(OBJDIR_DEBUG)/type.cpp.o $(OBJDIR_DEBUG)/statement.cpp.o $(OBJDIR_DEBUG)/parser_actions.cpp.o $(OBJDIR_DEBUG)/parser.cpp.o $(OBJDIR_DEBUG)/main.cpp.o $(OBJDIR_DEBUG)/ast_etc.cpp.o $(OBJDIR_DEBUG)/lexer.cpp.o $(OBJDIR_DEBUG)/expression.cpp.o $(OBJDIR_DEBUG)/compiler.cpp.o $(OBJDIR_DEBUG)/builtinfunctions.cpp.o
 
