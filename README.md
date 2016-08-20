@@ -13,9 +13,9 @@ LRパーサから手作りです。
 バイトコードへコンパイルし、仮想マシン上で実行します。
 
 
-スライド: https://bitbucket.org/matsud224/soramame/downloads/soramame_slide.pdf
+スライド: http://www.slideshare.net/matsud224/soramame
 
-soramame言語の解説文書：https://bitbucket.org/matsud224/soramame/downloads/soramame_lime52.pdf
+soramame言語の解説文書：http://www.kitcc.org/share/lime/lime52.pdf (pp.1-16)
 
 
 ### ビルド ###
